@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mr. Cash | مستر كاش - اربح الآن</title>
+    <title>Mr. Cash | مستر كاش - منصة الأرباح</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
@@ -13,16 +13,15 @@
         :root {
             --neon-blue: #00f2ff;
             --neon-pink: #ff007f;
-            --bg-dark: #050b18;
-            --card-bg: #0f172a;
+            --bg: #050b18;
+            --card: #10192d;
         }
 
         body {
-            background-color: var(--bg-dark);
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
             margin: 0;
-            padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -31,158 +30,108 @@
         /* الهيدر */
         header {
             width: 100%;
-            padding: 20px 5%;
-            background: var(--card-bg);
+            padding: 15px 5%;
+            background: var(--card);
             border-bottom: 2px solid var(--neon-blue);
             display: flex;
             justify-content: space-between;
             align-items: center;
             box-sizing: border-box;
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+            box-shadow: 0 0 15px var(--neon-blue);
         }
 
-        .logo {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--neon-blue);
-            text-shadow: 0 0 10px var(--neon-blue);
-            letter-spacing: 2px;
-        }
+        .logo { font-size: 1.8rem; font-weight: bold; color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); }
 
-        /* لوحة التحكم (الرصيد) */
-        .stats-container {
+        /* لوحة تحكم المستخدم */
+        .dashboard {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 20px;
             width: 90%;
-            max-width: 1000px;
+            max-width: 800px;
             margin-top: 30px;
         }
 
         .stat-card {
-            background: var(--card-bg);
+            background: var(--card);
             padding: 20px;
             border-radius: 15px;
             border: 1px solid rgba(0, 242, 255, 0.2);
             text-align: center;
-            transition: 0.3s;
         }
 
-        .stat-card:hover {
-            border-color: var(--neon-blue);
-            box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
-        }
+        .stat-card h3 { font-size: 0.8rem; color: #888; margin: 0; }
+        .stat-card p { font-size: 1.5rem; font-weight: bold; color: var(--neon-blue); margin: 10px 0; }
 
-        .stat-card h3 { font-size: 0.9rem; color: #8892b0; margin: 0; }
-        .stat-card p { font-size: 1.8rem; font-weight: bold; margin: 10px 0; color: var(--neon-blue); }
+        /* أزرار الدخول والخروج */
+        .btn-google {
+            background: #fff; color: #000; padding: 10px 20px; border-radius: 8px; border: none;
+            font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px;
+        }
 
         /* جدار العروض */
-        .section-title { margin-top: 50px; color: var(--neon-pink); text-shadow: 0 0 5px var(--neon-pink); }
-        .offer-wall {
+        .offerwall-container {
             width: 90%;
             max-width: 1000px;
-            background: var(--card-bg);
-            border-radius: 20px;
+            background: var(--card);
+            margin: 30px 0;
             padding: 20px;
-            min-height: 400px;
-            border: 1px dashed var(--neon-pink);
-            margin-bottom: 30px;
+            border-radius: 20px;
+            border: 2px dashed var(--neon-pink);
+            min-height: 500px;
         }
 
-        /* زر السحب */
+        /* قسم السحب */
         .withdraw-section {
             width: 90%;
-            max-width: 500px;
+            max-width: 400px;
             background: #111;
-            padding: 30px;
+            padding: 20px;
             border-radius: 15px;
-            border: 1px solid #333;
             margin-bottom: 50px;
+            border: 1px solid #333;
         }
 
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            background: #000;
-            border: 1px solid var(--neon-blue);
-            color: #fff;
-            border-radius: 8px;
-            box-sizing: border-box;
-        }
+        input { width: 100%; padding: 10px; margin: 10px 0; background: #000; color: #fff; border: 1px solid var(--neon-blue); border-radius: 5px; box-sizing: border-box;}
+        .btn-withdraw { width: 100%; padding: 12px; background: var(--neon-blue); border: none; font-weight: bold; cursor: pointer; border-radius: 5px; }
 
-        .btn {
-            width: 100%;
-            padding: 12px;
-            background: var(--neon-blue);
-            color: #000;
-            font-weight: bold;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .btn:hover { background: #fff; box-shadow: 0 0 15px #fff; }
-
-        /* زر جوجل */
-        .btn-google {
-            background: #fff;
-            color: #000;
-            padding: 10px 20px;
-            border-radius: 5px;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <header>
     <div class="logo">MR. CASH</div>
-    <div id="auth-area">
+    <div id="auth-buttons">
         <button class="btn-google" onclick="login()">
             <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="18">
-            دخول عبر جوجل
+            دخول بجوجل
         </button>
     </div>
 </header>
 
-<div class="stats-container">
-    <div class="stat-card">
-        <h3>رصيدك</h3>
-        <p id="balance">$0.00</p>
+<div id="main-content" class="hidden">
+    <div class="dashboard">
+        <div class="stat-card"><h3>نقاطك</h3><p id="user-points">0</p></div>
+        <div class="stat-card"><h3>رصيدك</h3><p id="user-balance">$0.00</p></div>
+        <div class="stat-card"><h3>حالة السحب</h3><p style="font-size: 0.9rem;">متاح</p></div>
     </div>
-    <div class="stat-card">
-        <h3>النقاط</h3>
-        <p id="points">0</p>
-    </div>
-    <div class="stat-card">
-        <h3>حالة الحساب</h3>
-        <p id="status" style="font-size: 1rem;">نشط</p>
-    </div>
-</div>
 
-<h2 class="section-title">🔥 جدار العروض - اجمع النقاط</h2>
-<div class="offer-wall">
-    <div id="adlexy-container">
-        <p style="color: #666; margin-top: 150px;">سجل دخولك لتظهر لك العروض المتاحة</p>
+    <div class="offerwall-container">
+        <h2 style="color: var(--neon-pink);">🔥 العروض المتاحة</h2>
+        <div id="adlexy-wall">
+            </div>
     </div>
-</div>
 
-<div class="withdraw-section">
-    <h3>💰 سحب الأرباح</h3>
-    <p style="font-size: 0.8rem; color: #888;">الحد الأدنى للسحب 5$ عبر USDT (TRC-20)</p>
-    <input type="text" id="wallet-address" placeholder="أدخل عنوان محفظة USDT (TRC-20)">
-    <button class="btn" onclick="requestWithdraw()">طلب سحب الآن</button>
+    <div class="withdraw-section">
+        <h3>💰 سحب الأرباح</h3>
+        <input type="text" id="wallet-addr" placeholder="عنوان محفظة USDT (TRC-20)">
+        <button class="btn-withdraw" onclick="withdraw()">طلب سحب</button>
+    </div>
 </div>
 
 <script>
-    // بيانات Firebase الخاصة بك
+    // بيانات Firebase الخاصة بك (لا تقم بتغييرها)
     const firebaseConfig = {
         apiKey: "AIzaSyBxlADpedVvasxiwOA3ESAPv73j7feck00",
         authDomain: "mrcash-9e428.firebaseapp.com",
@@ -197,60 +146,51 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // تسجيل الدخول
+    // وظيفة تسجيل الدخول
     function login() {
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).then((result) => {
-            const user = result.user;
-            setupUser(user);
+            handleUser(result.user);
+        }).catch((err) => {
+            alert("خطأ: يرجى التأكد من إضافة رابط الموقع في Firebase Authorized Domains");
+            console.error(err);
         });
     }
 
-    // إعداد بيانات المستخدم في القاعدة
-    async function setupUser(user) {
+    // إدارة بيانات المستخدم
+    async function handleUser(user) {
+        document.getElementById('auth-buttons').innerHTML = `<img src="${user.photoURL}" width="40" style="border-radius:50%; border:2px solid var(--neon-blue);">`;
+        document.getElementById('main-content').classList.remove('hidden');
+
         const userRef = db.collection('users').doc(user.uid);
         const doc = await userRef.get();
 
         if (!doc.exists) {
-            await userRef.set({
-                name: user.displayName,
-                email: user.email,
-                points: 0,
-                balance: 0.00,
-                wallet: ""
-            });
+            await userRef.set({ points: 0, balance: 0, email: user.email, name: user.displayName });
         }
 
-        updateUI(user, doc.data() || {points: 0, balance: 0.00});
-    }
+        // تحديث البيانات حياً
+        userRef.onSnapshot((snap) => {
+            const data = snap.data();
+            document.getElementById('user-points').innerText = data.points;
+            document.getElementById('user-balance').innerText = `$${(data.points / 1000).toFixed(2)}`;
+        });
 
-    function updateUI(user, data) {
-        document.getElementById('auth-area').innerHTML = `
-            <div style="display:flex; align-items:center; gap:10px;">
-                <span>${user.displayName}</span>
-                <img src="${user.photoURL}" width="35" style="border-radius:50%; border:2px solid var(--neon-blue);">
-            </div>
-        `;
-        document.getElementById('points').innerText = data.points;
-        document.getElementById('balance').innerText = `$${data.balance.toFixed(2)}`;
-        document.getElementById('adlexy-container').innerHTML = `
-            <iframe src="https://adlexy.com/your-offerwall-link" width="100%" height="600px" frameborder="0"></iframe>
+        // تحميل جدار عروض Adlexy الخاص بك
+        document.getElementById('adlexy-wall').innerHTML = `
+            <iframe src="https://adlexy.com/offerwall/h7mx23bis2zaib6apwwe73uv3gr92i/${user.uid}" 
+            width="100%" height="700px" frameborder="0"></iframe>
         `;
     }
 
-    function requestWithdraw() {
-        const wallet = document.getElementById('wallet-address').value;
-        if(wallet.length < 10) {
-            alert("يرجى إدخال عنوان محفظة صحيح!");
-            return;
-        }
-        alert("تم استلام طلب السحب بنجاح! سيتم التحويل بعد مراجعة العروض.");
+    function withdraw() {
+        const wallet = document.getElementById('wallet-addr').value;
+        if(wallet.length < 10) return alert("يرجى إدخال عنوان محفظة صحيح!");
+        alert("تم إرسال طلب السحب للمراجعة!");
     }
 
-    // مراقبة حالة المستخدم
-    auth.onAuthStateChanged((user) => {
-        if (user) setupUser(user);
-    });
+    // البقاء متصلاً
+    auth.onAuthStateChanged((user) => { if (user) handleUser(user); });
 </script>
 
 </body>
