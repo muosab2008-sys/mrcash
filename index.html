@@ -20,14 +20,20 @@
         body {
             background-color: var(--bg);
             color: #fff;
-            font-family: 'Segoe UI', Tahoma, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
         }
 
-        /* الهيدر الاحترافي */
+        /* أنيميشن النبض للأيقونة 0.webp */
+        @keyframes pulse-neon {
+            0% { box-shadow: 0 0 0 0 rgba(0, 242, 255, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 242, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 242, 255, 0); }
+        }
+
         header {
             padding: 15px 5%;
             background: var(--card);
@@ -35,38 +41,37 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 0 20px var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
-        .logo {
-            font-size: 2rem;
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* الأيقونة المطلوبة 0.webp */
+        .company-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            border: 2px solid var(--neon-blue);
+            object-fit: cover;
+            animation: pulse-neon 2s infinite;
+        }
+
+        .logo-text {
+            font-size: 1.8rem;
             font-weight: bold;
             color: var(--neon-blue);
             text-shadow: 0 0 10px var(--neon-blue);
+            letter-spacing: 1px;
         }
 
-        /* لوحة إحصائيات المستخدم */
-        .user-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 15px;
-            padding: 20px 5%;
-        }
-
-        .stat-box {
-            background: var(--card);
-            padding: 20px;
-            border-radius: 15px;
-            border: 1px solid rgba(0, 242, 255, 0.3);
-            text-align: center;
-            transition: 0.3s;
-        }
-
-        .stat-box:hover { border-color: var(--neon-pink); transform: scale(1.02); }
-        .stat-box h3 { font-size: 0.8rem; color: #888; margin: 0; }
-        .stat-box p { font-size: 1.6rem; font-weight: bold; color: var(--neon-blue); margin: 5px 0; }
-
-        /* منطقة تسجيل الدخول */
+        /* شاشة تسجيل الدخول */
         #login-screen {
             flex: 1;
             display: flex;
@@ -74,61 +79,127 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
+            text-align: center;
         }
 
         .login-card {
             background: var(--card);
-            padding: 40px;
-            border-radius: 20px;
-            text-align: center;
+            padding: 50px 30px;
+            border-radius: 30px;
             border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .login-card img.big-logo {
+            width: 120px;
+            height: 120px;
+            border-radius: 25px;
+            margin-bottom: 25px;
+            border: 3px solid var(--neon-blue);
+            box-shadow: 0 0 20px var(--neon-blue);
         }
 
         .btn-google {
-            background: #fff;
-            color: #000;
-            padding: 12px 25px;
-            border-radius: 10px;
+            background: #ffffff;
+            color: #000000;
+            padding: 15px 25px;
+            border-radius: 12px;
             border: none;
             font-weight: bold;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             font-size: 1.1rem;
+            margin: 30px auto 0;
+            transition: 0.3s;
+            width: 100%;
+            justify-content: center;
         }
 
-        /* جدار العروض */
-        .offers-section {
-            padding: 20px 5%;
+        .btn-google:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.3);
+        }
+
+        /* لوحة التحكم الرئيسية */
+        #main-app {
             flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 20px;
+            padding: 30px 5%;
+        }
+
+        .stat-card {
+            background: var(--card);
+            padding: 25px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .stat-card:hover {
+            border-color: var(--neon-pink);
+            transform: translateY(-5px);
+        }
+
+        .stat-card h3 { font-size: 0.9rem; color: #8892b0; margin: 0; text-transform: uppercase; }
+        .stat-card p { font-size: 1.8rem; font-weight: bold; color: var(--neon-blue); margin: 10px 0; }
+
+        /* جدار العروض Adlexy */
+        .offers-container {
+            padding: 0 5% 30px;
+        }
+
+        .offer-wall-title {
+            color: var(--neon-pink);
+            text-shadow: 0 0 8px var(--neon-pink);
+            margin-bottom: 20px;
+            text-align: right;
         }
 
         .wall-frame {
             width: 100%;
             height: 800px;
-            border-radius: 15px;
+            border-radius: 20px;
             border: 2px solid var(--neon-pink);
-            background: #fff;
+            background: #ffffff;
+            box-shadow: 0 0 20px rgba(255, 0, 127, 0.2);
         }
 
-        /* قسم السحب */
-        .withdraw-section {
+        /* قسم سحب الأرباح */
+        .withdraw-card {
             background: var(--card);
-            margin: 20px 5%;
-            padding: 25px;
-            border-radius: 15px;
-            border-top: 3px solid var(--neon-pink);
+            margin: 20px 5% 50px;
+            padding: 30px;
+            border-radius: 20px;
+            border-top: 4px solid var(--neon-pink);
+            max-width: 600px;
+            align-self: center;
+            width: 90%;
         }
 
+        .withdraw-card h3 { color: var(--neon-blue); margin-top: 0; }
+        
         input {
             width: 100%;
-            padding: 12px;
-            margin: 10px 0;
+            padding: 15px;
+            margin: 15px 0;
             background: #000;
             border: 1px solid var(--neon-blue);
             color: #fff;
-            border-radius: 8px;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 1rem;
         }
 
         .btn-withdraw {
@@ -138,56 +209,80 @@
             color: #000;
             font-weight: bold;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
+            font-size: 1.1rem;
+            transition: 0.3s;
+        }
+
+        .btn-withdraw:hover {
+            background: #fff;
+            box-shadow: 0 0 20px #fff;
         }
 
         .hidden { display: none !important; }
+
+        #user-profile-img {
+            border-radius: 50%;
+            border: 2px solid var(--neon-blue);
+            width: 40px;
+            height: 40px;
+        }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="logo">MR. CASH</div>
-    <div id="user-info" class="hidden">
-        <img id="user-img" src="" width="35" style="border-radius:50%; border:2px solid var(--neon-blue);">
+    <div class="brand-container">
+        <img src="0.webp" alt="Logo" class="company-logo">
+        <div class="logo-text">MR. CASH</div>
+    </div>
+    <div id="auth-status" class="hidden">
+        <img id="user-profile-img" src="" alt="User">
     </div>
 </header>
 
 <div id="login-screen">
     <div class="login-card">
-        <h1 style="color: var(--neon-blue);">مرحباً بك في مستر كاش</h1>
-        <p>سجل دخولك الآن لتبدأ بجني الأرباح من العروض</p>
-        <button class="btn-google" onclick="googleLogin()">
+        <img src="0.webp" alt="Mr Cash Logo" class="big-logo">
+        <h1 style="color: var(--neon-blue); margin: 0;">مستر كاش</h1>
+        <p style="color: #8892b0; margin-top: 10px;">سجل دخولك الآن وابدأ بربح الدولارات من تنفيذ المهام</p>
+        
+        <button class="btn-google" onclick="handleGoogleLogin()">
             <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="20">
-            الدخول عبر حساب جوجل
+            متابعة باستخدام جوجل
         </button>
     </div>
 </div>
 
 <div id="main-app" class="hidden">
     <div class="user-stats">
-        <div class="stat-box"><h3>النقاط المجموعة</h3><p id="pts">0</p></div>
-        <div class="stat-box"><h3>الرصيد القابل للسحب</h3><p id="bal">$0.00</p></div>
-        <div class="stat-box"><h3>معرف المستخدم</h3><p id="uid-display" style="font-size: 0.6rem;">---</p></div>
+        <div class="stat-card">
+            <h3>إجمالي النقاط</h3>
+            <p id="display-points">0</p>
+        </div>
+        <div class="stat-card">
+            <h3>الرصيد المتاح</h3>
+            <p id="display-balance">$0.00</p>
+        </div>
     </div>
 
-    <div class="offers-section">
-        <h2 style="color: var(--neon-pink); text-align: right;">🔥 عروض Adlexy المتاحة لك:</h2>
-        <div id="offer-wall-container">
+    <div class="offers-container">
+        <h2 class="offer-wall-title">🔥 جدار عروض Adlexy</h2>
+        <div id="wall-wrapper">
             </div>
     </div>
 
-    <div class="withdraw-section">
-        <h3>💰 سحب الأرباح (USDT TRC-20)</h3>
-        <p style="color: #888; font-size: 0.8rem;">الحد الأدنى 5000 نقطة ($5)</p>
-        <input type="text" id="wallet-address" placeholder="ضع عنوان محفظتك هنا">
-        <button class="btn-withdraw" onclick="handleWithdraw()">إرسال طلب السحب</button>
+    <div class="withdraw-card">
+        <h3>💰 طلب سحب أرباح</h3>
+        <p style="font-size: 0.8rem; color: #8892b0;">أدخل عنوان محفظة USDT (شبكة TRC-20) الخاص بك:</p>
+        <input type="text" id="wallet-input" placeholder="عنوان المحفظة T...">
+        <button class="btn-withdraw" onclick="submitWithdraw()">تأكيد طلب السحب</button>
     </div>
 </div>
 
 <script>
-    // إعدادات Firebase الخاصة بك
+    // تهيئة Firebase بالبيانات الخاصة بك
     const firebaseConfig = {
         apiKey: "AIzaSyBxlADpedVvasxiwOA3ESAPv73j7feck00",
         authDomain: "mrcash-9e428.firebaseapp.com",
@@ -204,52 +299,76 @@
 
     const ADLEXY_KEY = "h7mx23bis2zaib6apwwe73uv3gr92i";
 
-    // دالة تسجيل الدخول
-    function googleLogin() {
+    // دالة تسجيل الدخول عبر جوجل
+    function handleGoogleLogin() {
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).then((result) => {
-            setupUser(result.user);
-        }).catch(err => {
-            alert("تأكد من إضافة 'muosab2008-sys.github.io' في Authorized Domains بـ Firebase");
+            console.log("تم تسجيل الدخول بنجاح");
+            renderApp(result.user);
+        }).catch((error) => {
+            alert("حدث خطأ في تسجيل الدخول. تأكد من إعداد النطاقات في Firebase.");
+            console.error(error);
         });
     }
 
-    // إعداد حساب المستخدم
-    async function setupUser(user) {
+    // بناء واجهة التطبيق بعد الدخول
+    async function renderApp(user) {
+        // تبديل الشاشات
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
-        document.getElementById('user-info').classList.remove('hidden');
-        document.getElementById('user-img').src = user.photoURL;
-        document.getElementById('uid-display').innerText = user.uid;
+        document.getElementById('auth-status').classList.remove('hidden');
+        document.getElementById('user-profile-img').src = user.photoURL;
 
+        // التحقق من وجود المستخدم في قاعدة البيانات
         const userRef = db.collection('users').doc(user.uid);
         const doc = await userRef.get();
 
         if (!doc.exists) {
-            await userRef.set({ points: 0, balance: 0, email: user.email, name: user.displayName });
+            // إنشاء مستخدم جديد بنقاط صفر
+            await userRef.set({
+                name: user.displayName,
+                email: user.email,
+                points: 0,
+                createdAt: new Date()
+            });
         }
 
-        // تحديث حي للبيانات من Firestore
-        userRef.onSnapshot((snap) => {
-            const data = snap.data();
-            document.getElementById('pts').innerText = data.points || 0;
-            document.getElementById('bal').innerText = `$${((data.points || 0) / 1000).toFixed(2)}`;
+        // الاستماع للتغييرات الحية في النقاط
+        userRef.onSnapshot((snapshot) => {
+            const data = snapshot.data();
+            if (data) {
+                const points = data.points || 0;
+                document.getElementById('display-points').innerText = points;
+                // حساب الرصيد (كل 1000 نقطة تساوي 1 دولار)
+                document.getElementById('display-balance').innerText = `$${(points / 1000).toFixed(2)}`;
+            }
         });
 
-        // تحميل جدار العروض
-        document.getElementById('offer-wall-container').innerHTML = `
-            <iframe class="wall-frame" src="https://adlexy.com/offerwall/${ADLEXY_KEY}/${user.uid}"></iframe>
+        // تحميل جدار عروض Adlexy مع معرف المستخدم لضمان احتساب النقاط
+        document.getElementById('wall-wrapper').innerHTML = `
+            <iframe class="wall-frame" 
+                src="https://adlexy.com/offerwall/${ADLEXY_KEY}/${user.uid}" 
+                frameborder="0">
+            </iframe>
         `;
     }
 
-    function handleWithdraw() {
-        const wallet = document.getElementById('wallet-address').value;
-        if(wallet.length < 10) return alert("يرجى إدخال عنوان صحيح");
-        alert("تم استلام الطلب! سيتم التحقق من نقاطك والدفع قريباً.");
+    // دالة السحب
+    function submitWithdraw() {
+        const wallet = document.getElementById('wallet-input').value;
+        if (wallet.trim().length < 10) {
+            alert("يرجى إدخال عنوان محفظة USDT صحيح.");
+            return;
+        }
+        alert("تم إرسال طلب السحب بنجاح! سيتم مراجعة النقاط وإرسال المبلغ خلال 24 ساعة.");
     }
 
-    // الحفاظ على الجلسة عند تحديث الصفحة
-    auth.onAuthStateChanged((user) => { if (user) setupUser(user); });
+    // الحفاظ على تسجيل الدخول عند تحديث الصفحة
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            renderApp(user);
+        }
+    });
 </script>
 
 </body>
