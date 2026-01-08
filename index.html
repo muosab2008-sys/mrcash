@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مستر كاش | ابدأ الربح الآن</title>
+    <title>مستر كاش | النظام العالمي لمكافآت اللاعبين</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
@@ -12,238 +15,262 @@
     <style>
         :root {
             --primary: #2ecc71;
-            --dark-bg: #0d1117;
-            --card-bg: #161b22;
-            --text-gray: #8b949e;
+            --primary-dark: #27ae60;
+            --bg-deep: #0d1117;
+            --bg-card: #161b22;
+            --text-main: #ffffff;
+            --text-dim: #8b949e;
+            --border-color: #30363d;
         }
+
+        * { box-sizing: border-box; transition: all 0.3s ease; }
 
         body {
-            background-color: var(--dark-bg);
-            color: white;
-            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Cairo', sans-serif;
             margin: 0;
-            line-height: 1.6;
+            overflow-x: hidden;
         }
 
-        /* القائمة العلوية */
+        /* نافبار احترافي */
         nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 5%;
-            background: #010409;
-            border-bottom: 1px solid #30363d;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 8%; background: rgba(1, 4, 9, 0.95);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky; top: 0; z-index: 2000; backdrop-filter: blur(10px);
         }
 
-        .nav-links { display: flex; gap: 20px; list-style: none; margin: 0; padding: 0; }
-        .nav-links li a { color: var(--text-gray); text-decoration: none; font-size: 0.9rem; }
-        .nav-links li a:hover { color: var(--primary); }
+        .logo-section { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+        .logo-section img { width: 45px; height: 45px; border-radius: 12px; border: 2px solid var(--primary); }
+        .logo-text { font-size: 1.5rem; font-weight: 900; color: var(--primary); letter-spacing: 1px; }
 
-        .btn-green {
-            background: var(--primary);
-            color: black;
-            padding: 8px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            text-decoration: none;
-            cursor: pointer;
-            border: none;
-        }
+        .nav-links { display: flex; gap: 25px; list-style: none; margin: 0; }
+        .nav-links a { color: var(--text-dim); text-decoration: none; font-weight: 600; font-size: 0.95rem; }
+        .nav-links a:hover { color: var(--primary); }
 
-        /* الواجهة الترحيبية (Landing Page) */
+        .auth-btns { display: flex; gap: 15px; align-items: center; }
+
+        /* هيرو سكشن (الواجهة الرئيسية) */
         .hero {
-            padding: 100px 5% 50px;
+            padding: 100px 8% 60px;
             text-align: center;
-            background: radial-gradient(circle at top, #1a2332 0%, #0d1117 100%);
+            background: radial-gradient(circle at center, #1a2332 0%, #0d1117 100%);
         }
 
-        .hero img.main-logo {
-            width: 120px;
-            height: 120px;
-            border-radius: 20px;
-            border: 3px solid var(--primary);
-            margin-bottom: 20px;
+        .hero h1 { font-size: 3.5rem; font-weight: 900; line-height: 1.2; margin-bottom: 20px; }
+        .hero h1 span { color: var(--primary); }
+        .hero p { color: var(--text-dim); font-size: 1.3rem; max-width: 750px; margin: 0 auto 40px; }
+
+        .btn-cta {
+            background: var(--primary); color: #000; padding: 18px 45px;
+            border-radius: 50px; font-weight: 900; font-size: 1.2rem;
+            border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 12px;
+            box-shadow: 0 10px 20px rgba(46, 204, 113, 0.3);
+        }
+        .btn-cta:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(46, 204, 113, 0.4); }
+
+        /* لايف ستاتس (العدادات) */
+        .stats-container {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px; padding: 40px 8%;
+        }
+        .stat-card {
+            background: var(--bg-card); padding: 30px; border-radius: 20px;
+            border: 1px solid var(--border-color); text-align: center;
+        }
+        .stat-card i { font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; }
+        .stat-card h2 { font-size: 2rem; margin: 10px 0; }
+        .stat-card span { color: var(--text-dim); font-weight: bold; }
+
+        /* كيف يعمل؟ */
+        .steps-section { padding: 80px 8%; background: #010409; }
+        .section-header { text-align: center; margin-bottom: 60px; }
+        .section-header h2 { font-size: 2.5rem; }
+
+        .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px; }
+        .step-item { position: relative; padding: 40px; background: var(--bg-card); border-radius: 24px; border: 1px solid var(--border-color); }
+        .step-num { 
+            position: absolute; top: -20px; right: 30px; width: 60px; height: 60px; 
+            background: var(--primary); color: #000; display: flex; align-items: center; 
+            justify-content: center; font-size: 1.5rem; font-weight: 900; border-radius: 15px;
         }
 
-        .hero h1 { font-size: 3rem; margin: 0; }
-        .hero p { color: var(--text-gray); font-size: 1.2rem; max-width: 600px; margin: 20px auto; }
-
-        /* إحصائيات ميست كاش */
-        .live-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            padding: 40px 5%;
+        /* لوحة المستخدم (Dashboard) */
+        #dashboard { padding: 50px 8%; display: none; }
+        .user-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: var(--bg-card); padding: 25px; border-radius: 20px; margin-bottom: 40px;
+            border-right: 5px solid var(--primary);
         }
+        .balance-info { display: flex; gap: 40px; }
+        .balance-box h4 { color: var(--text-dim); margin: 0; }
+        .balance-box div { font-size: 2rem; font-weight: 900; color: var(--primary); }
 
-        .stat-item {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 15px;
-            border: 1px solid #30363d;
-            text-align: center;
-        }
-
-        .stat-item h4 { color: var(--primary); font-size: 1.5rem; margin: 5px 0; }
-        .stat-item span { color: var(--text-gray); font-size: 0.8rem; }
-
-        /* قسم كيف يعمل؟ */
-        .how-it-works { padding: 50px 5%; background: #010409; }
-        .steps-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            margin-top: 40px;
-        }
-
-        .step-box { text-align: right; }
-        .step-num { color: var(--primary); font-size: 2rem; font-weight: bold; }
-
-        /* لوحة التحكم (مخفية قبل الدخول) */
-        #user-panel { padding: 40px 5%; }
-        .dashboard-header {
-            display: flex;
-            justify-content: space-between;
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-        }
-
-        .offer-card {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid #30363d;
+        /* جدار العروض */
+        .offer-wall-card {
+            background: linear-gradient(135deg, #161b22 0%, #0d1117 100%);
+            border-radius: 25px; padding: 30px; border: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center;
             cursor: pointer;
         }
+        .offer-wall-card:hover { border-color: var(--primary); transform: scale(1.01); }
+
+        /* الأسئلة الشائعة FAQ */
+        .faq-section { padding: 80px 8%; }
+        .faq-item { background: var(--bg-card); padding: 20px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
+        .faq-item h4 { margin: 0; display: flex; justify-content: space-between; }
+
+        /* فوتر */
+        footer { padding: 60px 8%; background: #010409; border-top: 1px solid var(--border-color); color: var(--text-dim); }
+        .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; }
+        .footer-logo { color: #fff; font-weight: 900; font-size: 1.5rem; margin-bottom: 20px; }
 
         .hidden { display: none !important; }
 
-        footer {
-            background: #010409;
-            padding: 50px 5%;
-            border-top: 1px solid #30363d;
-            margin-top: 50px;
-            color: var(--text-gray);
-            font-size: 0.9rem;
+        /* موديول العروض */
+        #wall-modal {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: #000; z-index: 5000; display: none;
         }
+
+        .user-img-nav { width: 35px; height: 35px; border-radius: 50%; border: 2px solid var(--primary); }
     </style>
 </head>
 <body>
 
 <nav>
-    <div style="display: flex; align-items: center; gap: 10px;">
-        <img src="1.jpg" width="35" style="border-radius: 8px;">
-        <span style="font-weight: bold; color: var(--primary);">مستر كاش</span>
-    </div>
+    <a href="#" class="logo-section">
+        <img src="1.jpg" alt="Logo">
+        <span class="logo-text">مستر كاش</span>
+    </a>
     <ul class="nav-links">
-        <li><a href="#welcome">ابدأ</a></li>
+        <li><a href="#landing">ابدأ</a></li>
         <li><a href="#how">كيف يعمل؟</a></li>
-        <li><a href="#">التعليمات</a></li>
-        <li><a href="#">معلومات عنا</a></li>
+        <li><a href="#faq">التعليمات</a></li>
     </ul>
-    <div id="auth-btn-area">
-        <button class="btn-green" onclick="login()">تسجيل الدخول</button>
+    <div class="auth-btns" id="nav-auth">
+        <button class="btn-cta" style="padding: 10px 25px; font-size: 0.9rem;" onclick="login()">تسجيل الدخول</button>
     </div>
 </nav>
 
-<div id="landing-page">
-    <section class="hero" id="welcome">
-        <img src="1.jpg" class="main-logo" alt="Mr Cash">
-        <h1>أهلاً وسهلا بكم في مستر كاش</h1>
-        <p>اربح المال وأنت تستمتع.. جرّب التطبيقات والألعاب الآن واحصل على مكافآت حقيقية في دقائق معدودة!</p>
-        <button class="btn-green" onclick="login()" style="padding: 15px 40px; font-size: 1.1rem;">احصل على أموالك الآن</button>
+<div id="landing">
+    <section class="hero">
+        <img src="1.jpg" style="width: 140px; border-radius: 25px; margin-bottom: 25px; border: 3px solid var(--primary);">
+        <h1>اربح المال وأنت <span>تستمتع</span></h1>
+        <p>جرّب التطبيقات والألعاب الآن.. مستر كاش هو الموقع الأول لبرامج الولاء للاعبي الهواتف المحمولة وأجهزة الكمبيوتر.</p>
+        <button class="btn-cta" onclick="login()"><i class="fab fa-google"></i> احصل على أموالك الآن</button>
     </section>
 
-    <section class="live-stats">
-        <div class="stat-item">
-            <h4>17د و12ث</h4>
+    <section class="stats-container">
+        <div class="stat-card">
+            <i class="fas fa-bolt"></i>
+            <h2>17د و12ث</h2>
             <span>متوسط الوقت لأول سحب</span>
         </div>
-        <div class="stat-item">
-            <h4>34.67 دولار</h4>
-            <span>متوسط الأرباح اليومية للمستخدم</span>
+        <div class="stat-card">
+            <i class="fas fa-hand-holding-usd"></i>
+            <h2>34.67 دولار</h2>
+            <span>متوسط الأرباح اليومية</span>
         </div>
-        <div class="stat-item">
-            <h4>+25,000 دولار</h4>
+        <div class="stat-card">
+            <i class="fas fa-chart-line"></i>
+            <h2>+25,000 $</h2>
             <span>إجمالي الأموال المكتسبة</span>
         </div>
     </section>
 
-    <section class="how-it-works" id="how">
-        <h2 style="text-align: center;">خطوات بسيطة للربح</h2>
+    <section class="steps-section" id="how">
+        <div class="section-header">
+            <h2>كيف تبدأ الربح؟</h2>
+        </div>
         <div class="steps-grid">
-            <div class="step-box">
-                <div class="step-num">01.</div>
-                <h3>اختر عرضًا سيعجبك</h3>
-                <p>تصفّح أفضل المهام تقييمًا على صفحة الربح، اختر ما يناسبك وابدأ الربح بسهولة!</p>
+            <div class="step-item">
+                <div class="step-num">1</div>
+                <h3>اختر عرضًا</h3>
+                <p>تصفّح قائمة العروض الضخمة واختر المهمة التي تناسبك من ألعاب أو استطلاعات.</p>
             </div>
-            <div class="step-box">
-                <div class="step-num">02.</div>
+            <div class="step-item">
+                <div class="step-num">2</div>
                 <h3>أكمل المهمة</h3>
-                <p>معظم المهام بسيطة ويمكن إنجازها بسرعة. انضم لآلاف المستخدمين الآن!</p>
+                <p>اتبع التعليمات بدقة لضمان احتساب النقاط في حسابك فوراً.</p>
             </div>
-            <div class="step-box">
-                <div class="step-num">03.</div>
-                <h3>احصل على أموالك فوراً</h3>
-                <p>بمجرد إتمام المهمة، ستتلقى مكافأة مباشرة في حسابك. اسحبها متى شئت!</p>
+            <div class="step-item">
+                <div class="step-num">3</div>
+                <h3>اسحب كاش</h3>
+                <p>حول نقاطك إلى USDT أو طرق دفع أخرى واستلم أموالك في دقائق.</p>
             </div>
         </div>
     </section>
+
+    <section class="faq-section" id="faq">
+        <div class="section-header"><h2>الأسئلة الشائعة</h2></div>
+        <div class="faq-item"><h4>كيف تربح المال من مستر كاش؟ <i class="fas fa-chevron-down"></i></h4></div>
+        <div class="faq-item"><h4>كم من المال يمكنك أن تربح فعلاً؟ <i class="fas fa-chevron-down"></i></h4></div>
+    </section>
 </div>
 
-<div id="user-panel" class="hidden">
-    <div class="dashboard-header">
-        <div>أهلاً، <span id="user-name" style="color: var(--primary);">...</span></div>
-        <div>نقاطك: <span id="pts" style="color: var(--primary); font-weight: bold;">0</span></div>
-        <div>رصيدك: <span id="bal" style="color: var(--primary); font-weight: bold;">$0.00</span></div>
+<div id="dashboard">
+    <div class="user-header">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <img id="u-pic" src="" class="user-img-nav">
+            <div>
+                <h3 style="margin:0">أهلاً، <span id="u-name">...</span></h3>
+                <span style="color:var(--text-dim); font-size:0.8rem" id="u-id">ID: ...</span>
+            </div>
+        </div>
+        <div class="balance-info">
+            <div class="balance-box"><h4>نقاطك</h4><div id="pts">0</div></div>
+            <div class="balance-box"><h4>رصيدك</h4><div id="bal">$0.00</div></div>
+        </div>
     </div>
 
-    <h3>🔥 أفضل جدران العروض</h3>
-    <div class="offer-card" onclick="openWall('h7mx23bis2zaib6apwwe73uv3gr92i')">
-        <div>
-            <div style="font-weight: bold;">Adlexy Offers</div>
-            <div style="font-size: 0.8rem; color: var(--text-gray);">تطبيقات، ألعاب، واستطلاعات</div>
+    <h2 style="margin-bottom: 25px;"><i class="fas fa-fire" style="color:orange"></i> جدران العروض النشطة</h2>
+    
+    <div class="offer-wall-card" onclick="openWall()">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div style="width: 60px; height: 60px; background: var(--primary); border-radius: 15px; display: flex; align-items: center; justify-content: center; color: #000; font-size: 1.5rem;">
+                <i class="fas fa-gamepad"></i>
+            </div>
+            <div>
+                <h3 style="margin:0">Adlexy Premium Wall</h3>
+                <p style="margin:5px 0 0; color:var(--text-dim)">العروض الأعلى دفعاً في الوطن العربي</p>
+            </div>
         </div>
-        <div class="btn-green">فتح الجدار</div>
+        <button class="btn-cta" style="padding: 10px 25px; font-size: 0.9rem;">ابدأ المهمة</button>
     </div>
 </div>
 
 <footer>
-    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+    <div class="footer-grid">
         <div>
-            <h3 style="color: white;">مستر كاش</h3>
-            <p>منصة المكافآت الأولى لتحويل وقتك إلى أرباح حقيقية.</p>
+            <div class="footer-logo">مستر كاش</div>
+            <p>منصة المكافآت الرائدة التي تساعدك على تحويل وقت فراغك إلى مصدر دخل حقيقي.</p>
         </div>
         <div>
-            <h4>كسب</h4>
-            <span>التطبيقات والألعاب</span><br>
-            <span>شركاء العرض</span>
+            <h4>روابط سريعة</h4>
+            <p>معلومات عنا</p>
+            <p>سياسة الخصوصية</p>
+            <p>شروط الخدمة</p>
         </div>
         <div>
-            <h4>عن</h4>
-            <span>معلومات عنا</span><br>
-            <span>سياسة الخصوصية</span>
+            <h4>تواصل معنا</h4>
+            <div style="display:flex; gap:15px; font-size: 1.5rem;">
+                <i class="fab fa-telegram"></i>
+                <i class="fab fa-discord"></i>
+                <i class="fab fa-facebook"></i>
+            </div>
         </div>
     </div>
-    <hr style="border: 0; border-top: 1px solid #30363d; margin: 30px 0;">
-    <p style="text-align: center;">© 2026 Mr Cash. جميع الحقوق محفوظة.</p>
+    <p style="text-align: center; margin-top: 50px;">© 2026 MistCash System. كل الحقوق محفوظة.</p>
 </footer>
 
-<div id="wall-modal" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.95); z-index: 10000;">
-    <div style="padding: 10px; background: #010409; display: flex; justify-content: space-between; align-items: center;">
-        <span>جدار العروض</span>
-        <button onclick="closeWall()" style="background: red; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">إغلاق X</button>
+<div id="wall-modal">
+    <div style="padding: 15px; background: #010409; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: bold;"><i class="fas fa-shield-alt"></i> جدار العروض المؤمن</span>
+        <button onclick="closeWall()" style="background: #f85149; color: white; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">إغلاق العرض X</button>
     </div>
-    <iframe id="wall-iframe" src="" style="width: 100%; height: 92%; border: none; background: white;"></iframe>
+    <iframe id="wall-iframe" src="" style="width: 100%; height: calc(100% - 60px); border: none; background: #fff;"></iframe>
 </div>
 
 <script>
@@ -260,39 +287,48 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
-    let currentUID = "";
+    let userUID = "";
 
     function login() {
         const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).then(res => setupUser(res.user));
+        auth.signInWithPopup(provider).then(res => setupApp(res.user));
     }
 
-    async function setupUser(user) {
-        currentUID = user.uid;
-        document.getElementById('landing-page').classList.add('hidden');
-        document.getElementById('user-panel').classList.remove('hidden');
-        document.getElementById('user-name').innerText = user.displayName;
-        document.getElementById('auth-btn-area').innerHTML = `<img src="${user.photoURL}" width="35" style="border-radius: 50%;">`;
+    function logout() {
+        auth.signOut().then(() => location.reload());
+    }
 
-        const userRef = db.collection('users').doc(user.uid);
-        userRef.onSnapshot(doc => {
+    async function setupApp(user) {
+        userUID = user.uid;
+        document.getElementById('landing').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        document.getElementById('u-name').innerText = user.displayName;
+        document.getElementById('u-pic').src = user.photoURL;
+        document.getElementById('u-id').innerText = `ID: ${user.uid.substring(0, 8)}`;
+        
+        document.getElementById('nav-auth').innerHTML = `
+            <img src="${user.photoURL}" class="user-img-nav">
+            <button onclick="logout()" style="background:none; border:1px solid #f85149; color:#f85149; padding:5px 12px; border-radius:5px; cursor:pointer;">خروج</button>
+        `;
+
+        db.collection('users').doc(user.uid).onSnapshot(doc => {
             const data = doc.data() || {points: 0};
-            document.getElementById('pts').innerText = data.points;
+            document.getElementById('pts').innerText = data.points.toLocaleString();
             document.getElementById('bal').innerText = `$${(data.points / 1000).toFixed(2)}`;
         });
     }
 
-    function openWall(apiKey) {
-        document.getElementById('wall-modal').classList.remove('hidden');
-        document.getElementById('wall-iframe').src = `https://adlexy.com/offerwall/${apiKey}/${currentUID}`;
+    function openWall() {
+        document.getElementById('wall-modal').style.display = 'block';
+        document.getElementById('wall-iframe').src = `https://adlexy.com/offerwall/h7mx23bis2zaib6apwwe73uv3gr92i/${userUID}`;
     }
 
     function closeWall() {
-        document.getElementById('wall-modal').classList.add('hidden');
+        document.getElementById('wall-modal').style.display = 'none';
         document.getElementById('wall-iframe').src = "";
     }
 
-    auth.onAuthStateChanged(u => { if(u) setupUser(u); });
+    auth.onAuthStateChanged(u => { if(u) setupApp(u); });
 </script>
 
 </body>
