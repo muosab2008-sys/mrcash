@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mr. Cash | مستر كاش</title>
+    <title>مستر كاش | ابدأ الربح الآن</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
@@ -11,7 +11,7 @@
 
     <style>
         :root {
-            --main-green: #2ecc71;
+            --primary: #2ecc71;
             --dark-bg: #0d1117;
             --card-bg: #161b22;
             --text-gray: #8b949e;
@@ -20,176 +20,230 @@
         body {
             background-color: var(--dark-bg);
             color: white;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
             margin: 0;
-            display: flex;
-            flex-direction: column;
+            line-height: 1.6;
         }
 
-        /* الهيدر العلوي */
-        header {
-            background: #010409;
-            padding: 15px 5%;
+        /* القائمة العلوية */
+        nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 15px 5%;
+            background: #010409;
             border-bottom: 1px solid #30363d;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
-        .brand { display: flex; align-items: center; gap: 10px; }
-        .brand img { width: 40px; height: 40px; border-radius: 8px; }
-        .logo-text { font-size: 1.5rem; font-weight: bold; color: var(--main-green); }
+        .nav-links { display: flex; gap: 20px; list-style: none; margin: 0; padding: 0; }
+        .nav-links li a { color: var(--text-gray); text-decoration: none; font-size: 0.9rem; }
+        .nav-links li a:hover { color: var(--primary); }
 
-        .user-pill {
-            background: #21262d;
-            padding: 5px 15px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border: 1px solid #30363d;
-        }
-
-        /* شبكة الشركات (نفس شكل الصورة) */
-        .offers-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            padding: 30px 5%;
-        }
-
-        .company-card {
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 20px;
-            position: relative;
-            border: 1px solid #30363d;
-            cursor: pointer;
-            transition: 0.3s;
-            overflow: hidden;
-        }
-
-        .company-card:hover { border-color: var(--main-green); transform: translateY(-5px); }
-
-        .badge-bonus {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            background: #f1c40f;
+        .btn-green {
+            background: var(--primary);
             color: black;
-            font-size: 0.7rem;
-            font-weight: bold;
-            padding: 3px 8px;
-            border-radius: 10px;
-        }
-
-        .company-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            margin-top: 10px;
-        }
-
-        .company-name { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
-        .company-desc { font-size: 0.8rem; color: var(--text-gray); }
-
-        .stars { color: #f1c40f; font-size: 0.9rem; margin-top: 10px; }
-
-        /* الأقسام الأخرى */
-        .stats-bar {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            padding: 20px;
-            background: #161b22;
-            margin: 20px 5%;
-            border-radius: 10px;
-        }
-
-        .btn-withdraw {
-            background: var(--main-green);
-            color: black;
-            border: none;
-            padding: 10px 25px;
+            padding: 8px 20px;
             border-radius: 8px;
             font-weight: bold;
+            text-decoration: none;
             cursor: pointer;
+            border: none;
         }
 
-        #login-overlay {
-            position: fixed; top:0; left:0; width:100%; height:100%;
-            background: var(--dark-bg); display: flex; justify-content: center;
-            align-items: center; z-index: 9999;
+        /* الواجهة الترحيبية (Landing Page) */
+        .hero {
+            padding: 100px 5% 50px;
+            text-align: center;
+            background: radial-gradient(circle at top, #1a2332 0%, #0d1117 100%);
+        }
+
+        .hero img.main-logo {
+            width: 120px;
+            height: 120px;
+            border-radius: 20px;
+            border: 3px solid var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .hero h1 { font-size: 3rem; margin: 0; }
+        .hero p { color: var(--text-gray); font-size: 1.2rem; max-width: 600px; margin: 20px auto; }
+
+        /* إحصائيات ميست كاش */
+        .live-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 40px 5%;
+        }
+
+        .stat-item {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid #30363d;
+            text-align: center;
+        }
+
+        .stat-item h4 { color: var(--primary); font-size: 1.5rem; margin: 5px 0; }
+        .stat-item span { color: var(--text-gray); font-size: 0.8rem; }
+
+        /* قسم كيف يعمل؟ */
+        .how-it-works { padding: 50px 5%; background: #010409; }
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .step-box { text-align: right; }
+        .step-num { color: var(--primary); font-size: 2rem; font-weight: bold; }
+
+        /* لوحة التحكم (مخفية قبل الدخول) */
+        #user-panel { padding: 40px 5%; }
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .offer-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #30363d;
+            cursor: pointer;
         }
 
         .hidden { display: none !important; }
+
+        footer {
+            background: #010409;
+            padding: 50px 5%;
+            border-top: 1px solid #30363d;
+            margin-top: 50px;
+            color: var(--text-gray);
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
 
-<div id="login-overlay">
-    <div style="text-align: center;">
-        <img src="0.webp" width="100" style="border-radius: 20px; margin-bottom: 20px;">
-        <h2>مرحباً بك في مستر كاش</h2>
-        <button onclick="googleLogin()" style="padding: 12px 25px; cursor: pointer; border-radius: 8px; font-weight: bold; background: white; color: black; border: none; display: flex; align-items: center; gap: 10px; margin: auto;">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="20">
-            تسجيل الدخول بجوجل
-        </button>
+<nav>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <img src="1.jpg" width="35" style="border-radius: 8px;">
+        <span style="font-weight: bold; color: var(--primary);">مستر كاش</span>
     </div>
-</div>
+    <ul class="nav-links">
+        <li><a href="#welcome">ابدأ</a></li>
+        <li><a href="#how">كيف يعمل؟</a></li>
+        <li><a href="#">التعليمات</a></li>
+        <li><a href="#">معلومات عنا</a></li>
+    </ul>
+    <div id="auth-btn-area">
+        <button class="btn-green" onclick="login()">تسجيل الدخول</button>
+    </div>
+</nav>
 
-<header>
-    <div class="brand">
-        <img src="0.webp">
-        <div class="logo-text">MR. CASH</div>
-    </div>
-    <div id="user-area" class="hidden">
-        <div class="user-pill">
-            <span id="user-name">...</span>
-            <img id="user-img" src="" width="30" style="border-radius: 50%;">
+<div id="landing-page">
+    <section class="hero" id="welcome">
+        <img src="1.jpg" class="main-logo" alt="Mr Cash">
+        <h1>أهلاً وسهلا بكم في مستر كاش</h1>
+        <p>اربح المال وأنت تستمتع.. جرّب التطبيقات والألعاب الآن واحصل على مكافآت حقيقية في دقائق معدودة!</p>
+        <button class="btn-green" onclick="login()" style="padding: 15px 40px; font-size: 1.1rem;">احصل على أموالك الآن</button>
+    </section>
+
+    <section class="live-stats">
+        <div class="stat-item">
+            <h4>17د و12ث</h4>
+            <span>متوسط الوقت لأول سحب</span>
         </div>
-    </div>
-</header>
+        <div class="stat-item">
+            <h4>34.67 دولار</h4>
+            <span>متوسط الأرباح اليومية للمستخدم</span>
+        </div>
+        <div class="stat-item">
+            <h4>+25,000 دولار</h4>
+            <span>إجمالي الأموال المكتسبة</span>
+        </div>
+    </section>
 
-<div id="main-app" class="hidden">
-    <div class="stats-bar">
-        <div>نقاطك: <span id="pts" style="color: var(--main-green); font-weight: bold;">0</span></div>
-        <div>رصيدك: <span id="bal" style="color: var(--main-green); font-weight: bold;">$0.00</span></div>
-        <button class="btn-withdraw" onclick="alert('سيتم فتح قسم السحب قريباً')">سحب نقدي</button>
-    </div>
-
-    <h2 style="padding: 0 5%; color: var(--text-gray);">الشركات المتاحة</h2>
-    
-    <div class="offers-grid">
-        <div class="company-card" onclick="openWall('h7mx23bis2zaib6apwwe73uv3gr92i')">
-            <div class="badge-bonus">60% ✨</div>
-            <img src="https://adlexy.com/favicon.ico" width="40">
-            <div class="company-info">
-                <span class="company-name">أدليكسي - Adlexy</span>
-                <span class="company-desc">أفضل العروض والمهام السريعة</span>
-                <div class="stars">★★★★★</div>
+    <section class="how-it-works" id="how">
+        <h2 style="text-align: center;">خطوات بسيطة للربح</h2>
+        <div class="steps-grid">
+            <div class="step-box">
+                <div class="step-num">01.</div>
+                <h3>اختر عرضًا سيعجبك</h3>
+                <p>تصفّح أفضل المهام تقييمًا على صفحة الربح، اختر ما يناسبك وابدأ الربح بسهولة!</p>
+            </div>
+            <div class="step-box">
+                <div class="step-num">02.</div>
+                <h3>أكمل المهمة</h3>
+                <p>معظم المهام بسيطة ويمكن إنجازها بسرعة. انضم لآلاف المستخدمين الآن!</p>
+            </div>
+            <div class="step-box">
+                <div class="step-num">03.</div>
+                <h3>احصل على أموالك فوراً</h3>
+                <p>بمجرد إتمام المهمة، ستتلقى مكافأة مباشرة في حسابك. اسحبها متى شئت!</p>
             </div>
         </div>
+    </section>
+</div>
 
-        <div class="company-card">
-            <div class="badge-bonus">40% 🔥</div>
-            <div class="company-name">Monlix</div>
-            <div class="company-desc">استطلاعات رأي وعروض مميزة</div>
-            <div class="stars">★★★★☆</div>
+<div id="user-panel" class="hidden">
+    <div class="dashboard-header">
+        <div>أهلاً، <span id="user-name" style="color: var(--primary);">...</span></div>
+        <div>نقاطك: <span id="pts" style="color: var(--primary); font-weight: bold;">0</span></div>
+        <div>رصيدك: <span id="bal" style="color: var(--primary); font-weight: bold;">$0.00</span></div>
+    </div>
+
+    <h3>🔥 أفضل جدران العروض</h3>
+    <div class="offer-card" onclick="openWall('h7mx23bis2zaib6apwwe73uv3gr92i')">
+        <div>
+            <div style="font-weight: bold;">Adlexy Offers</div>
+            <div style="font-size: 0.8rem; color: var(--text-gray);">تطبيقات، ألعاب، واستطلاعات</div>
         </div>
-        
-        <div class="company-card">
-            <div class="badge-bonus">30% ⚡</div>
-            <div class="company-name">Torox</div>
-            <div class="company-desc">تحميل ألعاب وتطبيقات</div>
-            <div class="stars">★★★★★</div>
-        </div>
+        <div class="btn-green">فتح الجدار</div>
     </div>
 </div>
 
-<div id="wall-modal" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 10000; padding: 20px; box-sizing: border-box;">
-    <button onclick="closeWall()" style="background: red; color: white; border: none; padding: 10px; cursor: pointer; margin-bottom: 10px;">إغلاق X</button>
-    <iframe id="wall-iframe" src="" style="width: 100%; height: 90%; background: white; border-radius: 10px;"></iframe>
+<footer>
+    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+        <div>
+            <h3 style="color: white;">مستر كاش</h3>
+            <p>منصة المكافآت الأولى لتحويل وقتك إلى أرباح حقيقية.</p>
+        </div>
+        <div>
+            <h4>كسب</h4>
+            <span>التطبيقات والألعاب</span><br>
+            <span>شركاء العرض</span>
+        </div>
+        <div>
+            <h4>عن</h4>
+            <span>معلومات عنا</span><br>
+            <span>سياسة الخصوصية</span>
+        </div>
+    </div>
+    <hr style="border: 0; border-top: 1px solid #30363d; margin: 30px 0;">
+    <p style="text-align: center;">© 2026 Mr Cash. جميع الحقوق محفوظة.</p>
+</footer>
+
+<div id="wall-modal" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.95); z-index: 10000;">
+    <div style="padding: 10px; background: #010409; display: flex; justify-content: space-between; align-items: center;">
+        <span>جدار العروض</span>
+        <button onclick="closeWall()" style="background: red; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">إغلاق X</button>
+    </div>
+    <iframe id="wall-iframe" src="" style="width: 100%; height: 92%; border: none; background: white;"></iframe>
 </div>
 
 <script>
@@ -208,22 +262,21 @@
     const db = firebase.firestore();
     let currentUID = "";
 
-    function googleLogin() {
+    function login() {
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).then(res => setupUser(res.user));
     }
 
     async function setupUser(user) {
         currentUID = user.uid;
-        document.getElementById('login-overlay').classList.add('hidden');
-        document.getElementById('main-app').classList.remove('hidden');
-        document.getElementById('user-area').classList.remove('hidden');
+        document.getElementById('landing-page').classList.add('hidden');
+        document.getElementById('user-panel').classList.remove('hidden');
         document.getElementById('user-name').innerText = user.displayName;
-        document.getElementById('user-img').src = user.photoURL;
+        document.getElementById('auth-btn-area').innerHTML = `<img src="${user.photoURL}" width="35" style="border-radius: 50%;">`;
 
         const userRef = db.collection('users').doc(user.uid);
-        userRef.onSnapshot(snap => {
-            const data = snap.data() || {points: 0};
+        userRef.onSnapshot(doc => {
+            const data = doc.data() || {points: 0};
             document.getElementById('pts').innerText = data.points;
             document.getElementById('bal').innerText = `$${(data.points / 1000).toFixed(2)}`;
         });
@@ -239,7 +292,7 @@
         document.getElementById('wall-iframe').src = "";
     }
 
-    auth.onAuthStateChanged(user => { if(user) setupUser(user); });
+    auth.onAuthStateChanged(u => { if(u) setupUser(u); });
 </script>
 
 </body>
