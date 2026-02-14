@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ميست كاش | كسب المال</title>
+    <title>ميست كاش | MIST CASH</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -18,10 +18,10 @@
             --card: #161b22; --border: #30363d; --text: #ffffff; --text-dim: #8b949e;
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; transition: 0.3s; }
         body { background-color: var(--bg-main); color: var(--text); font-family: 'Cairo', sans-serif; margin: 0; display: flex; }
 
-        /* Sidebar */
+        /* Sidebar الأصلي الخاص بك */
         .sidebar {
             width: 280px; height: 100vh; background: var(--bg-side); border-left: 1px solid var(--border);
             position: fixed; right: 0; top: 0; padding: 20px; display: flex; flex-direction: column; z-index: 1000;
@@ -29,7 +29,7 @@
         .sidebar-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 30px; font-weight: 900; color: var(--primary); font-size: 1.5rem; }
         .sidebar-brand img { width: 45px; border-radius: 10px; }
         
-        .nav-link { display: flex; align-items: center; gap: 12px; padding: 12px; color: var(--text); text-decoration: none; border-radius: 12px; transition: 0.3s; margin-bottom: 5px; }
+        .nav-link { display: flex; align-items: center; gap: 12px; padding: 12px; color: var(--text); text-decoration: none; border-radius: 12px; margin-bottom: 5px; cursor: pointer; }
         .nav-link:hover, .nav-link.active { background: var(--card); color: var(--primary); }
 
         /* Main Content */
@@ -37,39 +37,36 @@
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .balance-card { background: var(--card); padding: 10px 20px; border-radius: 50px; border: 1px solid var(--border); display: flex; gap: 20px; }
 
-        /* Partner Cards - التصميم الجديد */
-        .partners-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-        .partner-box { 
-            background: #000; border-radius: 20px; border: 1px solid var(--border); padding: 20px; 
-            position: relative; cursor: pointer; transition: 0.3s;
+        /* تصميم شركات العروض المطلوب */
+        .partners-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .partner-card {
+            background: #000; border-radius: 20px; border: 1px solid var(--border); padding: 20px;
+            position: relative; cursor: pointer; min-height: 160px; display: flex; flex-direction: column;
         }
-        .partner-box:hover { border-color: var(--primary); box-shadow: 0 0 15px rgba(46, 204, 113, 0.2); }
-        .partner-box .badge { 
-            position: absolute; top: 15px; left: 15px; background: #6c5ce7; color: white; 
-            padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;
-        }
-        .partner-info { display: flex; align-items: center; gap: 10px; margin: 15px 0; }
-        .partner-info img { width: 35px; }
-        .stars { color: #f1c40f; font-size: 0.8rem; margin-top: 10px; }
+        .partner-card:hover { border-color: var(--primary); box-shadow: 0 0 15px rgba(46, 204, 113, 0.2); }
+        .badge-top { position: absolute; top: 15px; left: 15px; background: #6c5ce7; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; }
+        .partner-info { display: flex; align-items: center; gap: 10px; margin: 20px 0; }
+        .partner-info img { height: 35px; }
+        .partner-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+        .stars { color: #f1c40f; font-size: 0.75rem; }
+        .btn-action { background: #3498db; color: white; border: none; padding: 5px 15px; border-radius: 15px; font-size: 0.75rem; font-weight: bold; }
 
-        /* Avatar Modal - نافذة الأفاتار */
+        /* نافذة الأفاتار - حل مشكلة التعليق */
         #avatar-overlay { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 6000; 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 6000; 
             display: none; align-items: center; justify-content: center; 
         }
-        .avatar-card { 
+        .avatar-box { 
             background: var(--card); border: 2px solid var(--primary); border-radius: 25px; 
-            width: 90%; max-width: 500px; padding: 30px; text-align: center;
+            width: 90%; max-width: 450px; padding: 30px; text-align: center;
         }
         .avatar-grid { 
             display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; 
-            max-height: 300px; overflow-y: auto; margin: 20px 0; padding: 10px;
+            max-height: 280px; overflow-y: auto; margin: 20px 0; padding: 10px;
         }
-        .avatar-grid img { 
-            width: 100%; border-radius: 50%; cursor: pointer; border: 3px solid transparent; 
-        }
+        .avatar-grid img { width: 100%; border-radius: 50%; cursor: pointer; border: 3px solid transparent; background: #010409; }
         .avatar-grid img.selected { border-color: var(--primary); box-shadow: 0 0 10px var(--primary); }
-        
+
         #login-overlay { position: fixed; inset: 0; background: var(--bg-main); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .hidden { display: none !important; }
     </style>
@@ -77,15 +74,16 @@
 <body>
 
 <div id="avatar-overlay">
-    <div class="avatar-card">
-        <h2 style="color: var(--primary); margin-top: 0;">اختر شخصيتك</h2>
-        <div class="avatar-grid" id="avatar-picker-grid"></div>
-        <button id="save-avatar-btn" onclick="saveAvatar()" style="width: 100%; background: var(--primary); color: #000; padding: 12px; border: none; border-radius: 10px; font-weight: 900; cursor: pointer;">تأكيد الاختيار</button>
+    <div class="avatar-box">
+        <h2 style="color: var(--primary); margin: 0 0 10px;">اختر شخصيتك</h2>
+        <p style="color: var(--text-dim); font-size: 0.8rem;">اختر أفاتار لفتح حسابك</p>
+        <div class="avatar-grid" id="avatar-picker-list"></div>
+        <button id="save-btn" onclick="saveAvatar()" style="width:100%; background:var(--primary); color:#000; padding:12px; border:none; border-radius:10px; font-weight:900; cursor:pointer;">تأكيد الاختيار</button>
     </div>
 </div>
 
 <div id="login-overlay">
-    <img src="0.webp" style="width: 120px; border-radius: 20px; border: 3px solid var(--primary); margin-bottom: 20px;">
+    <img src="1.jpg" style="width: 100px; border-radius: 20px; border: 3px solid var(--primary); margin-bottom: 20px;">
     <h1>مستر كاش</h1>
     <button onclick="login()" style="background: var(--primary); color: #000; padding: 15px 40px; border: none; border-radius: 50px; font-weight: 900; cursor: pointer;"><i class="fab fa-google"></i> دخول بواسطة جوجل</button>
 </div>
@@ -93,29 +91,43 @@
 <aside class="sidebar">
     <div class="sidebar-brand"><img src="1.jpg"> ميست كاش</div>
     <div class="nav-link active"><i class="fas fa-coins"></i> يكسب</div>
-    <a href="#" class="nav-link"><i class="fas fa-wallet"></i> سحب نقدي</a>
+    <div class="nav-link"><i class="fas fa-wallet"></i> سحب نقدي</div>
+    <div class="nav-link" onclick="auth.signOut()"><i class="fas fa-sign-out-alt"></i> خروج</div>
 </aside>
 
 <main>
     <header>
         <div>
-            <h2 style="margin: 0;">رصيدك الحالي</h2>
-            <p style="color: var(--text-dim);">مرحباً، <span id="u-display">...</span></p>
+            <h2 style="margin: 0;">الرصيد الحالي</h2>
+            <p style="color: var(--text-dim);">مرحباً، <span id="user-n">...</span></p>
         </div>
         <div class="balance-card">
-            <span>رصيدك: <b id="pts">0.00</b> MC</span>
+            <span>النقاط: <b id="pts">0.00</b> MC</span>
         </div>
     </header>
 
-    <h3>شركاء العرض</h3>
-    <div class="partners-list">
-        <div class="partner-box" onclick="openWall()">
-            <div class="badge">عروض موثوقة 🤝</div>
+    <h3>شركاء العروض</h3>
+    <div class="partners-grid">
+        <div class="partner-card" onclick="openWall()">
+            <div class="badge-top">🤝 عروض موثوقة</div>
             <div class="partner-info">
                 <img src="https://gemiad.s3.eu-central-1.amazonaws.com/logos/Asset_7.png">
-                <span style="font-weight: 900; font-size: 1.2rem;">GemiAd</span>
+                <span style="font-weight:900; font-size:1.3rem;">GemiAd</span>
             </div>
-            <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+            <div class="partner-footer">
+                <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                <button class="btn-action">فتح الجدار</button>
+            </div>
+        </div>
+        <div class="partner-card" onclick="openWall()">
+            <div class="badge-top" style="background:#00b894;">2X 🏅</div>
+            <div class="partner-info">
+                <span style="font-weight:900; font-size:1.3rem; color:#00f2ff;">Offery</span>
+            </div>
+            <div class="partner-footer">
+                <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                <button class="btn-action" style="background:#2980b9;">عرض المهمات</button>
+            </div>
         </div>
     </div>
 </main>
@@ -133,39 +145,37 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
-    let currentUID = "";
     let selectedAvatar = "";
 
     function login() {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider);
+        auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
     }
 
     auth.onAuthStateChanged(user => {
         if(user) {
-            currentUID = user.uid;
             document.getElementById('login-overlay').classList.add('hidden');
-            document.getElementById('u-display').innerText = user.displayName;
+            document.getElementById('user-n').innerText = user.displayName;
             
-            // التحقق من وجود أفاتار
+            // التحقق الفوري من الأفاتار لتجنب التعليق
             db.collection('users').doc(user.uid).get().then(doc => {
-                if (!doc.exists || !doc.data().avatar) {
-                    showAvatarPicker();
+                if(!doc.exists || !doc.data().avatar) {
+                    showPicker();
                 }
             });
 
-            db.collection('users').doc(user.uid).onSnapshot(doc => {
-                const d = doc.data() || {points: 0};
-                document.getElementById('pts').innerText = parseFloat(d.points).toFixed(2);
+            db.collection('users').doc(user.uid).onSnapshot(d => {
+                document.getElementById('pts').innerText = (d.data()?.points || 0).toFixed(2);
             });
+        } else {
+            document.getElementById('login-overlay').classList.remove('hidden');
         }
     });
 
-    function showAvatarPicker() {
-        const grid = document.getElementById('avatar-picker-grid');
+    function showPicker() {
+        const grid = document.getElementById('avatar-picker-list');
         grid.innerHTML = '';
         for(let i=1; i<=12; i++) {
-            const url = `https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`;
+            const url = `https://api.dicebear.com/7.x/avataaars/svg?seed=mist${i}${Math.random()}`;
             const img = document.createElement('img');
             img.src = url;
             img.onclick = () => {
@@ -178,29 +188,28 @@
         document.getElementById('avatar-overlay').style.display = 'flex';
     }
 
+    // حل مشكلة التعليق: استخدام set مع merge
     async function saveAvatar() {
-        if(!selectedAvatar) return alert("الرجاء اختيار شخصية!");
-        
-        const btn = document.getElementById('save-avatar-btn');
+        if(!selectedAvatar) return alert("اختر صورة أولاً!");
+        const btn = document.getElementById('save-btn');
         btn.innerText = "جاري الحفظ...";
         btn.disabled = true;
 
         try {
-            await db.collection('users').doc(currentUID).set({
+            await db.collection('users').doc(auth.currentUser.uid).set({
                 avatar: selectedAvatar,
                 displayName: auth.currentUser.displayName
             }, { merge: true });
-            
             document.getElementById('avatar-overlay').style.display = 'none';
         } catch (e) {
-            alert("خطأ في الحفظ، حاول ثانية");
+            alert("حدث خطأ، حاول ثانية");
             btn.innerText = "تأكيد الاختيار";
             btn.disabled = false;
         }
     }
 
     function openWall() {
-        window.open(`https://adlexy.com/offerwall/h7mx23bis2zaib6apwwe73uv3gr92i/${currentUID}`, '_blank');
+        window.open(`https://adlexy.com/offerwall/h7mx23bis2zaib6apwwe73uv3gr92i/${auth.currentUser.uid}`, '_blank');
     }
 </script>
 </body>
