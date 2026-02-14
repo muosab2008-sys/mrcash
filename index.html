@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ميست كاش | المظهر الجديد</title>
+    <title>ميست كاش | Mist Cash</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -15,14 +15,14 @@
         :root {
             --primary: #00ffa3;
             --bg-dark: #0d1117;
-            --card-dark: #161b22;
+            --card-bg: #161b22;
             --text-main: #ffffff;
             --text-dim: #8b949e;
             --border: #30363d;
-            --accent-grad: linear-gradient(135deg, #00ffa3 0%, #03a9f4 100%);
+            --accent: linear-gradient(135deg, #00ffa3 0%, #03a9f4 100%);
         }
 
-        * { box-sizing: border-box; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        * { box-sizing: border-box; transition: 0.3s; }
         body { 
             background-color: var(--bg-dark); 
             color: var(--text-main); 
@@ -31,129 +31,124 @@
             overflow-x: hidden;
         }
 
-        /* شاشة تسجيل الدخول العائمة */
+        /* شاشة تسجيل الدخول المدمجة */
         #login-overlay {
-            position: fixed; inset: 0; background: rgba(1, 4, 9, 0.95);
+            position: fixed; inset: 0; background: rgba(1, 4, 9, 0.98);
             z-index: 9999; display: flex; align-items: center; justify-content: center;
-            backdrop-filter: blur(10px); visibility: hidden; opacity: 0;
+            backdrop-filter: blur(10px); display: none;
         }
-        #login-overlay.active { visibility: visible; opacity: 1; }
-        .login-card {
-            background: var(--card-dark); padding: 40px; border-radius: 30px;
+        .login-box {
+            background: var(--card-bg); padding: 40px; border-radius: 30px;
             border: 1px solid var(--border); text-align: center; width: 90%; max-width: 400px;
-            transform: scale(0.8);
         }
-        #login-overlay.active .login-card { transform: scale(1); }
 
-        /* الهيكل الرئيسي */
+        /* القائمة الجانبية / السفلية */
         .sidebar {
             width: 260px; height: 100vh; background: #010409;
             position: fixed; right: 0; top: 0; border-left: 1px solid var(--border);
             display: flex; flex-direction: column; z-index: 1000;
         }
 
-        main { margin-right: 260px; padding: 25px; min-height: 100vh; }
-
-        .nav-link {
+        .nav-item {
             padding: 15px 25px; color: var(--text-dim); text-decoration: none;
-            display: flex; align-items: center; gap: 12px; cursor: pointer; border-right: 4px solid transparent;
+            display: flex; align-items: center; gap: 12px; cursor: pointer;
         }
-        .nav-link.active { color: var(--primary); background: rgba(0,255,163,0.05); border-right-color: var(--primary); }
+        .nav-item.active { color: var(--primary); background: rgba(0,255,163,0.05); border-right: 4px solid var(--primary); }
 
-        /* البطاقات والشبكة */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .stat-box { background: var(--card-dark); padding: 20px; border-radius: 20px; border: 1px solid var(--border); display: flex; align-items: center; gap: 15px; }
+        /* المحتوى */
+        main { margin-right: 260px; padding: 20px; min-height: 100vh; }
+        .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: var(--card-bg); padding: 15px; border-radius: 15px; border: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
         
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+        /* شبكة العروض */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
         .card { 
-            background: var(--card-dark); border: 1px solid var(--border); border-radius: 20px; 
-            padding: 20px; text-align: center; cursor: pointer; position: relative;
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; 
+            padding: 15px; text-align: center; cursor: pointer; position: relative;
         }
-        .card:hover { border-color: var(--primary); transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.5); }
-        .card img { width: 50px; height: 50px; border-radius: 12px; margin-bottom: 10px; }
-        
-        .badge { position: absolute; top: 10px; left: 10px; background: var(--primary); color: #000; font-size: 0.6rem; padding: 2px 8px; border-radius: 5px; font-weight: 900; }
-
-        /* الموبايل */
-        @media (max-width: 768px) {
-            .sidebar { width: 100%; height: 70px; top: auto; bottom: 0; flex-direction: row; border-left: none; border-top: 1px solid var(--border); }
-            .sidebar-brand, .nav-label { display: none; }
-            .nav-link { flex-direction: column; font-size: 0.7rem; justify-content: center; padding: 5px; flex: 1; border-right: none; border-top: 4px solid transparent; }
-            .nav-link.active { border-top-color: var(--primary); }
-            main { margin-right: 0; padding-bottom: 100px; }
-        }
+        .card:hover { border-color: var(--primary); transform: translateY(-5px); }
+        .card img { width: 45px; height: 45px; border-radius: 10px; margin-bottom: 8px; }
+        .card h4 { margin: 5px 0; font-size: 0.85rem; }
+        .badge { background: var(--primary); color: #000; font-size: 0.6rem; padding: 2px 7px; border-radius: 5px; font-weight: 800; margin-bottom: 5px; display: inline-block; }
 
         /* مشغل العروض (Iframe) */
         #wall-view { position: fixed; inset: 0; background: #000; z-index: 10000; display: none; flex-direction: column; }
+
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; height: 65px; top: auto; bottom: 0; flex-direction: row; border-left: none; border-top: 1px solid var(--border); }
+            .sidebar-brand, .nav-label { display: none; }
+            .nav-item { flex: 1; justify-content: center; padding: 10px; border-right: none; }
+            .nav-item.active { border-right: none; border-top: 3px solid var(--primary); }
+            main { margin-right: 0; padding-bottom: 80px; }
+        }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <div id="login-overlay">
-    <div class="login-card">
-        <h1 style="color: var(--primary); margin: 0;">MIST CASH</h1>
-        <p style="color: var(--text-dim);">سجل دخولك لبدء جمع النقاط</p>
-        <button onclick="login()" style="background: var(--accent-grad); border:none; padding: 15px 35px; border-radius: 15px; font-weight: 900; cursor: pointer; color: #000; width: 100%; margin-top: 20px;">
-            <i class="fab fa-google"></i> متابعة باستخدام Google
+    <div class="login-box">
+        <h1 style="color: var(--primary); margin-bottom: 5px;">MIST CASH</h1>
+        <p style="color: var(--text-dim); margin-bottom: 25px;">اربح المال عبر تنفيذ العروض</p>
+        <button onclick="login()" style="background: var(--accent); border:none; padding: 14px; border-radius: 12px; font-weight: 900; width: 100%; cursor: pointer;">
+            <i class="fab fa-google"></i> الدخول بواسطة جوجل
         </button>
     </div>
 </div>
 
 <aside class="sidebar">
-    <div class="sidebar-brand" style="padding: 25px; font-weight: 900; color: var(--primary); font-size: 1.5rem;">MIST CASH</div>
-    <div class="nav-link active" onclick="showTab('earn', this)"><i class="fas fa-bolt"></i><span class="nav-label">العروض</span></div>
-    <div class="nav-link" onclick="showTab('withdraw', this)"><i class="fas fa-wallet"></i><span class="nav-label">السحب</span></div>
-    <div class="nav-link" onclick="showTab('account', this)"><i class="fas fa-user-circle"></i><span class="nav-label">حسابي</span></div>
+    <div class="sidebar-brand" style="padding: 20px; font-weight: 900; color: var(--primary); font-size: 1.3rem;">MIST CASH</div>
+    <div class="nav-item active" onclick="showTab('earn', this)"><i class="fas fa-tasks"></i> <span class="nav-label">العروض</span></div>
+    <div class="nav-item" onclick="showTab('withdraw', this)"><i class="fas fa-wallet"></i> <span class="nav-label">السحب</span></div>
+    <div class="nav-item" onclick="showTab('me', this)"><i class="fas fa-user"></i> <span class="nav-label">حسابي</span></div>
 </aside>
 
 <main>
-    <div class="stats-grid">
-        <div class="stat-box"><i class="fas fa-coins" style="color: gold;"></i> <div><small>نقاطي</small><div id="pts" style="font-weight: 900; font-size: 1.3rem;">0</div></div></div>
-        <div class="stat-box"><i class="fas fa-dollar-sign" style="color: var(--primary);"></i> <div><small>الرصيد</small><div id="bal" style="font-weight: 900; font-size: 1.3rem;">$0.00</div></div></div>
+    <div class="stats-row">
+        <div class="stat-card"><i class="fas fa-coins" style="color:gold"></i> <div><small>النقاط</small><div id="pts">0</div></div></div>
+        <div class="stat-card"><i class="fas fa-dollar-sign" style="color:var(--primary)"></i> <div><small>الرصيد</small><div id="bal">$0.00</div></div></div>
     </div>
 
     <section id="earn-tab">
-        <h2 style="font-size: 1.1rem; margin-bottom: 20px;">شركات العروض الموثوقة</h2>
-        <div class="grid" id="partners-list"></div>
+        <h3 style="font-size: 1rem; margin-bottom: 15px;">شركاء العروض</h3>
+        <div class="grid" id="partners-grid"></div>
     </section>
 
     <section id="withdraw-tab" class="hidden">
-        <h2 style="font-size: 1.1rem; margin-bottom: 20px;">اختر وسيلة الدفع</h2>
+        <h3>وسائل السحب</h3>
         <div class="grid">
-            <div class="card">
-                <i class="fab fa-paypal" style="color: #0070ba; font-size: 2rem;"></i>
+            <div class="card" onclick="alert('سيتم إضافة الطلب قريباً')">
+                <i class="fab fa-paypal" style="font-size: 2rem; color: #0070ba;"></i>
                 <h4>PayPal $5</h4>
-                <button onclick="requestWithdraw(5000, 'PayPal')" style="background: var(--primary); border:none; border-radius:8px; padding:5px 15px; font-weight:bold; cursor:pointer;">5000 نقطة</button>
+                <div class="badge">5000 نقطة</div>
             </div>
-            <div class="card">
-                <i class="fas fa-phone-alt" style="color: #e60000; font-size: 2rem;"></i>
-                <h4>Vodafone Cash</h4>
-                <button onclick="requestWithdraw(1000, 'Vodafone')" style="background: var(--primary); border:none; border-radius:8px; padding:5px 15px; font-weight:bold; cursor:pointer;">1000 نقطة</button>
+            <div class="card" onclick="alert('سيتم إضافة الطلب قريباً')">
+                <i class="fas fa-phone" style="font-size: 2rem; color: #e60000;"></i>
+                <h4>فودافون كاش</h4>
+                <div class="badge">1000 نقطة</div>
             </div>
         </div>
     </section>
 
-    <section id="account-tab" class="hidden">
-        <div class="card" style="max-width: 400px; margin: auto;">
-            <div id="u-img" style="width: 80px; height: 80px; border-radius: 50%; background: var(--border); margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 2rem;">👤</div>
-            <h3 id="u-name" style="margin: 0;">المستخدم</h3>
-            <p id="u-email" style="color: var(--text-dim); font-size: 0.9rem;"></p>
-            <button onclick="auth.signOut()" style="background: #ff4757; color: #fff; border:none; padding: 10px 25px; border-radius: 12px; cursor: pointer; margin-top: 15px;">تسجيل الخروج</button>
+    <section id="me-tab" class="hidden">
+        <div class="card" style="max-width: 300px; margin: auto;">
+            <div id="user-img" style="font-size: 3rem; margin-bottom: 10px;">👤</div>
+            <h4 id="user-name">...</h4>
+            <p id="user-email" style="font-size: 0.7rem; color: var(--text-dim);"></p>
+            <button onclick="auth.signOut()" style="background: #ff4757; color: white; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; margin-top: 10px;">خروج</button>
         </div>
     </section>
 </main>
 
 <div id="wall-view">
-    <div style="padding: 15px; background: #010409; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border);">
-        <span id="wall-title" style="font-weight: bold;">...</span>
-        <button onclick="closeWall()" style="background: #ff4757; border: none; color: white; padding: 8px 15px; border-radius: 10px; cursor: pointer;">رجوع للخلف</button>
+    <div style="padding: 10px; background: #010409; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border);">
+        <span id="wall-name" style="font-weight: bold;">...</span>
+        <button onclick="closeWall()" style="background: #ff4757; color: white; border: none; padding: 5px 12px; border-radius: 8px;">إغلاق X</button>
     </div>
     <iframe id="wall-iframe" style="flex-grow: 1; border: none; background: #fff;"></iframe>
 </div>
 
 <script>
-    // تهيئة Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyBxlADpedVvasxiwOA3ESAPv73j7feck00",
         authDomain: "mrcash-9e428.firebaseapp.com",
@@ -168,36 +163,38 @@
     const db = firebase.firestore();
     let currentUID = "";
 
-    // قائمة الشركات (تم إضافة Offery)
+    // إضافة شركة GemiAd بالمعلومات الجديدة
     const partners = [
-        { name: "Offery", icon: "https://offery.io/assets/images/logo-icon.png", badge: "HOT", url: "https://offery.io/offerwall/9tns2375b9z4y9lmz8pisa2e6vma05/" },
-        { name: "Adlexy", icon: "https://adlexy.com/favicon.ico", badge: "جديد", url: "https://adlexy.com/offerwall/h7mx23bis2zaib6apwwe73uv3gr92i/" },
-        { name: "Monlix", icon: "https://monlix.com/favicon.ico", badge: "20%+", url: "https://offers.monlix.com/?appid=YOUR_ID&userid=" }
+        { n: "GemiAd", i: "https://gemiad.com/assets/img/logo_icon.png", b: "جديد", u: "https://gemiwall.com/6977536ec6ceefce12a28330/" },
+        { n: "Offery", i: "https://offery.io/assets/images/logo-icon.png", b: "HOT", u: "https://offery.io/offerwall/9tns2375b9z4y9lmz8pisa2e6vma05/" },
+        { n: "Adlexy", i: "https://adlexy.com/favicon.ico", b: "موصى به", u: "https://adlexy.com/offerwall/h7mx23bis2zaib6apwwe73uv3gr92i/" }
     ];
 
-    function showTab(id, el) {
-        document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
-        document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
-        document.getElementById(id + '-tab').classList.remove('hidden');
-        el.classList.add('active');
-    }
-
     function renderPartners() {
-        const grid = document.getElementById('partners-list');
+        const grid = document.getElementById('partners-grid');
         partners.forEach(p => {
             grid.innerHTML += `
-                <div class="card" onclick="openWall('${p.url}', '${p.name}')">
-                    <div class="badge">${p.badge}</div>
-                    <img src="${p.icon}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3135/3135706.png'">
-                    <h4 style="margin:0; font-size:0.9rem;">${p.name}</h4>
+                <div class="card" onclick="openWall('${p.u}', '${p.n}')">
+                    <div class="badge">${p.b}</div>
+                    <img src="${p.i}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3135/3135706.png'">
+                    <h4>${p.n}</h4>
                 </div>
             `;
         });
     }
 
+    function showTab(id, el) {
+        document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(id + '-tab').classList.remove('hidden');
+        el.classList.add('active');
+    }
+
     function openWall(url, name) {
-        document.getElementById('wall-title').innerText = name;
+        if(!currentUID) return;
+        document.getElementById('wall-name').innerText = name;
         document.getElementById('wall-view').style.display = 'flex';
+        // دمج الـ UID مع الرابط (سواء كمعلمات مسار أو استعلام)
         document.getElementById('wall-iframe').src = url + currentUID;
     }
 
@@ -208,43 +205,25 @@
 
     function login() {
         const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).then(() => {
-            document.getElementById('login-overlay').classList.remove('active');
-        }).catch(err => alert("خطأ في تسجيل الدخول: " + err.message));
-    }
-
-    async function requestWithdraw(pts, method) {
-        if(!currentUID) return;
-        const userRef = db.collection('users').doc(currentUID);
-        const doc = await userRef.get();
-        const currentPoints = doc.data()?.points || 0;
-
-        if(currentPoints < pts) return alert("نقاطك غير كافية!");
-
-        if(confirm(`سحب ${pts} نقطة مقابل ${method}؟`)) {
-            await userRef.update({ points: firebase.firestore.FieldValue.increment(-pts) });
-            await db.collection('withdrawals').add({ uid: currentUID, method, pts, status: 'pending', date: new Date() });
-            alert("تم إرسال الطلب!");
-        }
+        auth.signInWithPopup(provider);
     }
 
     auth.onAuthStateChanged(user => {
         const overlay = document.getElementById('login-overlay');
         if (user) {
             currentUID = user.uid;
-            overlay.classList.remove('active');
-            document.getElementById('u-name').innerText = user.displayName;
-            document.getElementById('u-email').innerText = user.email;
-            if(user.photoURL) document.getElementById('u-img').innerHTML = `<img src="${user.photoURL}" style="width:100%; border-radius:50%">`;
+            overlay.style.display = 'none';
+            document.getElementById('user-name').innerText = user.displayName;
+            document.getElementById('user-email').innerText = user.email;
+            if(user.photoURL) document.getElementById('user-img').innerHTML = `<img src="${user.photoURL}" style="width:100%; border-radius:50%">`;
             
-            // تحديث النقاط لحظياً
             db.collection('users').doc(user.uid).onSnapshot(doc => {
                 const data = doc.data() || { points: 0 };
                 document.getElementById('pts').innerText = Number(data.points).toLocaleString();
                 document.getElementById('bal').innerText = "$" + (data.points / 1000).toFixed(2);
             });
         } else {
-            overlay.classList.add('active');
+            overlay.style.display = 'flex';
         }
     });
 
