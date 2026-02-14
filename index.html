@@ -14,7 +14,7 @@
 
     <style>
         :root {
-            --primary: #00ff9d; /* لون النيون من الشعار */
+            --primary: #00ff9d; 
             --primary-glow: rgba(0, 255, 157, 0.3);
             --bg-dark: #0a0c10;
             --card-dark: #12151c;
@@ -33,7 +33,6 @@
             overflow-x: hidden;
         }
 
-        /* القائمة العلوية */
         nav { 
             background: rgba(10, 12, 16, 0.95); 
             padding: 15px 5%; 
@@ -54,13 +53,11 @@
         .nav-links a:hover { color: var(--primary); }
         .btn-auth { background: var(--primary); color: #000 !important; padding: 8px 20px; border-radius: 8px; font-weight: bold; }
 
-        /* الأقسام */
         .view-section { display: none; padding: 40px 5%; animation: fadeIn 0.5s ease; }
         .view-section.active { display: block; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* الصفحة الرئيسية */
         .hero { text-align: center; padding: 60px 0; }
         .hero h1 { font-size: 3rem; font-weight: 900; margin-bottom: 20px; }
         .hero p { color: var(--text-muted); max-width: 600px; margin: 0 auto 30px; }
@@ -72,7 +69,6 @@
         }
         .btn-neon:hover { box-shadow: 0 0 25px var(--primary); transform: scale(1.05); }
 
-        /* البطاقات والجداول */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 40px; }
         .stat-card { background: var(--card-dark); padding: 20px; border-radius: 15px; border: 1px solid var(--border); text-align: center; }
         .stat-card b { display: block; font-size: 1.8rem; color: var(--primary); }
@@ -85,7 +81,6 @@
         .offer-card:hover { border-color: var(--primary); box-shadow: 0 0 15px var(--primary-glow); transform: translateY(-5px); }
         .offer-card img { width: 60px; height: 60px; object-fit: contain; margin-bottom: 15px; }
 
-        /* التنبيه العائم */
         #live-notif {
             position: fixed; bottom: 20px; left: 20px; background: var(--card-dark); padding: 12px 20px;
             border-radius: 50px; box-shadow: 0 0 20px rgba(0,0,0,0.5); display: flex; align-items: center;
@@ -93,14 +88,43 @@
         }
         #live-notif.show { transform: translateY(0); }
 
-        /* التجاوب مع الجوال */
+        /* نافذة اختيار الأفاتار */
+        #avatar-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 5000;
+            display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        .avatar-box {
+            background: var(--card-dark); width: 100%; max-width: 600px; padding: 30px;
+            border-radius: 25px; border: 2px solid var(--primary); text-align: center;
+        }
+        .avatar-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 15px; margin-top: 25px; max-height: 300px; overflow-y: auto; padding: 10px;
+        }
+        .avatar-grid img {
+            width: 80px; height: 80px; border-radius: 50%; cursor: pointer;
+            border: 3px solid transparent; transition: 0.2s;
+        }
+        .avatar-grid img:hover { border-color: var(--primary); transform: scale(1.1); }
+        .avatar-grid img.selected { border-color: var(--primary); box-shadow: 0 0 15px var(--primary); }
+
         @media (max-width: 768px) {
-            .nav-links { display: none; } /* يمكن إضافة قائمة موبايل لاحقاً */
+            .nav-links { display: none; }
             .hero h1 { font-size: 2rem; }
         }
     </style>
 </head>
 <body>
+
+    <div id="avatar-modal">
+        <div class="avatar-box">
+            <h2 style="color: var(--primary);">اختر شخصيتك (الأفاتار)</h2>
+            <p style="font-size: 0.9rem; color: var(--text-muted);">هذا الأفاتار سيظهر في ملفك الشخصي وعند سحب الأرباح</p>
+            <div class="avatar-grid" id="avatar-list">
+                </div>
+            <button class="btn-neon" style="margin-top: 25px; width: 100%;" onclick="saveAvatar()">تأكيد الاختيار</button>
+        </div>
+    </div>
 
     <div id="live-notif">
         <i class="fas fa-check-circle" style="color: var(--primary);"></i>
@@ -112,8 +136,7 @@
             <img src="1.jpg" alt="Logo">
             MIST CASH
         </a>
-        <div class="nav-links" id="main-nav">
-            </div>
+        <div class="nav-links" id="main-nav"></div>
     </nav>
 
     <section id="view-home" class="view-section active">
@@ -122,7 +145,6 @@
             <p>حوّل وقت فراغك إلى مبالغ حقيقية عبر إكمال الاستطلاعات والمهام البسيطة من شركائنا العالميين.</p>
             <button class="btn-neon" onclick="login()">ابدأ الربح الآن</button>
         </div>
-
         <div class="stats-grid">
             <div class="stat-card"><b>+120k</b><span>مستخدم نشط</span></div>
             <div class="stat-card"><b>+$20.1k</b><span>مدفوعات إجمالية</span></div>
@@ -137,8 +159,7 @@
                 رصيدك: <span id="user-balance" style="color: var(--primary); font-weight: 900;">$0.00</span>
             </div>
         </div>
-        <div class="offers-grid" id="partners-list">
-            </div>
+        <div class="offers-grid" id="partners-list"></div>
     </section>
 
     <section id="view-withdraw" class="view-section">
@@ -164,7 +185,10 @@
 
     <section id="view-profile" class="view-section">
         <div class="offer-card" style="max-width: 500px; margin: 0 auto;">
-            <div id="u-photo" style="font-size: 4rem; margin-bottom: 15px;">👤</div>
+            <div id="u-photo" style="margin-bottom: 15px; position: relative; display: inline-block;">
+                <img id="current-avatar-img" src="" style="width:100px; height:100px; border-radius:50%; border:3px solid var(--primary);">
+                <button onclick="openAvatarPicker()" style="position: absolute; bottom: 0; right: 0; background: var(--primary); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer;"><i class="fas fa-pen" style="font-size: 0.8rem;"></i></button>
+            </div>
             <h2 id="u-name-full">اسم المستخدم</h2>
             <p id="u-email" style="color: var(--text-muted); margin-bottom: 20px;"></p>
             <div style="display: flex; justify-content: space-around; background: var(--bg-dark); padding: 15px; border-radius: 10px;">
@@ -176,7 +200,6 @@
     </section>
 
     <script>
-        // تكوين Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBxlADpedVvasxiwOA3ESAPv73j7feck00",
             authDomain: "mrcash-9e428.firebaseapp.com",
@@ -190,14 +213,20 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // بيانات الشركات
         const partners = [
             { n: "GemiAd", i: "https://gemiad.s3.eu-central-1.amazonaws.com/logos/Asset_7.png", u: "https://gemiwall.com/6977536ec6ceefce12a28330/" },
             { n: "Offery", i: "https://offery.io/assets/images/logo-icon.png", u: "https://offery.io/offerwall/9tns2375b9z4y9lmz8pisa2e6vma05/" },
             { n: "Adlexy", i: "https://adlexy.com/favicon.ico", u: "https://adlexy.com/offerwall/h7mx23bis2zaib6apwwe73uv3gr92i/" }
         ];
 
-        // وظيفة التنقل بين الصفحات
+        // مصفوفة الأفاتارات (يمكنك تغيير الروابط لآلاف الأفاتارات)
+        const avatars = [];
+        for(let i=1; i<=20; i++) {
+            avatars.push(`https://api.dicebear.com/7.x/avataaars/svg?seed=${i + Math.random()}`);
+        }
+
+        let selectedAvatarUrl = "";
+
         function showView(viewId) {
             document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
             document.getElementById('view-' + viewId).classList.add('active');
@@ -209,7 +238,32 @@
             auth.signInWithPopup(provider);
         }
 
-        // تحديث القائمة بناءً على تسجيل الدخول
+        function openAvatarPicker() {
+            const list = document.getElementById('avatar-list');
+            list.innerHTML = '';
+            avatars.forEach(url => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.onclick = function() {
+                    document.querySelectorAll('.avatar-grid img').forEach(i => i.classList.remove('selected'));
+                    img.classList.add('selected');
+                    selectedAvatarUrl = url;
+                };
+                list.appendChild(img);
+            });
+            document.getElementById('avatar-modal').style.display = 'flex';
+        }
+
+        function saveAvatar() {
+            if(!selectedAvatarUrl) { alert("من فضلك اختر أفاتار أولاً"); return; }
+            db.collection('users').doc(auth.currentUser.uid).update({
+                avatar: selectedAvatarUrl
+            }).then(() => {
+                document.getElementById('avatar-modal').style.display = 'none';
+                document.getElementById('current-avatar-img').src = selectedAvatarUrl;
+            });
+        }
+
         function updateNav(isLogged) {
             const nav = document.getElementById('main-nav');
             if(isLogged) {
@@ -222,44 +276,32 @@
             } else {
                 nav.innerHTML = `
                     <a onclick="showView('home')">الرئيسية</a>
-                    <a href="#">التعليمات</a>
                     <a onclick="login()" class="btn-auth">تسجيل الدخول</a>
                 `;
             }
         }
 
-        // إشعارات وهمية للمصداقية
-        const fakeNames = ["عمر", "سارة", "Mike", "Khalid", "ليلى"];
-        function showNotif() {
-            const name = fakeNames[Math.floor(Math.random()*fakeNames.length)];
-            const amount = (Math.random()*20 + 5).toFixed(2);
-            document.getElementById('notif-text').innerText = `سحب ${name} مبلغ $${amount} بنجاح`;
-            const el = document.getElementById('live-notif');
-            el.classList.add('show');
-            setTimeout(() => el.classList.remove('show'), 4000);
-        }
-        setInterval(showNotif, 10000);
-
-        // مراقبة حالة المستخدم
         auth.onAuthStateChanged(user => {
             if(user) {
                 updateNav(true);
                 showView('offers');
-                
-                // تحديث بيانات الملف الشخصي
                 document.getElementById('u-name-full').innerText = user.displayName;
                 document.getElementById('u-email').innerText = user.email;
-                if(user.photoURL) document.getElementById('u-photo').innerHTML = `<img src="${user.photoURL}" style="width:80px; border-radius:50%; border: 2px solid var(--primary);">`;
 
-                // جلب النقاط من Firestore
                 db.collection('users').doc(user.uid).onSnapshot(doc => {
-                    const data = doc.data() || { points: 0 };
+                    const data = doc.data() || {};
+                    // إذا لم يكن لديه أفاتار، نفتح نافذة الاختيار
+                    if(!data.avatar) {
+                        openAvatarPicker();
+                    } else {
+                        document.getElementById('current-avatar-img').src = data.avatar;
+                    }
+                    
                     const pts = data.points || 0;
                     document.getElementById('user-balance').innerText = `$${(pts/1000).toFixed(2)}`;
                     document.getElementById('u-pts').innerText = pts;
                 });
 
-                // تحميل الشركات
                 const list = document.getElementById('partners-list');
                 list.innerHTML = '';
                 partners.forEach(p => {
@@ -267,8 +309,7 @@
                         <div class="offer-card" onclick="window.open('${p.u}${user.uid}', '_blank')">
                             <img src="${p.i}" alt="${p.n}">
                             <h3>${p.n}</h3>
-                            <p style="color: var(--text-muted); font-size: 0.8rem;">أكمل المهام واربح النقاط</p>
-                            <button class="btn-neon" style="width:100%; padding: 10px; margin-top: 15px; font-size: 0.9rem;">فتح الجدار</button>
+                            <button class="btn-neon" style="width:100%; padding: 10px; margin-top: 15px;">فتح الجدار</button>
                         </div>
                     `;
                 });
