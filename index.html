@@ -6,107 +6,135 @@
     <title>MrCash | لوحة التحكم</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --primary: #00c853; --bg: #050505; --card: #111; --border: #222; }
-        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; padding: 20px; }
-        
-        /* الهيدر المصغر */
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .user-info { display: flex; align-items: center; gap: 10px; }
-        .user-info img { width: 40px; border-radius: 50%; border: 2px solid var(--primary); }
-        
-        /* رصيد النقاط */
-        .balance-card {
-            background: linear-gradient(135deg, var(--primary), #007e33);
-            padding: 30px; border-radius: 20px; text-align: center; margin-bottom: 30px;
-            color: black; font-weight: bold;
-        }
-        .balance-card h1 { font-size: 3rem; margin: 10px 0; }
+        :root { --primary: #00c853; --bg: #0b0b0b; --card: #161616; --border: #222; }
+        body { background: var(--bg); color: white; font-family: 'Cairo', sans-serif; margin: 0; padding-bottom: 80px; }
 
-        /* أيقونات السحب (مثل الصورة التي أرفقتها) */
-        .grid-container {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 15px; margin-bottom: 40px;
-        }
-        .draw-card {
-            background: var(--card); border: 1px solid var(--border);
-            padding: 20px; border-radius: 15px; text-align: center; transition: 0.3s;
-        }
-        .draw-card:hover { border-color: var(--primary); transform: scale(1.05); }
-        .draw-card img { width: 50px; height: 50px; object-fit: contain; margin-bottom: 10px; }
+        /* الهيدر العلوي */
+        .top-nav { background: #000; padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+        .balance-pill { background: #1a1a1a; padding: 5px 15px; border-radius: 20px; border: 1px solid var(--primary); color: var(--primary); font-weight: bold; }
 
-        /* شركات العروض */
-        .offer-section { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .offer-wall {
-            background: var(--card); padding: 20px; border-radius: 15px;
-            display: flex; align-items: center; justify-content: space-between;
-            border: 1px solid var(--border); cursor: pointer;
-        }
-        .offer-wall i { font-size: 1.5rem; color: var(--primary); }
+        /* المحتوى المتغير */
+        .page { display: none; padding: 20px 5%; }
+        .active-page { display: block; }
+
+        /* صفحات العروض */
+        .wall-card { background: var(--card); border: 1px solid var(--border); border-radius: 15px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .wall-card:hover { border-color: var(--primary); }
+
+        /* شبكة السحب */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; }
+        .draw-item { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 15px; text-align: center; }
+        .draw-item img { width: 50px; height: 50px; object-fit: contain; margin-bottom: 10px; }
+
+        /* بار التنقل السفلي (مثل التطبيقات) */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #000; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid var(--border); }
+        .nav-item { color: #555; text-align: center; cursor: pointer; font-size: 0.8rem; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item i { font-size: 1.5rem; display: block; }
+
+        /* الملف الشخصي */
+        .profile-header { text-align: center; margin-bottom: 30px; }
+        .profile-header img { width: 80px; border-radius: 50%; border: 3px solid var(--primary); }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="logo" style="color:var(--primary); font-weight:bold; font-size:1.5rem;">MR CASH</div>
-        <div class="user-info">
-            <span id="user-name">تحميل...</span>
-            <img id="user-pic" src="https://via.placeholder.com/40" alt="">
-            <button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer;"><i class="fas fa-sign-out-alt"></i></button>
+    <div class="top-nav">
+        <div style="font-weight: 900; color: var(--primary);">MR CASH</div>
+        <div class="balance-pill"><span id="points-val">0.00</span> Pts</div>
+    </div>
+
+    <div id="offers-page" class="page active-page">
+        <h3>شركات العروض</h3>
+        <div class="wall-card" onclick="openWall('adlexy')">
+            <div><strong>Adlexy Wall</strong><p style="font-size:0.8rem; color:#888;">أفضل العروض السهلة</p></div>
+            <i class="fas fa-chevron-left"></i>
         </div>
-    </header>
-
-    <div class="balance-card">
-        <p>رصيدك الحالي</p>
-        <h1 id="user-balance">0.00</h1>
-        <span>نقطة (Points)</span>
+        <div class="wall-card" onclick="openWall('gemiad')">
+            <div><strong>GemiAd Wall</strong><p style="font-size:0.8rem; color:#888;">استبيانات وألعاب</p></div>
+            <i class="fas fa-chevron-left"></i>
+        </div>
+        
+        <div id="wall-container" style="display:none; margin-top:20px;">
+            <button onclick="closeWall()" style="background:red; color:white; border:none; padding:5px 15px; border-radius:5px; margin-bottom:10px;">إغلاق الجدار</button>
+            <div id="iframe-content"></div>
+        </div>
     </div>
 
-    <h3>طرق السحب المتاحة</h3>
-    <div class="grid-container">
-        <div class="draw-card"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg"><div>Visa</div></div>
-        <div class="draw-card"><img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg"><div>PayPal</div></div>
-        <div class="draw-card"><img src="https://upload.wikimedia.org/wikipedia/en/2/21/Free_Fire_Logo.png"><div>Free Fire</div></div>
-        <div class="draw-card"><img src="https://w7.pngwing.com/pngs/410/505/png-transparent-pubg-mobile-playerunknown-s-battlegrounds-logo-game-pubg-mobile-logo-text-orange-logo.png"><div>PUBG</div></div>
+    <div id="withdraw-page" class="page">
+        <h3>سحب الأرباح</h3>
+        <div class="grid">
+            <div class="draw-item"><img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg"><span>PayPal</span></div>
+            <div class="draw-item"><img src="https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg"><span>Binance</span></div>
+            <div class="draw-item"><img src="https://upload.wikimedia.org/wikipedia/en/2/21/Free_Fire_Logo.png"><span>Free Fire</span></div>
+            <div class="draw-item"><img src="https://w7.pngwing.com/pngs/410/505/png-transparent-pubg-mobile-playerunknown-s-battlegrounds-logo-game-pubg-mobile-logo-text-orange-logo.png"><span>PUBG UC</span></div>
+        </div>
     </div>
 
-    <h3>شركات العروض</h3>
-    <div class="offer-section">
-        <div class="offer-wall"><span>Lootably</span> <i class="fas fa-chevron-left"></i></div>
-        <div class="offer-wall"><span>OfferToro</span> <i class="fas fa-chevron-left"></i></div>
-        <div class="offer-wall"><span>AdGate</span> <i class="fas fa-chevron-left"></i></div>
-        <div class="offer-wall"><span>Monlix</span> <i class="fas fa-chevron-left"></i></div>
+    <div id="profile-page" class="page">
+        <div class="profile-header">
+            <img id="u-img" src="https://via.placeholder.com/80">
+            <h2 id="u-name">...</h2>
+            <p id="u-email" style="color:#888;"></p>
+        </div>
+        <div style="background:var(--card); padding:20px; border-radius:15px; border:1px solid var(--border);">
+            <p>المعرف الخاص بك: <br><small id="u-id" style="color:var(--primary);"></small></p>
+            <hr style="border:0; border-top:1px solid #333; margin:15px 0;">
+            <button onclick="logout()" style="width:100%; padding:10px; background:none; border:1px solid red; color:red; border-radius:10px; cursor:pointer;">تسجيل الخروج</button>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="showPage('offers', this)"><i class="fas fa-tasks"></i>العروض</div>
+        <div class="nav-item" onclick="showPage('withdraw', this)"><i class="fas fa-wallet"></i>السحب</div>
+        <div class="nav-item" onclick="showPage('profile', this)"><i class="fas fa-user"></i>حسابي</div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // ضع إعداداتك هنا مرة أخرى
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "mrcash-app.firebaseapp.com",
-            projectId: "mrcash-app",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyAd9KgnzExZ5RdrJVB_hpzxUvrqHiQ3jmU",
+            authDomain: "mrcash-com.firebaseapp.com",
+            projectId: "mrcash-com",
+            appId: "1:348374269609:web:9fed2a4f69f2c0f00ff3b8"
         };
-
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // التأكد من أن المستخدم مسجل دخول
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                document.getElementById('user-name').innerText = user.displayName || user.email;
-                if(user.photoURL) document.getElementById('user-pic').src = user.photoURL;
-                // ملاحظة: الرصيد يحتاج ربط بقاعدة بيانات Firestore لاحقاً
-                document.getElementById('user-balance').innerText = "150.00"; 
+        let currentUser = null;
+
+        onAuthStateChanged(auth, user => {
+            if(user) {
+                currentUser = user;
+                document.getElementById('u-name').innerText = user.displayName;
+                document.getElementById('u-email').innerText = user.email;
+                document.getElementById('u-id').innerText = user.uid;
+                if(user.photoURL) document.getElementById('u-img').src = user.photoURL;
             } else {
-                window.location.href = "index.html"; // إذا لم يسجل دخول ارجعه للرئيسية
+                window.location.href = "index.html";
             }
         });
 
-        window.logout = () => {
-            signOut(auth).then(() => window.location.href = "index.html");
-        }
+        window.showPage = (id, btn) => {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+            document.getElementById(id + '-page').classList.add('active-page');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            btn.classList.add('active');
+        };
+
+        window.openWall = (name) => {
+            let url = "";
+            if(name === 'adlexy') url = `https://adlexy.com/offerwall/h7mx23bis2zaib6apwwe73uv3gr92i/${currentUser.uid}`;
+            if(name === 'gemiad') url = `https://gemiad.com/offerwall/750/مصعب123/${currentUser.uid}`;
+            
+            document.getElementById('iframe-content').innerHTML = `<iframe src="${url}" style="width:100%; height:600px; border:0; background:white; border-radius:15px;"></iframe>`;
+            document.getElementById('wall-container').style.display = 'block';
+        };
+
+        window.closeWall = () => document.getElementById('wall-container').style.display = 'none';
+        window.logout = () => signOut(auth);
     </script>
 </body>
 </html>
