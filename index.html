@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MrCash | النسخة الشاملة</title>
+    <title>MrCash | Premier Rewards Platform</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
@@ -14,150 +14,198 @@
 
     <style>
         :root {
-            --primary: #00ff9d;
+            --primary: #2ecc71;
             --gold: #f1c40f;
-            --bg: #0a0c10;
-            --card: #161b22;
-            --border: #30363d;
-            --text: #ffffff;
-            --nav-height: 70px;
+            --dark-bg: #050505;
+            --card-bg: #111111;
+            --border: #222;
+            --text-white: #ffffff;
+            --text-gray: #a0a0a0;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
-        body { background-color: var(--bg); color: var(--text); line-height: 1.6; }
-
-        /* Navigation Top */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background-color: var(--dark-bg); color: var(--text-white); overflow-x: hidden; }
+        
+        /* Navigation */
         nav {
-            height: 70px; display: flex; align-items: center; justify-content: space-between;
-            padding: 0 5%; background: rgba(10, 12, 16, 0.95); backdrop-filter: blur(10px);
+            height: 80px; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 5%; background: rgba(5, 5, 5, 0.95); backdrop-filter: blur(10px);
             position: sticky; top: 0; z-index: 2000; border-bottom: 1px solid var(--border);
         }
-        .logo { font-size: 1.6rem; font-weight: 900; color: var(--primary); text-decoration: none; }
-        .logo span { color: #fff; }
-
-        /* Main Container */
-        .view { display: none; padding: 20px 5%; padding-bottom: 100px; animation: fadeIn 0.4s ease; }
-        .view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .logo { font-size: 1.8rem; font-weight: 800; color: #fff; text-decoration: none; }
+        .logo span { color: var(--primary); }
 
         /* Buttons */
-        .btn-main { background: var(--primary); color: #000; padding: 10px 25px; border-radius: 10px; font-weight: bold; border: none; cursor: pointer; transition: 0.3s; }
-        .btn-main:hover { transform: scale(1.05); filter: brightness(1.1); }
-        .btn-google { background: #fff; color: #000; width: 100%; padding: 12px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px; border: none; cursor: pointer; }
+        .btn-primary { background: var(--primary); color: #000; padding: 10px 25px; border-radius: 10px; font-weight: 700; border: none; cursor: pointer; transition: 0.3s; }
+        .btn-google { background: #fff; color: #000; width: 100%; padding: 12px; border-radius: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; border: none; cursor: pointer; margin-bottom: 15px; }
+
+        /* Views Management */
+        .view { display: none; padding-bottom: 120px; animation: fadeIn 0.5s ease; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Landing Page (Visitor View) */
+        .hero { text-align: center; padding: 100px 5%; background: radial-gradient(circle at top, #1a3324 0%, var(--dark-bg) 70%); }
+        .hero h1 { font-size: clamp(2.5rem, 8vw, 4rem); font-weight: 800; line-height: 1.1; margin-bottom: 20px; }
+        .hero p { color: var(--text-gray); font-size: 1.2rem; max-width: 700px; margin: 0 auto 30px; }
+
+        .stats-container { display: flex; justify-content: center; gap: 50px; flex-wrap: wrap; margin-top: 50px; }
+        .stat-item h2 { color: var(--gold); font-size: 2.5rem; }
+        .stat-item p { font-size: 0.8rem; color: var(--text-gray); letter-spacing: 2px; }
 
         /* Grid System */
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-top: 30px; }
-        .card { background: var(--card); padding: 25px; border-radius: 20px; border: 1px solid var(--border); text-align: center; position: relative; }
-        .card img { width: 70px; height: 70px; margin-bottom: 15px; border-radius: 12px; object-fit: contain; }
-        .card h4 { margin-bottom: 10px; font-size: 1.2rem; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin-top: 40px; }
+        .card { background: var(--card-bg); border: 1px solid var(--border); padding: 30px; border-radius: 25px; text-align: center; transition: 0.3s; }
+        .card:hover { border-color: var(--primary); transform: translateY(-5px); }
+        .card img { width: 80px; height: 80px; border-radius: 15px; margin-bottom: 20px; }
 
-        /* Bottom Navigation (Fixed & Solid) */
-        .bottom-nav {
-            position: fixed; bottom: 0; width: 100%; background: #000; 
-            border-top: 1px solid var(--border); display: flex; justify-content: space-around; 
-            padding: 12px 0; z-index: 3000;
-        }
-        .nav-item { color: #8b949e; text-align: center; cursor: pointer; text-decoration: none; font-size: 0.8rem; }
-        .nav-item.active { color: var(--primary); }
-        .nav-item i { display: block; font-size: 1.4rem; margin-bottom: 4px; }
-
-        /* Modal Auth */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .modal-content { background: var(--card); width: 100%; max-width: 420px; padding: 35px; border-radius: 25px; border: 1px solid var(--border); }
-        .input-box { width: 100%; padding: 14px; background: #000; border: 1px solid var(--border); color: #fff; border-radius: 12px; margin-bottom: 15px; outline: none; font-size: 1rem; }
+        /* Internal Modals (For Email/Pass Change) */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 5000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: var(--card-bg); width: 100%; max-width: 400px; padding: 35px; border-radius: 30px; border: 1px solid var(--border); }
+        .input-box { width: 100%; padding: 15px; background: #000; border: 1px solid var(--border); color: #fff; border-radius: 12px; margin-bottom: 15px; outline: none; }
         .input-box:focus { border-color: var(--primary); }
 
+        /* Bottom Nav (Sticky) */
+        .bottom-nav {
+            position: fixed; bottom: 0; width: 100%; background: #000; border-top: 1px solid var(--border);
+            display: flex; justify-content: space-around; padding: 15px 0; z-index: 3000;
+        }
+        .nav-item { color: var(--text-gray); text-align: center; font-size: 0.75rem; cursor: pointer; transition: 0.3s; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item i { display: block; font-size: 1.4rem; margin-bottom: 5px; }
+
         .hidden { display: none !important; }
-        .gold-text { color: var(--gold); font-weight: bold; }
     </style>
 </head>
 <body>
 
     <nav>
-        <a href="#" class="logo">MR<span>CASH</span></a>
-        <div id="nav-actions">
-            <button class="btn-main" id="btn-open-auth" onclick="openAuth('login')">تسجيل الدخول</button>
-            <div id="user-info-nav" class="hidden">
-                <span id="nav-pts" class="gold-text">0 PTS</span>
-                <img id="nav-avatar" src="" style="width: 38px; border-radius: 50%; border: 2px solid var(--primary); margin-right: 10px; vertical-align: middle;">
+        <a href="#" class="logo" onclick="showView('home')">MR<span>CASH</span></a>
+        <div id="nav-visitor">
+            <button class="btn-primary" onclick="openAuth('signup')">Join Now</button>
+        </div>
+        <div id="nav-user" class="hidden">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span id="nav-points" style="color: var(--gold); font-weight: 800;">0 PTS</span>
+                <i class="fas fa-user-circle fa-2x" style="cursor: pointer;" onclick="showView('account')"></i>
             </div>
         </div>
     </nav>
 
     <main>
         <div id="view-home" class="view active">
-            <div style="text-align: center; padding: 60px 0;">
-                <h1 style="font-size: 2.5rem; margin-bottom: 20px;">حول وقتك إلى <span>أرباح حقيقية</span></h1>
-                <p style="color: #8b949e; max-width: 600px; margin: 0 auto;">انضم لأكثر من 50,000 مستخدم يربحون يومياً عبر إتمام المهام البسيطة وسحب الجوائز.</p>
-                <button class="btn-main" style="margin-top: 30px; padding: 15px 50px;" onclick="openAuth('signup')">اشترك مجاناً الآن</button>
-            </div>
+            <section class="hero">
+                <div class="container">
+                    <h1>Earn Money by<br><span>Playing & Testing</span></h1>
+                    <p>The most trusted platform to earn real cash and gift cards by completing simple tasks online.</p>
+                    <button class="btn-primary" style="padding: 15px 45px; font-size: 1.1rem;" onclick="openAuth('signup')">Start Earning Today</button>
+                    
+                    <div class="stats-container">
+                        <div class="stat-item"><h2>$500K+</h2><p>TOTAL PAID</p></div>
+                        <div class="stat-item"><h2>1.2M</h2><p>ACTIVE USERS</p></div>
+                        <div class="stat-item"><h2>4.9/5</h2><p>TRUST SCORE</p></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="container" style="padding: 80px 0;">
+                <h2 style="text-align: center; margin-bottom: 50px;">Why <span>MrCash?</span></h2>
+                <div class="grid">
+                    <div class="card"><i class="fas fa-bolt fa-3x" style="color:var(--primary)"></i><h3 style="margin:15px 0">Instant Payouts</h3><p style="color:var(--text-gray)">Get your rewards within 24 hours directly to your wallet.</p></div>
+                    <div class="card"><i class="fas fa-tasks fa-3x" style="color:var(--primary)"></i><h3 style="margin:15px 0">Unlimited Tasks</h3><p style="color:var(--text-gray)">Thousands of games and surveys updated every single hour.</p></div>
+                    <div class="card"><i class="fas fa-shield-alt fa-3x" style="color:var(--primary)"></i><h3 style="margin:15px 0">Secure Platform</h3><p style="color:var(--text-gray)">Your data is encrypted and your privacy is our top priority.</p></div>
+                </div>
+            </section>
         </div>
 
-        <div id="view-earn" class="view">
-            <h2 style="border-right: 4px solid var(--primary); padding-right: 15px;">جدران العروض المتاحة</h2>
+        <div id="view-earn" class="view container" style="padding-top: 40px;">
+            <div style="background: var(--card-bg); padding: 30px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 id="welcome-text">Welcome!</h2>
+                    <p style="color: var(--text-gray);">Ready to earn some points today?</p>
+                </div>
+                <div style="text-align: right;">
+                    <span style="font-size: 0.8rem; color: var(--text-gray);">BALANCE</span>
+                    <h2 id="dash-points" style="color: var(--gold);">0 PTS</h2>
+                </div>
+            </div>
+            <h3>Offerwalls</h3>
             <div class="grid" id="walls-list"></div>
         </div>
 
-        <div id="view-shop" class="view">
-            <h2 style="border-right: 4px solid var(--primary); padding-right: 15px;">مركز السحب والمكافآت</h2>
+        <div id="view-shop" class="view container" style="padding-top: 40px;">
+            <h2>Withdraw <span>Rewards</span></h2>
             <div class="grid" id="shop-list"></div>
         </div>
 
-        <div id="view-account" class="view">
-            <div class="card" style="max-width: 550px; margin: 0 auto; text-align: right;">
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <img id="acc-img" src="" style="width: 100px; height: 100px; border-radius: 50%;">
-                    <h2 id="acc-name" style="margin-top:10px;">-</h2>
+        <div id="view-account" class="view container" style="padding-top: 40px;">
+            <div style="max-width: 600px; margin: 0 auto; background: var(--card-bg); padding: 40px; border-radius: 30px; border: 1px solid var(--border);">
+                <h2 style="text-align: center; margin-bottom: 30px;">Account <span>Settings</span></h2>
+                <div style="margin-bottom: 20px; border-bottom: 1px solid #222; padding-bottom: 15px;">
+                    <p style="color: var(--text-gray);">Email Address</p>
+                    <p id="acc-email" style="font-weight: 600;">-</p>
                 </div>
-                <div style="background: #000; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
-                    <p>البريد: <span id="acc-email">-</span></p>
-                    <p style="margin-top: 10px;">إجمالي النقاط: <span id="acc-pts" class="gold-text">0 PTS</span></p>
+                <div style="margin-bottom: 20px; border-bottom: 1px solid #222; padding-bottom: 15px;">
+                    <p style="color: var(--text-gray);">Username</p>
+                    <p id="acc-name" style="font-weight: 600;">-</p>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <button class="btn-main" style="background: #333; color: #fff;" onclick="resetPassword()">تغيير كلمة السر</button>
-                    <button class="btn-main" style="background: #333; color: #fff;" onclick="updateEmailPrompt()">تحديث البريد</button>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 30px;">
+                    <button class="btn-primary" style="background: #222; color: #fff;" onclick="openChangeModal('email')">Change Email</button>
+                    <button class="btn-primary" style="background: #222; color: #fff;" onclick="openChangeModal('pass')">Change Password</button>
                 </div>
-                <button class="btn-main" style="width:100%; margin-top:15px; background: #e74c3c; color: #fff;" onclick="auth.signOut()">تسجيل الخروج الآمن</button>
+                <button class="btn-primary" style="width: 100%; margin-top: 15px; background: #e74c3c; color: #fff;" onclick="auth.signOut()">Logout</button>
             </div>
         </div>
     </main>
 
     <div id="auth-modal" class="modal hidden">
         <div class="modal-content">
-            <h2 id="auth-title" style="text-align: center; margin-bottom: 25px;">تسجيل الدخول</h2>
+            <h2 id="auth-title" style="text-align: center; margin-bottom: 25px;">Login</h2>
             
             <button class="btn-google" onclick="loginWithGoogle()">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="20">
-                المتابعة باستخدام جوجل
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="18">
+                Continue with Google
             </button>
 
-            <div style="text-align: center; margin: 15px 0; color: #555;">أو الطريقة اليدوية</div>
-            <div id="auth-error" style="color: #ff4444; font-size: 0.85rem; text-align: center; margin-bottom: 10px;"></div>
+            <div style="text-align: center; margin: 15px 0; color: #555; font-size: 0.8rem;">OR WITH EMAIL</div>
 
-            <div id="signup-only" class="hidden">
-                <input type="text" id="in-name" class="input-box" placeholder="اسم المستخدم">
+            <div id="signup-fields" class="hidden">
+                <input type="text" id="in-name" class="input-box" placeholder="Username">
             </div>
-            <input type="email" id="in-email" class="input-box" placeholder="البريد الإلكتروني">
-            <input type="password" id="in-pass" class="input-box" placeholder="كلمة المرور">
+            <input type="email" id="in-email" class="input-box" placeholder="Email Address">
+            <input type="password" id="in-pass" class="input-box" placeholder="Password">
             
-            <button class="btn-main" style="width:100%; padding: 15px;" onclick="handleAuth()">دخول للحساب</button>
+            <button class="btn-primary" style="width: 100%; padding: 15px;" onclick="handleAuth()">Continue</button>
             
-            <p style="text-align: center; margin-top: 20px; font-size: 0.9rem;">
-                <span id="switch-text">ليس لديك حساب؟</span>
-                <span style="color: var(--primary); cursor: pointer; font-weight: bold;" onclick="toggleAuth()">اضغط هنا</span>
+            <p style="text-align: center; margin-top: 20px; font-size: 0.85rem;">
+                <span id="auth-toggle-text">Don't have an account?</span>
+                <span style="color: var(--primary); cursor: pointer; font-weight: 700;" onclick="toggleAuth()">Click here</span>
             </p>
-            <p style="text-align: center; margin-top: 15px; color: #8b949e; cursor: pointer; font-size: 0.8rem;" onclick="closeAuth()">إغلاق النافذة</p>
+            <p style="text-align: center; margin-top: 10px; color: var(--primary); cursor: pointer; font-size: 0.8rem;" onclick="forgotPassword()">Forgot Password?</p>
+            <p style="text-align: center; margin-top: 15px; color: var(--text-gray); cursor: pointer;" onclick="closeModal('auth-modal')">Cancel</p>
+        </div>
+    </div>
+
+    <div id="change-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="change-title">Update Details</h2>
+            <p id="change-desc" style="color: var(--text-gray); margin-bottom: 20px; font-size: 0.9rem;"></p>
+            <input type="text" id="change-input" class="input-box" placeholder="Enter new value">
+            <button class="btn-primary" style="width: 100%;" onclick="processUpdate()">Confirm Update</button>
+            <p style="text-align: center; margin-top: 15px; cursor: pointer;" onclick="closeModal('change-modal')">Cancel</p>
         </div>
     </div>
 
     <div id="bottom-bar" class="bottom-nav hidden">
-        <div class="nav-item active" onclick="showView('earn', this)"><i class="fas fa-tasks"></i>العروض</div>
-        <div class="nav-item" onclick="showView('shop', this)"><i class="fas fa-wallet"></i>المتجر</div>
-        <div class="nav-item" onclick="showView('account', this)"><i class="fas fa-user-circle"></i>حسابي</div>
+        <div class="nav-item active" onclick="showView('earn', this)"><i class="fas fa-coins"></i>Earn</div>
+        <div class="nav-item" onclick="showView('shop', this)"><i class="fas fa-shopping-bag"></i>Shop</div>
+        <div class="nav-item" onclick="showView('account', this)"><i class="fas fa-user-cog"></i>Account</div>
     </div>
 
     <script>
-        // Firebase Config
+        // --- Firebase Configuration ---
         const firebaseConfig = {
             apiKey: "AIzaSyAd9KgnzExZ5RdrJVB_hpzxUvrqHiQ3jmU",
             authDomain: "mrcash-com.firebaseapp.com",
@@ -170,112 +218,13 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        let currentAuthMode = 'login';
-        let userPoints = 0;
+        let authMode = 'login';
+        let updateType = '';
 
-        // --- Auth Logic ---
-        function openAuth(mode) {
-            currentAuthMode = mode;
-            document.getElementById('auth-title').innerText = mode === 'login' ? 'تسجيل الدخول' : 'إنشاء حساب جديد';
-            document.getElementById('signup-only').classList.toggle('hidden', mode === 'login');
-            document.getElementById('auth-modal').classList.remove('hidden');
-        }
-
-        function closeAuth() { document.getElementById('auth-modal').classList.add('hidden'); }
-        
-        function toggleAuth() {
-            openAuth(currentAuthMode === 'login' ? 'signup' : 'login');
-        }
-
-        async function loginWithGoogle() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            try {
-                const res = await auth.signInWithPopup(provider);
-                const user = res.user;
-                const doc = await db.collection('users').doc(user.uid).get();
-                if(!doc.exists) {
-                    await db.collection('users').doc(user.uid).set({
-                        username: user.displayName, email: user.email, points: 0, joined: new Date().toLocaleDateString()
-                    });
-                }
-                closeAuth();
-            } catch(e) { alert(e.message); }
-        }
-
-        async function handleAuth() {
-            const email = document.getElementById('in-email').value;
-            const pass = document.getElementById('in-pass').value;
-            const name = document.getElementById('in-name').value;
-            const err = document.getElementById('auth-error');
-            try {
-                if(currentAuthMode === 'signup') {
-                    if(!name) throw new Error("يرجى كتابة اسم المستخدم");
-                    const res = await auth.createUserWithEmailAndPassword(email, pass);
-                    await db.collection('users').doc(res.user.uid).set({
-                        username: name, email: email, points: 0, joined: new Date().toLocaleDateString()
-                    });
-                } else {
-                    await auth.signInWithEmailAndPassword(email, pass);
-                }
-                closeAuth();
-            } catch(e) { err.innerText = e.message; }
-        }
-
-        async function resetPassword() {
-            const email = auth.currentUser ? auth.currentUser.email : prompt("أدخل بريدك الإلكتروني:");
-            if(email) {
-                await auth.sendPasswordResetEmail(email);
-                alert("تم إرسال رابط استعادة كلمة السر لبريدك الإلكتروني.");
-            }
-        }
-
-        async function updateEmailPrompt() {
-            const newMail = prompt("أدخل البريد الإلكتروني الجديد:");
-            if(newMail) {
-                try {
-                    await auth.currentUser.updateEmail(newMail);
-                    await db.collection('users').doc(auth.currentUser.uid).update({ email: newMail });
-                    alert("تم تحديث البريد بنجاح.");
-                } catch(e) { alert(e.message); }
-            }
-        }
-
-        // --- Data Handling ---
-        auth.onAuthStateChanged(user => {
-            if(user) {
-                document.getElementById('btn-open-auth').classList.add('hidden');
-                document.getElementById('user-info-nav').classList.remove('hidden');
-                document.getElementById('bottom-bar').classList.remove('hidden');
-                document.getElementById('nav-avatar').src = user.photoURL || 'https://via.placeholder.com/40';
-                showView('earn');
-                syncUserData(user.uid);
-            } else {
-                document.getElementById('btn-open-auth').classList.remove('hidden');
-                document.getElementById('user-info-nav').classList.add('hidden');
-                document.getElementById('bottom-bar').classList.add('hidden');
-                showView('home');
-            }
-        });
-
-        function syncUserData(uid) {
-            db.collection('users').doc(uid).onSnapshot(doc => {
-                const data = doc.data();
-                if(data) {
-                    userPoints = data.points;
-                    document.getElementById('nav-pts').innerText = data.points + " PTS";
-                    document.getElementById('acc-pts').innerText = data.points + " PTS";
-                    document.getElementById('acc-name').innerText = data.username;
-                    document.getElementById('acc-email').innerText = data.email;
-                    document.getElementById('acc-img').src = auth.currentUser.photoURL || 'https://via.placeholder.com/100';
-                }
-            });
-            renderWalls(uid);
-            renderShop();
-        }
-
-        function showView(viewId, el) {
+        // --- UI Functions ---
+        function showView(id, el) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById('view-' + viewId).classList.add('active');
+            document.getElementById('view-' + id).classList.add('active');
             if(el) {
                 document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
                 el.classList.add('active');
@@ -283,52 +232,137 @@
             window.scrollTo(0,0);
         }
 
-        function renderWalls(uid) {
+        function openAuth(m) {
+            authMode = m;
+            document.getElementById('auth-title').innerText = m === 'login' ? 'Login' : 'Sign Up';
+            document.getElementById('signup-fields').classList.toggle('hidden', m === 'login');
+            document.getElementById('auth-modal').classList.remove('hidden');
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function toggleAuth() { openAuth(authMode === 'login' ? 'signup' : 'login'); }
+
+        // --- Authentication ---
+        async function loginWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            try {
+                const res = await auth.signInWithPopup(provider);
+                const doc = await db.collection('users').doc(res.user.uid).get();
+                if(!doc.exists) {
+                    await db.collection('users').doc(res.user.uid).set({
+                        username: res.user.displayName, email: res.user.email, points: 0
+                    });
+                }
+                closeModal('auth-modal');
+            } catch(e) { alert(e.message); }
+        }
+
+        async function handleAuth() {
+            const email = document.getElementById('in-email').value;
+            const pass = document.getElementById('in-pass').value;
+            const name = document.getElementById('in-name').value;
+            try {
+                if(authMode === 'signup') {
+                    const res = await auth.createUserWithEmailAndPassword(email, pass);
+                    await db.collection('users').doc(res.user.uid).set({
+                        username: name, email: email, points: 0
+                    });
+                } else {
+                    await auth.signInWithEmailAndPassword(email, pass);
+                }
+                closeModal('auth-modal');
+            } catch(e) { alert(e.message); }
+        }
+
+        async function forgotPassword() {
+            const email = document.getElementById('in-email').value;
+            if(!email) return alert("Please type your email address first.");
+            await auth.sendPasswordResetEmail(email);
+            alert("Password reset link sent to your email!");
+        }
+
+        // --- Account Updates (The Professional Fix) ---
+        function openChangeModal(type) {
+            updateType = type;
+            document.getElementById('change-title').innerText = type === 'email' ? 'Update Email' : 'Update Password';
+            document.getElementById('change-desc').innerText = `Enter your new ${type} below to update your account securely.`;
+            document.getElementById('change-input').type = type === 'email' ? 'email' : 'password';
+            document.getElementById('change-modal').classList.remove('hidden');
+        }
+
+        async function processUpdate() {
+            const val = document.getElementById('change-input').value;
+            if(!val) return;
+            try {
+                if(updateType === 'email') {
+                    await auth.currentUser.updateEmail(val);
+                    await db.collection('users').doc(auth.currentUser.uid).update({ email: val });
+                } else {
+                    await auth.currentUser.updatePassword(val);
+                }
+                alert("Updated successfully!");
+                closeModal('change-modal');
+            } catch(e) { alert("Error: Please logout and login again to verify your session before changing sensitive data."); }
+        }
+
+        // --- App Logic ---
+        auth.onAuthStateChanged(user => {
+            if(user) {
+                document.getElementById('nav-visitor').classList.add('hidden');
+                document.getElementById('nav-user').classList.remove('hidden');
+                document.getElementById('bottom-bar').classList.remove('hidden');
+                showView('earn');
+                syncData(user.uid);
+            } else {
+                document.getElementById('nav-visitor').classList.remove('hidden');
+                document.getElementById('nav-user').classList.add('hidden');
+                document.getElementById('bottom-bar').classList.add('hidden');
+                showView('home');
+            }
+        });
+
+        function syncData(uid) {
+            db.collection('users').doc(uid).onSnapshot(doc => {
+                const data = doc.data();
+                if(data) {
+                    document.getElementById('nav-points').innerText = data.points + " PTS";
+                    document.getElementById('dash-points').innerText = data.points + " PTS";
+                    document.getElementById('acc-name').innerText = data.username;
+                    document.getElementById('acc-email').innerText = data.email;
+                    document.getElementById('welcome-text').innerText = "Hello, " + data.username + "!";
+                }
+            });
+            loadOfferwalls(uid);
+            loadShop();
+        }
+
+        function loadOfferwalls(uid) {
             const walls = [
                 { n: "Offery Wall", i: "https://earng.net/storage/providers/x5v40jKJIoMPSNXMmiyTkK0eWIGXHPXSsAT2QRYb.png", u: "https://offery.io/offerwall/9tns2375b9z4y9lmz8pisa2e6vma05/" },
-                { n: "GemiAd Wall", i: "https://earng.net/storage/providers/5t91vghsZuzh5mBa1uDlmfpjjMH05idKJtU8VjcB.png", u: "https://gemiwall.com/6977536ec6ceefce12a28330/" },
-                { n: "Adlexy Wall", i: "https://monosuirveys.com/admin/images/file_00000000867471f49bc3179f6aa3f452.png", u: "https://adlexy.com/offerwall/h7mx23bis2zaib6apwwe73uv3gr92i/" }
+                { n: "GemiAd Wall", i: "https://earng.net/storage/providers/5t91vghsZuzh5mBa1uDlmfpjjMH05idKJtU8VjcB.png", u: "https://gemiwall.com/6977536ec6ceefce12a28330/" }
             ];
             document.getElementById('walls-list').innerHTML = walls.map(w => `
                 <div class="card">
-                    <img src="${w.i}"><h4>${w.n}</h4>
-                    <button class="btn-main" style="width:100%" onclick="window.open('${w.u}${uid}', '_blank')">فتح المهام</button>
+                    <img src="${w.i}"><h3>${w.n}</h3>
+                    <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="window.open('${w.u}${uid}', '_blank')">Open Wall</button>
                 </div>
             `).join('');
         }
 
-        function renderShop() {
+        function loadShop() {
             const items = [
-                { n: "فودافون كاش", i: "https://upload.wikimedia.org/wikipedia/commons/a/af/Vodafone_Logo.svg", p: 1500, label: "رقم المحفظة" },
-                { n: "باير (Payeer)", i: "https://www.payeer.com/favicon.ico", p: 1000, label: "رقم المحفظة (P123...)" },
-                { n: "USDT (TRC20)", i: "https://cryptologos.cc/logos/tether-usdt-logo.png", p: 3000, label: "عنوان TRC20" },
-                { n: "بايبال (PayPal)", i: "https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg", p: 5000, label: "البريد الإلكتروني" },
-                { n: "شدات ببجي", i: "https://upload.wikimedia.org/wikipedia/en/a/ad/Pubg_mobile_logo.png", p: 1800, label: "الأيدي (ID)" },
-                { n: "جواهر فري فاير", i: "https://upload.wikimedia.org/wikipedia/en/c/c2/Garena_Free_Fire_logo.png", p: 1200, label: "الأيدي (ID)" },
-                { n: "جوجل بلاي 5$", i: "https://upload.wikimedia.org/wikipedia/commons/d/d0/Google_Play_Arrow_logo.svg", p: 5000, label: "بريد استلام الكود" }
+                { n: "Vodafone Cash", i: "https://upload.wikimedia.org/wikipedia/commons/a/af/Vodafone_Logo.svg", p: 1500 },
+                { n: "Payeer", i: "https://www.payeer.com/favicon.ico", p: 1000 },
+                { n: "PayPal", i: "https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg", p: 5000 },
+                { n: "USDT TRC20", i: "https://cryptologos.cc/logos/tether-usdt-logo.png", p: 3000 }
             ];
-            document.getElementById('shop-list').innerHTML = items.map(item => `
+            document.getElementById('shop-list').innerHTML = items.map(i => `
                 <div class="card">
-                    <img src="${item.i}"><h4>${item.n}</h4>
-                    <p class="gold-text">${item.p} PTS</p>
-                    <button class="btn-main" style="width:100%; margin-top:10px; background:#222; color:#fff;" onclick="withdraw('${item.n}', ${item.p}, '${item.label}')">سحب الآن</button>
+                    <img src="${i.i}"><h3>${i.n}</h3>
+                    <p style="color:var(--gold); font-weight:bold; margin-bottom:15px;">${i.p} PTS</p>
+                    <button class="btn-primary" style="width:100%; background:#222; color:#fff;" onclick="alert('Withdraw logic here')">Withdraw</button>
                 </div>
             `).join('');
-        }
-
-        async function withdraw(name, price, label) {
-            if(userPoints < price) return alert("نقاطك غير كافية لهذا السحب.");
-            const info = prompt(`للسحب لـ ${name}، يرجى إدخال ${label}:`);
-            if(info) {
-                try {
-                    await db.collection('withdrawals').add({
-                        uid: auth.currentUser.uid, user: auth.currentUser.displayName || "User",
-                        item: name, amount: price, account: info, status: 'pending', date: new Date().toLocaleString()
-                    });
-                    await db.collection('users').doc(auth.currentUser.uid).update({ points: userPoints - price });
-                    alert("تم إرسال طلب السحب بنجاح! سيصلك خلال 24 ساعة.");
-                } catch(e) { alert(e.message); }
-            }
         }
     </script>
 </body>
