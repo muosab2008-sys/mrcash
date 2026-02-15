@@ -3,108 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MrCash | الصفحة الرئيسية</title>
+    <title>ميست كاش | MIST CASH</title>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
-        :root { --primary: #00ff6a; --bg: #000; --card: #111; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
-        body { background: var(--bg); color: white; }
+        :root {
+            --primary: #00ff9d;
+            --primary-glow: rgba(0, 255, 157, 0.2);
+            --bg-dark: #0a0c10;
+            --card-dark: #161b22;
+            --text-main: #ffffff;
+            --text-muted: #8b949e;
+            --border: #30363d;
+            --accent: #58a6ff;
+        }
 
-        /* واجهة الزوار */
-        .hero { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
-        .hero h1 { font-size: 3rem; font-weight: 900; margin-bottom: 20px; }
-        .hero h1 span { color: var(--primary); }
-        .btn-main { background: var(--primary); color: black; padding: 15px 40px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; font-size: 1.2rem; }
+        * { box-sizing: border-box; margin: 0; padding: 0; transition: 0.3s ease; }
+        body { font-family: 'Cairo', sans-serif; background-color: var(--bg-dark); color: var(--text-main); overflow-x: hidden; }
 
-        /* نافذة التسجيل (Modal) */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-card { background: var(--card); padding: 30px; border-radius: 25px; border: 1px solid #222; width: 90%; max-width: 400px; text-align: center; }
+        /* --- شريط السحوبات العلوي (الجديد) --- */
+        .payouts-strip {
+            background: #0d1117;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: none;
+        }
+        .payouts-strip::-webkit-scrollbar { display: none; }
         
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #333; background: #000; color: white; text-align: center; }
-        .btn-login { width: 100%; padding: 12px; background: var(--primary); color: black; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        
-        .divider { margin: 20px 0; color: #444; font-size: 0.8rem; }
-        .google-btn { background: white; color: black; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .payout-card {
+            background: rgba(48, 54, 61, 0.4);
+            border-radius: 50px;
+            padding: 5px 15px 5px 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--border);
+            min-width: 180px;
+        }
+        .payout-card img { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--primary); }
+        .payout-card .info { font-size: 0.75rem; }
+        .payout-card .amount { color: var(--primary); font-weight: bold; }
+
+        /* --- القائمة العلوية --- */
+        nav { 
+            background: rgba(13, 17, 23, 0.95); padding: 10px 5%; 
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+        }
+        .logo { display: flex; align-items: center; gap: 10px; font-weight: 900; color: var(--primary); text-decoration: none; font-size: 1.2rem; }
+        .logo img { width: 35px; border-radius: 8px; }
+
+        .nav-user-zone { display: flex; align-items: center; gap: 15px; }
+        .avatar-circle {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: var(--card-dark); border: 2px solid var(--primary);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+        .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* --- العروض (تعديل الأيقونات والستايل) --- */
+        .view-section { display: none; padding: 30px 5%; animation: fadeIn 0.4s ease; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .offers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .offer-card {
+            background: var(--card-dark); border-radius: 16px; border: 1px solid var(--border);
+            padding: 20px; position: relative; overflow: hidden;
+        }
+        .offer-card:hover { border-color: var(--primary); transform: translateY(-3px); }
+        .offer-badge {
+            position: absolute; top: 15px; left: 15px;
+            background: var(--primary); color: #000;
+            padding: 2px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;
+        }
+        .offer-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .offer-header img { width: 50px; height: 50px; border-radius: 10px; }
+        .stars { color: #f3ba2f; font-size: 0.8rem; margin-top: 5px; }
+
+        .btn-open {
+            background: var(--primary); color: #000; width: 100%; border: none;
+            padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer;
+        }
+
+        .balance-pill {
+            background: rgba(0, 255, 157, 0.1); color: var(--primary);
+            padding: 5px 15px; border-radius: 50px; font-weight: bold; font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
 
-    <section class="hero" id="hero-section">
-        <h1>مرحباً بك في <span>MR CASH</span></h1>
-        <p style="color:#888; margin-bottom: 30px;">أفضل منصة لربح المكافآت عبر إكمال العروض.</p>
-        <button class="btn-main" onclick="toggleModal()">سجل دخولك الآن</button>
+    <div class="payouts-strip" id="payouts-strip">
+        </div>
+
+    <nav>
+        <a href="#" class="logo" onclick="showView('home')">
+            <img src="1.jpg" alt="Logo"> MIST CASH
+        </a>
+        <div class="nav-user-zone" id="nav-zone">
+            <button onclick="login()" style="background: var(--primary); border:none; padding:8px 15px; border-radius:8px; font-weight:bold; cursor:pointer;">دخول</button>
+        </div>
+    </nav>
+
+    <section id="view-home" class="view-section active">
+        <div style="text-align: center; padding: 50px 0;">
+            <h1 style="font-size: 2.5rem; margin-bottom: 15px;">Mist Cash | <span style="color: var(--primary);">ميست كاش</span></h1>
+            <p style="color: var(--text-muted); margin-bottom: 30px;">ابدأ الآن بجمع النقاط وتحويلها لأموال حقيقية</p>
+            <button onclick="login()" class="btn-open" style="width: auto; padding: 15px 40px;">ابدأ الربح الآن</button>
+        </div>
     </section>
 
-    <div class="modal" id="loginModal">
-        <div class="modal-card">
-            <h2 style="margin-bottom: 15px;">تسجيل الدخول</h2>
-            
-            <input type="email" id="email" placeholder="البريد الإلكتروني">
-            <input type="password" id="pass" placeholder="كلمة المرور">
-            <button class="btn-login" onclick="emailLogin()">دخول / إنشاء حساب</button>
-
-            <div class="divider">أو عبر</div>
-
-            <div class="google-btn" onclick="googleLogin()">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="20">
-                متابعة باستخدام Google
-            </div>
-
-            <p style="margin-top: 20px; color:#555; cursor:pointer;" onclick="toggleModal()">إغلاق</p>
+    <section id="view-offers" class="view-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h3>Live Notifications</h3>
+            <div class="balance-pill">Balance: <span id="user-balance">$0.00</span></div>
         </div>
-    </div>
+        
+        <div class="offers-grid" id="partners-list">
+            </div>
+    </section>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    <section id="view-profile" class="view-section">
+        <div style="max-width: 400px; margin: 0 auto; background: var(--card-dark); padding: 30px; border-radius: 20px; text-align: center;">
+            <div id="u-photo-large" style="margin-bottom: 15px;"></div>
+            <h2 id="u-name-full">اسم المستخدم</h2>
+            <p id="u-email" style="color: var(--text-muted); margin-bottom: 20px;"></p>
+            <button onclick="auth.signOut()" style="background: #ff4757; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor:pointer;">تسجيل الخروج</button>
+        </div>
+    </section>
 
-        // إعداداتك الأصلية
+    <script>
+        // --- إعدادات Firebase (ضع بياناتك هنا) ---
         const firebaseConfig = {
-            apiKey: "AIzaSyAd9KgnzExZ5RdrJVB_hpzxUvrqHiQ3jmU",
-            authDomain: "mrcash-com.firebaseapp.com",
-            projectId: "mrcash-com",
-            appId: "1:348374269609:web:9fed2a4f69f2c0f00ff3b8"
+            apiKey: "AIzaSyBxlADpedVvasxiwOA3ESAPv73j7feck00",
+            authDomain: "mrcash-9e428.firebaseapp.com",
+            projectId: "mrcash-9e428",
+            storageBucket: "mrcash-9e428.firebasestorage.app",
+            messagingSenderId: "537730003026",
+            appId: "1:537730003026:web:82e58fd16d9ec4feaf6f8b"
         };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
+        // --- نظام السحوبات العلوي (الوهمي للمصداقية) ---
+        const names = ["Ahmad", "Samy", "Maro", "Ziad", "Laila", "User99", "Kimo"];
+        const strip = document.getElementById('payouts-strip');
+        function addFakePayout() {
+            const name = names[Math.floor(Math.random()*names.length)];
+            const amount = (Math.random()*25 + 5).toFixed(2);
+            const html = `
+                <div class="payout-card">
+                    <img src="https://ui-avatars.com/api/?name=${name}&background=random" alt="">
+                    <div class="info">
+                        <div>${name}</div>
+                        <div class="amount">$${amount}</div>
+                    </div>
+                </div>
+            `;
+            strip.insertAdjacentHTML('afterbegin', html);
+            if(strip.children.length > 10) strip.lastElementChild.remove();
+        }
+        setInterval(addFakePayout, 5000);
+        for(let i=0; i<6; i++) addFakePayout();
 
-        window.toggleModal = () => {
-            const m = document.getElementById('loginModal');
-            m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
-        };
+        // --- بيانات الشركات ---
+        const partners = [
+            { n: "GemiAd", i: "https://gemiad.s3.eu-central-1.amazonaws.com/logos/Asset_7.png", u: "https://gemiwall.com/6977536ec6ceefce12a28330/", tag: "عروض موثوقة" },
+            { n: "Offery", i: "https://offery.io/assets/images/logo-icon.png", u: "https://offery.io/offerwall/9tns2375b9z4y9lmz8pisa2e6vma05/", tag: "2X Points" },
+            { n: "Adlexy", i: "https://adlexy.com/favicon.ico", u: "https://adlexy.com/offerwall/h7mx23bis2zaib6apwwe73uv3gr92i/", tag: "جديد" }
+        ];
 
-        // تسجيل جوجل
-        window.googleLogin = async () => {
-            try {
-                await signInWithPopup(auth, provider);
-                window.location.href = "dashboard.html";
-            } catch (error) {
-                alert("خطأ في جوجل: " + error.message);
+        function showView(id) {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('view-' + id).classList.add('active');
+        }
+
+        function login() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider);
+        }
+
+        // --- مراقبة المستخدم ---
+        auth.onAuthStateChanged(user => {
+            const navZone = document.getElementById('nav-zone');
+            if(user) {
+                // تحديث الهيدر بالأفاتار
+                navZone.innerHTML = `
+                    <div class="avatar-circle" onclick="showView('profile')">
+                        <img src="${user.photoURL || 'https://ui-avatars.com/api/?name='+user.displayName}" alt="avatar">
+                    </div>
+                `;
+                showView('offers');
+                
+                // تحميل العروض
+                const list = document.getElementById('partners-list');
+                list.innerHTML = '';
+                partners.forEach(p => {
+                    list.innerHTML += `
+                        <div class="offer-card">
+                            <span class="offer-badge">${p.tag}</span>
+                            <div class="offer-header">
+                                <img src="${p.i}" alt="">
+                                <div>
+                                    <h4 style="margin:0">${p.n}</h4>
+                                    <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                                </div>
+                            </div>
+                            <button class="btn-open" onclick="window.open('${p.u}${user.uid}', '_blank')">فتح الجدار</button>
+                        </div>
+                    `;
+                });
+
+                // جلب الرصيد
+                db.collection('users').doc(user.uid).onSnapshot(doc => {
+                    const pts = doc.data()?.points || 0;
+                    document.getElementById('user-balance').innerText = `$${(pts/1000).toFixed(2)}`;
+                    document.getElementById('u-name-full').innerText = user.displayName;
+                    document.getElementById('u-email').innerText = user.email;
+                    document.getElementById('u-photo-large').innerHTML = `<img src="${user.photoURL}" style="width:100px; border-radius:50%; border:3px solid var(--primary);">`;
+                });
+
+            } else {
+                navZone.innerHTML = `<button onclick="login()" style="background: var(--primary); border:none; padding:8px 15px; border-radius:8px; font-weight:bold; cursor:pointer;">دخول</button>`;
+                showView('home');
             }
-        };
-
-        // تسجيل البريد
-        window.emailLogin = async () => {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('pass').value;
-            if(!email || !pass) return alert("املاً البيانات");
-
-            try {
-                // محاولة تسجيل دخول، إذا لم يوجد حساب يتم إنشاؤه
-                await signInWithEmailAndPassword(auth, email, pass);
-                window.location.href = "dashboard.html";
-            } catch (err) {
-                if(err.code === 'auth/user-not-found') {
-                    await createUserWithEmailAndPassword(auth, email, pass);
-                    window.location.href = "dashboard.html";
-                } else {
-                    alert("خطأ: " + err.message);
-                }
-            }
-        };
+        });
     </script>
 </body>
 </html>
