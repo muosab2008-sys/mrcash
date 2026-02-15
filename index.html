@@ -1,40 +1,9 @@
-انتقل إلى المحتوى
-muosab2008-sys
-مستر كاش
-التنقل في المستودع
-شفرة
-مشاكل
-طلبات السحب
-الوكلاء
-الإجراءات
-المشاريع
-ويكي
-حماية
-1
- ( 1 )
-رؤى
-إعدادات
-مستر كاش
-/index.html
-انتقل إلى الملف
-t
-muosab2008-sys
-muosab2008-sys
-قم بتحديث ملف index.html
-0ab8fb3
- · 
-قبل 14 ساعة
-
-شفرة
-
-لوم
-247 سطرًا (220 موقعًا) · 12 كيلوبايت
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ميست كاش | MIST CASH</title>
+    <title>Earnly | ارتقِ بأرباحك للمستوى التالي</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -46,143 +15,161 @@ muosab2008-sys
     <style>
         :root {
             --primary: #00ff9d;
-            --primary-glow: rgba(0, 255, 157, 0.2);
-            --bg-dark: #0a0c10;
-            --card-dark: #161b22;
+            --bg-dark: #0d1117;
+            --card-bg: #161b22;
+            --border-color: #30363d;
             --text-main: #ffffff;
             --text-muted: #8b949e;
-            --border: #30363d;
-            --accent: #58a6ff;
+            --purple: #6c5ce7;
+            --cyan: #00cec9;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; transition: 0.3s ease; }
-        body { font-family: 'Cairo', sans-serif; background-color: var(--bg-dark); color: var(--text-main); overflow-x: hidden; }
+        body { font-family: 'Cairo', sans-serif; background-color: var(--bg-dark); color: var(--text-main); overflow-x: hidden; scroll-behavior: smooth; }
 
-        /* --- شريط السحوبات العلوي (الجديد) --- */
-        .payouts-strip {
-            background: #0d1117;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            gap: 15px;
-            overflow-x: auto;
-            white-space: nowrap;
-            scrollbar-width: none;
+        /* --- شريط السحوبات العلوي بالأفاتار (Live Feed) --- */
+        .live-bar {
+            background: #090c10; padding: 12px 0; border-bottom: 1px solid var(--border-color);
+            display: flex; gap: 20px; overflow: hidden; white-space: nowrap;
         }
-        .payouts-strip::-webkit-scrollbar { display: none; }
-        
-        .payout-card {
-            background: rgba(48, 54, 61, 0.4);
-            border-radius: 50px;
-            padding: 5px 15px 5px 5px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border: 1px solid var(--border);
-            min-width: 180px;
+        .payout-item {
+            display: inline-flex; align-items: center; gap: 12px; background: #1c2128;
+            padding: 8px 15px; border-radius: 12px; border: 1px solid var(--border-color); min-width: 180px;
         }
-        .payout-card img { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--primary); }
-        .payout-card .info { font-size: 0.75rem; }
-        .payout-card .amount { color: var(--primary); font-weight: bold; }
+        .payout-item img { width: 35px; height: 35px; border-radius: 50%; border: 1px solid var(--primary); }
+        .payout-info { font-size: 0.8rem; }
+        .payout-amt { color: var(--primary); font-weight: bold; background: rgba(0,255,157,0.1); padding: 2px 6px; border-radius: 4px; }
 
         /* --- القائمة العلوية --- */
         nav { 
-            background: rgba(13, 17, 23, 0.95); padding: 10px 5%; 
+            background: rgba(13, 17, 23, 0.95); padding: 15px 8%; 
             display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border-color);
             backdrop-filter: blur(10px);
         }
-        .logo { display: flex; align-items: center; gap: 10px; font-weight: 900; color: var(--primary); text-decoration: none; font-size: 1.2rem; }
-        .logo img { width: 35px; border-radius: 8px; }
+        .logo { font-size: 1.8rem; font-weight: 900; color: var(--primary); text-decoration: none; letter-spacing: -1px; }
+        .nav-btn { background: var(--primary); color: #000; padding: 10px 25px; border-radius: 10px; font-weight: 900; border: none; cursor: pointer; }
 
-        .nav-user-zone { display: flex; align-items: center; gap: 15px; }
-        .avatar-circle {
-            width: 40px; height: 40px; border-radius: 50%;
-            background: var(--card-dark); border: 2px solid var(--primary);
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            overflow: hidden;
-        }
-        .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+        /* --- صفحة الهبوط المطورة (Landing Page) --- */
+        .hero { padding: 120px 8% 80px; text-align: center; background: radial-gradient(circle at top, rgba(0,255,157,0.1), transparent 70%); }
+        .hero h1 { font-size: 4rem; font-weight: 900; line-height: 1.1; margin-bottom: 20px; }
+        .hero p { color: var(--text-muted); font-size: 1.3rem; max-width: 800px; margin: 0 auto 40px; }
 
-        /* --- العروض (تعديل الأيقونات والستايل) --- */
-        .view-section { display: none; padding: 30px 5%; animation: fadeIn 0.4s ease; }
-        .view-section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; padding: 80px 8%; }
+        .feat-card { background: var(--card-bg); padding: 40px; border-radius: 24px; border: 1px solid var(--border-color); text-align: center; }
+        .feat-card i { font-size: 3rem; color: var(--primary); margin-bottom: 20px; }
 
-        .offers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .stats-section { background: #090c10; padding: 60px 8%; display: flex; justify-content: space-around; flex-wrap: wrap; text-align: center; border-top: 1px solid var(--border-color); }
+        .stat-item h2 { font-size: 3rem; color: var(--primary); font-weight: 900; }
+
+        /* --- واجهة العروض (تصميم الصورة بالضبط) --- */
+        .view-section { display: none; padding: 50px 8%; animation: fadeInUp 0.5s ease; }
+        .active { display: block; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .offers-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; }
         .offer-card {
-            background: var(--card-dark); border-radius: 16px; border: 1px solid var(--border);
-            padding: 20px; position: relative; overflow: hidden;
+            background: var(--card-bg); border-radius: 28px; padding: 35px;
+            border: 1px solid var(--border-color); position: relative; overflow: hidden;
         }
-        .offer-card:hover { border-color: var(--primary); transform: translateY(-3px); }
-        .offer-badge {
-            position: absolute; top: 15px; left: 15px;
-            background: var(--primary); color: #000;
-            padding: 2px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;
+        .badge {
+            position: absolute; top: 25px; left: 25px; padding: 6px 16px; 
+            border-radius: 20px; font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; gap: 8px;
         }
-        .offer-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-        .offer-header img { width: 50px; height: 50px; border-radius: 10px; }
-        .stars { color: #f3ba2f; font-size: 0.8rem; margin-top: 5px; }
+        .offer-name { font-size: 2.5rem; font-weight: 900; margin-top: 50px; display: block; }
+        .stars { color: #f3ba2f; margin: 15px 0 25px; font-size: 1.1rem; }
+        .btn-action { width: 100%; background: var(--primary); color: #000; padding: 15px; border-radius: 14px; border: none; font-weight: 900; font-size: 1.1rem; cursor: pointer; }
 
-        .btn-open {
-            background: var(--primary); color: #000; width: 100%; border: none;
-            padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer;
+        /* --- قسم السحب (Withdrawal) --- */
+        .withdraw-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-top: 40px; }
+        .withdraw-card { 
+            background: var(--card-bg); padding: 25px; border-radius: 20px; 
+            border: 1px solid var(--border-color); text-align: center; cursor: pointer;
         }
+        .withdraw-card:hover { border-color: var(--primary); background: #1c2128; }
+        .withdraw-card img { width: 80px; height: 80px; object-fit: contain; margin-bottom: 15px; border-radius: 12px; }
 
-        .balance-pill {
-            background: rgba(0, 255, 157, 0.1); color: var(--primary);
-            padding: 5px 15px; border-radius: 50px; font-weight: bold; font-size: 0.9rem;
-        }
+        .user-nav-box { display: flex; align-items: center; gap: 15px; }
+        .nav-avatar { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--primary); cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="payouts-strip" id="payouts-strip">
-        </div>
+    <div class="live-bar" id="payout-slider"></div>
 
     <nav>
-        <a href="#" class="logo" onclick="showView('home')">
-            <img src="1.jpg" alt="Logo"> MIST CASH
-        </a>
-        <div class="nav-user-zone" id="nav-zone">
-            <button onclick="login()" style="background: var(--primary); border:none; padding:8px 15px; border-radius:8px; font-weight:bold; cursor:pointer;">دخول</button>
+        <a href="#" class="logo" onclick="showView('home')">EARNLY</a>
+        <div id="nav-content">
+            <button class="nav-btn" onclick="login()">سجل الآن</button>
         </div>
     </nav>
 
     <section id="view-home" class="view-section active">
-        <div style="text-align: center; padding: 50px 0;">
-            <h1 style="font-size: 2.5rem; margin-bottom: 15px;">Mist Cash | <span style="color: var(--primary);">ميست كاش</span></h1>
-            <p style="color: var(--text-muted); margin-bottom: 30px;">ابدأ الآن بجمع النقاط وتحويلها لأموال حقيقية</p>
-            <button onclick="login()" class="btn-open" style="width: auto; padding: 15px 40px;">ابدأ الربح الآن</button>
+        <div class="hero">
+            <h1>اربح الجوائز <br><span style="color: var(--primary);">بينما تلعب وتستمتع</span></h1>
+            <p>Earnly هي المنصة الأفضل عالمياً لتحويل مهامك اليومية إلى رصيد حقيقي وشحن ألعابك المفضلة بضغطة زر واحدة.</p>
+            <button class="nav-btn" style="padding: 20px 60px; font-size: 1.3rem;" onclick="login()">ابدأ الربح مجاناً</button>
+        </div>
+
+        <div class="stats-section">
+            <div class="stat-item"><h2>+120K</h2><p>مستخدم نشط</p></div>
+            <div class="stat-item"><h2>$65,000</h2><p>إجمالي الأرباح</p></div>
+            <div class="stat-item"><h2>24h</h2><p>سرعة الدفع</p></div>
+        </div>
+
+        <div class="feature-grid">
+            <div class="feat-card"><i class="fas fa-bolt"></i><h3>تنفيذ فوري</h3><p>احصل على نقاطك فور انتهاء المهمة دون انتظار.</p></div>
+            <div class="feat-card"><i class="fas fa-gift"></i><h3>هدايا متنوعة</h3><p>شحن فري فاير، ببجي، وبطاقات جوجل بلاي وفودافون كاش.</p></div>
+            <div class="feat-card"><i class="fas fa-headset"></i><h3>دعم متواصل</h3><p>فريقنا معك على مدار الساعة لحل أي مشكلة.</p></div>
         </div>
     </section>
 
     <section id="view-offers" class="view-section">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-            <h3>Live Notifications</h3>
-            <div class="balance-pill">Balance: <span id="user-balance">$0.00</span></div>
-        </div>
-        
-        <div class="offers-grid" id="partners-list">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+            <h2>جدران العروض</h2>
+            <div style="background: var(--card-bg); padding: 12px 25px; border-radius: 15px; border: 1px solid var(--primary);">
+                الرصيد: <span id="balance-txt" style="font-weight: 900; color: var(--primary);">0</span> نقطة
             </div>
+        </div>
+
+        <div class="offers-container">
+            <div class="offer-card" style="border-bottom: 5px solid var(--purple);">
+                <div class="badge" style="background: var(--purple); color: #fff;">🛡️ عروض موثوقة</div>
+                <span class="offer-name" style="color: #a29bfe;">GemiAd</span>
+                <p style="color: var(--text-muted);">جيمياد</p>
+                <div class="stars">⭐⭐⭐⭐<span style="opacity:0.2">★</span></div>
+                <button class="btn-action">فتح الجدار</button>
+            </div>
+
+            <div class="offer-card" style="border-bottom: 5px solid var(--cyan);">
+                <div class="badge" style="background: var(--cyan); color: #000;">2X Points 🏅</div>
+                <span class="offer-name" style="color: var(--cyan);">Offery</span>
+                <p style="color: var(--text-muted);">عرض</p>
+                <div class="stars">⭐⭐⭐⭐⭐</div>
+                <button class="btn-action" style="background: var(--cyan);">فتح الجدار</button>
+            </div>
+        </div>
     </section>
 
-    <section id="view-profile" class="view-section">
-        <div style="max-width: 400px; margin: 0 auto; background: var(--card-dark); padding: 30px; border-radius: 20px; text-align: center;">
-            <div id="u-photo-large" style="margin-bottom: 15px;"></div>
-            <h2 id="u-name-full">اسم المستخدم</h2>
-            <p id="u-email" style="color: var(--text-muted); margin-bottom: 20px;"></p>
-            <button onclick="auth.signOut()" style="background: #ff4757; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor:pointer;">تسجيل الخروج</button>
+    <section id="view-withdraw" class="view-section">
+        <h2 style="text-align: center; margin-bottom: 40px;">سحب الأرباح والجوائز</h2>
+        <div class="withdraw-list">
+            <div class="withdraw-card"><img src="https://img.icons8.com/color/120/free-fire.png"><h4>Free Fire</h4></div>
+            <div class="withdraw-card"><img src="https://img.icons8.com/color/120/pubg.png"><h4>PUBG Mobile</h4></div>
+            <div class="withdraw-card"><img src="https://img.icons8.com/fluency/120/visa.png"><h4>Visa Card</h4></div>
+            <div class="withdraw-card"><img src="https://cwallet.com/images/logo.png"><h4>Cwallet</h4></div>
+            <div class="withdraw-card"><img src="https://faucetpay.io/static/images/favicon.png"><h4>FaucetPay</h4></div>
+            <div class="withdraw-card"><img src="https://img.icons8.com/color/120/paypal.png"><h4>PayPal</h4></div>
         </div>
     </section>
 
     <script>
-        // --- إعدادات Firebase (ضع بياناتك هنا) ---
+        // --- تهيئة Firebase ---
         const firebaseConfig = {
             apiKey: "AIzaSyBxlADpedVvasxiwOA3ESAPv73j7feck00",
             authDomain: "mrcash-9e428.firebaseapp.com",
             projectId: "mrcash-9e428",
-            storageBucket: "mrcash-9e428.firebasestorage.app",
+            storageBucket: "mrcash-9e428.appspot.com",
             messagingSenderId: "537730003026",
             appId: "1:537730003026:web:82e58fd16d9ec4feaf6f8b"
         };
@@ -190,37 +177,33 @@ muosab2008-sys
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // --- نظام السحوبات العلوي (الوهمي للمصداقية) ---
-        const names = ["Ahmad", "Samy", "Maro", "Ziad", "Laila", "User99", "Kimo"];
-        const strip = document.getElementById('payouts-strip');
-        function addFakePayout() {
-            const name = names[Math.floor(Math.random()*names.length)];
-            const amount = (Math.random()*25 + 5).toFixed(2);
-            const html = `
-                <div class="payout-card">
-                    <img src="https://ui-avatars.com/api/?name=${name}&background=random" alt="">
-                    <div class="info">
-                        <div>${name}</div>
-                        <div class="amount">$${amount}</div>
+        // --- توليد شريط السحب المتحرك ---
+        const users = ["Maro", "Kimo", "Laila", "User99", "Samy", "Ziad", "MenoTn", "BertKnox"];
+        function initSlider() {
+            const slider = document.getElementById('payout-slider');
+            let content = "";
+            for(let i=0; i<15; i++) {
+                const name = users[Math.floor(Math.random()*users.length)];
+                const amt = (Math.random()*25 + 5).toFixed(2);
+                content += `
+                    <div class="payout-item">
+                        <img src="https://i.pravatar.cc/100?u=${name}${i}">
+                        <div class="payout-info">
+                            <div>${name}</div>
+                            <div class="payout-amt">$${amt}</div>
+                        </div>
                     </div>
-                </div>
-            `;
-            strip.insertAdjacentHTML('afterbegin', html);
-            if(strip.children.length > 10) strip.lastElementChild.remove();
+                `;
+            }
+            slider.innerHTML = content + content;
         }
-        setInterval(addFakePayout, 5000);
-        for(let i=0; i<6; i++) addFakePayout();
+        initSlider();
 
-        // --- بيانات الشركات ---
-        const partners = [
-            { n: "GemiAd", i: "https://gemiad.s3.eu-central-1.amazonaws.com/logos/Asset_7.png", u: "https://gemiwall.com/6977536ec6ceefce12a28330/", tag: "عروض موثوقة" },
-            { n: "Offery", i: "https://offery.io/assets/images/logo-icon.png", u: "https://offery.io/offerwall/9tns2375b9z4y9lmz8pisa2e6vma05/", tag: "2X Points" },
-            { n: "Adlexy", i: "https://adlexy.com/favicon.ico", u: "https://adlexy.com/offerwall/h7mx23bis2zaib6apwwe73uv3gr92i/", tag: "جديد" }
-        ];
-
+        // --- وظائف العرض والتنقل ---
         function showView(id) {
-            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
             document.getElementById('view-' + id).classList.add('active');
+            window.scrollTo(0,0);
         }
 
         function login() {
@@ -230,46 +213,18 @@ muosab2008-sys
 
         // --- مراقبة المستخدم ---
         auth.onAuthStateChanged(user => {
-            const navZone = document.getElementById('nav-zone');
+            const nav = document.getElementById('nav-content');
             if(user) {
-                // تحديث الهيدر بالأفاتار
-                navZone.innerHTML = `
-                    <div class="avatar-circle" onclick="showView('profile')">
-                        <img src="${user.photoURL || 'https://ui-avatars.com/api/?name='+user.displayName}" alt="avatar">
-                    </div>
+                nav.innerHTML = `
+                    <span onclick="showView('offers')" style="margin-left:20px; cursor:pointer; font-weight:bold;">العروض</span>
+                    <span onclick="showView('withdraw')" style="margin-left:20px; cursor:pointer; font-weight:bold;">السحب</span>
+                    <img src="${user.photoURL}" class="nav-avatar" onclick="auth.signOut().then(()=>location.reload())">
                 `;
                 showView('offers');
-                
-                // تحميل العروض
-                const list = document.getElementById('partners-list');
-                list.innerHTML = '';
-                partners.forEach(p => {
-                    list.innerHTML += `
-                        <div class="offer-card">
-                            <span class="offer-badge">${p.tag}</span>
-                            <div class="offer-header">
-                                <img src="${p.i}" alt="">
-                                <div>
-                                    <h4 style="margin:0">${p.n}</h4>
-                                    <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                                </div>
-                            </div>
-                            <button class="btn-open" onclick="window.open('${p.u}${user.uid}', '_blank')">فتح الجدار</button>
-                        </div>
-                    `;
-                });
-
-                // جلب الرصيد
                 db.collection('users').doc(user.uid).onSnapshot(doc => {
-                    const pts = doc.data()?.points || 0;
-                    document.getElementById('user-balance').innerText = `$${(pts/1000).toFixed(2)}`;
-                    document.getElementById('u-name-full').innerText = user.displayName;
-                    document.getElementById('u-email').innerText = user.email;
-                    document.getElementById('u-photo-large').innerHTML = `<img src="${user.photoURL}" style="width:100px; border-radius:50%; border:3px solid var(--primary);">`;
+                    document.getElementById('balance-txt').innerText = doc.data()?.points || 0;
                 });
-
             } else {
-                navZone.innerHTML = `<button onclick="login()" style="background: var(--primary); border:none; padding:8px 15px; border-radius:8px; font-weight:bold; cursor:pointer;">دخول</button>`;
                 showView('home');
             }
         });
