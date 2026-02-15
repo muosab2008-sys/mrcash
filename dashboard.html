@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MrCash | لوحة التحكم</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
+        :root { --primary: #00ff6a; --bg: #050505; --card: #121212; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { background: var(--bg); color: white; padding-bottom: 80px; }
+
+        /* شريط المعلومات العلوي */
+        header { padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1a1a1a; }
+        .balance { background: #00ff6a15; border: 1px solid var(--primary); color: var(--primary); padding: 5px 15px; border-radius: 20px; font-weight: 900; }
+
+        .content { padding: 20px; }
+        .page { display: none; }
+        .active { display: block; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* صفحة العروض */
+        .wall-item { background: var(--card); border: 1px solid #222; padding: 20px; border-radius: 20px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; }
+        .wall-item i { color: var(--primary); font-size: 1.5rem; }
+
+        /* صفحة السحب */
+        .withdraw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .method-card { background: var(--card); padding: 20px; border-radius: 20px; text-align: center; border: 1px solid #222; }
+        .method-card img { width: 40px; margin-bottom: 10px; }
+
+        /* الملف الشخصي */
+        .user-box { text-align: center; background: var(--card); padding: 30px; border-radius: 30px; border: 1px solid #222; }
+        .user-box img { width: 80px; border-radius: 50%; border: 3px solid var(--primary); margin-bottom: 15px; }
+
+        /* البار السفلي للتنقل */
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: #000; border-top: 1px solid #1a1a1a; display: flex; justify-content: space-around; padding: 15px 0; z-index: 10; }
+        .nav-link { color: #555; text-align: center; cursor: pointer; transition: 0.3s; }
+        .nav-link.active { color: var(--primary); }
+        .nav-link i { font-size: 1.5rem; display: block; }
+        .nav-link span { font-size: 0.7rem; font-weight: bold; }
+
+        /* عرض الجدار */
+        #iframe-modal { position: fixed; inset: 0; background: white; z-index: 200; display: none; flex-direction: column; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <span style="font-weight: 900; color:var(--primary)">MR CASH</span>
+        <div class="balance" id="pts">0.00 PTS</div>
+    </header>
+
+    <div class="content">
+        <div id="offers-page" class="page active">
+            <h2 style="margin-bottom: 20px;">شركات العروض</h2>
+            <div class="wall-item" onclick="openWall('adlexy')">
+                <i class="fas fa-fire"></i>
+                <div><b>Adlexy Wall</b><p style="font-size: 0.8rem; color:#666;">عروض حصرية ونقاط مضاعفة</p></div>
+            </div>
+            <div class="wall-item" onclick="openWall('gemiad')">
+                <i class="fas fa-play-circle"></i>
+                <div><b>GemiAd Wall</b><p style="font-size: 0.8rem; color:#666;">ألعاب واستبيانات سريعة</p></div>
+            </div>
+        </div>
+
+        <div id="withdraw-page" class="page">
+            <h2 style="margin-bottom: 20px;">وسائل السحب</h2>
+            <div class="withdraw-grid">
+                <div class="method-card"><img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg"><div>PayPal</div></div>
+                <div class="method-card"><img src="https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg"><div>Binance</div></div>
+                <div class="method-card"><img src="https://upload.wikimedia.org/wikipedia/en/2/21/Free_Fire_Logo.png"><div>Free Fire</div></div>
+                <div class="method-card"><img src="https://w7.pngwing.com/pngs/410/505/png-transparent-pubg-mobile-playerunknown-s-battlegrounds-logo-game-pubg-mobile-logo-text-orange-logo.png"><div>PUBG UC</div></div>
+            </div>
+        </div>
+
+        <div id="profile-page" class="page">
+            <div class="user-box">
+                <img id="u-img" src="https://via.placeholder.com/80">
+                <h3 id="u-name">...</h3>
+                <p id="u-email" style="color:#666; font-size:0.9rem; margin-bottom: 20px;"></p>
+                <div style="background:#000; padding:10px; border-radius:10px; font-size:0.7rem; color:var(--primary);">UID: <span id="u-id">...</span></div>
+            </div>
+            <button onclick="logout()" style="width:100%; margin-top:20px; padding:15px; background:none; border:1px solid #ff4444; color:#ff4444; border-radius:15px; cursor:pointer;">تسجيل الخروج</button>
+        </div>
+    </div>
+
+    <div class="nav-bar">
+        <div class="nav-link active" onclick="nav('offers', this)"><i class="fas fa-tasks"></i><span>العروض</span></div>
+        <div class="nav-link" onclick="nav('withdraw', this)"><i class="fas fa-wallet"></i><span>السحب</span></div>
+        <div class="nav-link" onclick="nav('profile', this)"><i class="fas fa-user-circle"></i><span>حسابي</span></div>
+    </div>
+
+    <div id="iframe-modal">
+        <div style="background:#000; padding:15px; display:flex; justify-content:space-between; align-items:center;">
+            <span>جدار العروض</span>
+            <button onclick="closeWall()" style="background:var(--primary); border:none; padding:5px 15px; border-radius:8px; font-weight:bold;">إغلاق</button>
+        </div>
+        <div id="iframe-container" style="flex:1"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAd9KgnzExZ5RdrJVB_hpzxUvrqHiQ3jmU",
+            authDomain: "mrcash-com.firebaseapp.com",
+            projectId: "mrcash-com",
+            appId: "1:348374269609:web:9fed2a4f69f2c0f00ff3b8"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        let uid = "";
+
+        onAuthStateChanged(auth, user => {
+            if(user) {
+                uid = user.uid;
+                document.getElementById('u-name').innerText = user.displayName;
+                document.getElementById('u-email').innerText = user.email;
+                document.getElementById('u-id').innerText = user.uid;
+                document.getElementById('u-img').src = user.photoURL || 'https://via.placeholder.com/80';
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        window.nav = (page, el) => {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(page + '-page').classList.add('active');
+            document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+        };
+
+        window.openWall = (wall) => {
+            let url = (wall === 'adlexy') 
+                ? `https://adlexy.com/offerwall/h7mx23bis2zaib6apwwe73uv3gr92i/${uid}`
+                : `https://gemiad.com/offerwall/750/مصعب123/${uid}`;
+            
+            document.getElementById('iframe-container').innerHTML = `<iframe src="${url}" style="width:100%; height:100%; border:0;"></iframe>`;
+            document.getElementById('iframe-modal').style.display = 'flex';
+        };
+
+        window.closeWall = () => document.getElementById('iframe-modal').style.display = 'none';
+        window.logout = () => signOut(auth);
+    </script>
+</body>
+</html>
