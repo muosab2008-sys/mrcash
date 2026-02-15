@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مونو سويرفيز | MonoSurveys</title>
+    <title>مونو كاش | MonoCash - العب واربح</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
@@ -14,158 +14,131 @@
 
     <style>
         :root {
-            --primary: #39ff14;
-            --bg: #050505;
-            --card: #0f0f0f;
-            --border: #1a1a1a;
+            --primary: #00ffa3;
+            --accent: #bcfe2d;
+            --bg: #0d1117;
+            --card: #161b22;
+            --border: #30363d;
             --text: #ffffff;
-            --dim: #a0a0a0;
+            --text-dim: #8b949e;
+            --grad: linear-gradient(135deg, #00ffa3 0%, #bcfe2d 100%);
         }
 
-        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Cairo', sans-serif; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        body { background: var(--bg); color: var(--text); overflow-x: hidden; }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Cairo', sans-serif; }
+        body { background: var(--bg); color: var(--text); overflow-x: hidden; line-height: 1.6; }
 
         /* Navigation */
-        nav { padding: 15px 8%; display: flex; justify-content: space-between; align-items: center; background: rgba(5,5,5,0.9); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border); }
-        .logo { font-size: 1.8rem; font-weight: 900; color: var(--primary); text-decoration: none; text-shadow: 0 0 10px rgba(57, 255, 20, 0.3); }
-        .btn-main { background: var(--primary); color: #000; padding: 10px 25px; border-radius: 10px; font-weight: 800; border: none; cursor: pointer; }
+        nav { padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; background: rgba(13, 17, 23, 0.8); backdrop-filter: blur(15px); position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border); }
+        .logo { font-size: 1.5rem; font-weight: 900; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+        .balance-badge { background: rgba(0, 255, 163, 0.1); border: 1px solid var(--primary); padding: 5px 15px; border-radius: 50px; color: var(--primary); font-weight: bold; }
 
-        /* Sections */
-        .view { display: none; animation: fadeIn 0.5s ease; }
+        /* General UI Elements */
+        .btn-main { background: var(--grad); color: #000; padding: 12px 25px; border-radius: 12px; font-weight: 800; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-main:hover { transform: scale(1.05); filter: brightness(1.1); }
+        
+        .view { display: none; padding: 20px 5% 100px; animation: slideUp 0.4s ease; }
         .active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Landing Page Elements */
-        .hero { padding: 80px 8%; text-align: center; background: radial-gradient(circle at top, #112211 0%, var(--bg) 70%); }
-        .hero h1 { font-size: clamp(2.5rem, 8vw, 4.5rem); line-height: 1.1; margin-bottom: 20px; font-weight: 900; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; padding: 40px 8%; background: var(--card); border-top: 1px solid var(--border); }
-        .stat-card { text-align: center; }
-        .stat-card h2 { color: var(--primary); font-size: 2.5rem; }
+        /* Grid System */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-top: 20px; }
+        @media(min-width: 768px) { .grid { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; } }
 
-        /* Dashboard & Grid */
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; padding: 40px 8%; }
-        .item-card { background: var(--card); border-radius: 20px; padding: 30px; border: 1px solid var(--border); text-align: center; position: relative; }
-        .item-card:hover { border-color: var(--primary); transform: translateY(-10px); box-shadow: 0 10px 30px rgba(57, 255, 20, 0.1); }
-        .item-card img { width: 80px; height: 80px; margin-bottom: 20px; border-radius: 15px; }
-        .hot-badge { position: absolute; top: 15px; right: 15px; background: #ff4444; font-size: 0.7rem; padding: 4px 10px; border-radius: 5px; font-weight: bold; }
+        /* Cards */
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px; text-align: center; position: relative; overflow: hidden; }
+        .card:hover { border-color: var(--primary); background: #1c2128; }
+        .card img { width: 60px; height: 60px; border-radius: 12px; margin-bottom: 15px; object-fit: cover; }
+        .card h3 { font-size: 1rem; margin-bottom: 5px; }
+        .card p { font-size: 0.8rem; color: var(--text-dim); }
 
-        /* Auth Modal */
-        #auth-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .auth-box { background: var(--card); padding: 40px; border-radius: 25px; width: 100%; max-width: 420px; border: 1px solid var(--border); }
-        .auth-tabs { display: flex; margin-bottom: 30px; background: #000; border-radius: 12px; padding: 5px; }
-        .tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; border-radius: 10px; font-weight: bold; color: var(--dim); }
-        .tab.active { background: var(--primary); color: #000; }
-        input { width: 100%; padding: 15px; background: #000; border: 1px solid var(--border); color: #fff; border-radius: 12px; margin-bottom: 15px; text-align: right; }
-        input:focus { border-color: var(--primary); outline: none; }
+        /* Withdraw Categories */
+        .cat-title { margin-top: 30px; font-size: 1.2rem; border-right: 4px solid var(--primary); padding-right: 10px; }
 
-        /* Withdrawal Modal */
-        #withdraw-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 6000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-
+        /* Auth & Modals */
+        #auth-overlay, #withdraw-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 5000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(5px); }
+        .modal-box { background: var(--card); padding: 30px; border-radius: 25px; width: 100%; max-width: 400px; border: 1px solid var(--border); }
+        input { width: 100%; padding: 14px; background: #0d1117; border: 1px solid var(--border); color: #fff; border-radius: 12px; margin-bottom: 15px; text-align: right; }
+        
         /* Bottom Nav */
-        .bottom-bar { position: fixed; bottom: 0; width: 100%; background: #000; display: flex; justify-content: space-around; padding: 15px; border-top: 1px solid var(--border); z-index: 900; }
-        .nav-link { color: var(--dim); text-decoration: none; font-size: 0.8rem; text-align: center; cursor: pointer; }
-        .nav-link.active { color: var(--primary); }
+        .bottom-nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: rgba(22, 27, 34, 0.95); border: 1px solid var(--border); border-radius: 25px; display: flex; justify-content: space-around; padding: 12px; backdrop-filter: blur(10px); z-index: 2000; }
+        .nav-item { color: var(--text-dim); text-decoration: none; text-align: center; font-size: 0.7rem; cursor: pointer; flex: 1; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item i { font-size: 1.2rem; display: block; margin-bottom: 2px; }
 
         .hidden { display: none !important; }
-        footer { padding: 60px 8% 120px; background: #000; border-top: 1px solid var(--border); text-align: center; color: var(--dim); }
+        .tag { position: absolute; top: 10px; left: 10px; background: var(--primary); color: #000; font-size: 0.6rem; padding: 2px 8px; border-radius: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <nav>
-        <a href="#" class="logo">MonoSurveys</a>
-        <div id="nav-actions">
-            <button class="btn-main" onclick="openAuth('login')">تسجيل الدخول</button>
+        <a href="#" class="logo">MONOCASH</a>
+        <div id="nav-user" class="hidden">
+            <div class="balance-badge" id="user-points">0 Pts</div>
         </div>
+        <button id="login-btn" class="btn-main" onclick="openAuth('login')"><i class="fas fa-sign-in-alt"></i> دخول</button>
     </nav>
 
     <div id="view-home" class="view active">
-        <section class="hero">
-            <h1>اربح المال عبر الإنترنت <br><span style="color: var(--primary);">بأمان وسهولة</span></h1>
-            <p style="color: var(--dim); max-width: 700px; margin: 0 auto 40px;">حوّل وقت فراغك إلى أموال حقيقية من خلال إكمال استطلاعات رأي بسيطة من شركاء موثوق بهم حول العالم.</p>
-            <div style="display: flex; gap: 15px; justify-content: center;">
-                <button class="btn-main" style="padding: 18px 40px; font-size: 1.1rem;" onclick="openAuth('signup')">ابدأ الربح مجاناً</button>
-            </div>
-            <p style="margin-top: 30px; color: var(--primary); font-weight: bold;">✔ التسجيل مجاني  ✔ دفعات فورية  ✔ عالميًا</p>
-        </section>
-
-        <div class="stats-grid">
-            <div class="stat-card"><h2>120K+</h2><p>المستخدمون النشطون</p></div>
-            <div class="stat-card"><h2>$20.1K+</h2><p>إجمالي المبالغ المدفوعة</p></div>
-            <div class="stat-card"><h2>190+</h2><p>بلدان مدعومة</p></div>
-            <div class="stat-card"><h2>4.8★</h2><p>تقييم المستخدمين</p></div>
+        <div style="text-align: center; padding: 60px 0;">
+            <h1 style="font-size: 2.5rem; line-height: 1.2;">حوّل مهاراتك في الألعاب <br><span style="color: var(--primary);">إلى أرباح حقيقية!</span></h1>
+            <p style="color: var(--text-dim); margin: 20px 0;">أكمل العروض، اجمع النقاط، واشحن ألعابك المفضلة مجاناً.</p>
+            <button class="btn-main" onclick="openAuth('signup')" style="padding: 15px 40px; font-size: 1.1rem;">سجل الآن وابدأ الربح</button>
         </div>
-
-        <section style="padding: 80px 8%; text-align: center;">
-            <h2 style="margin-bottom: 50px; font-size: 2.5rem;">لماذا تختار MonoSurveys؟</h2>
-            <div class="grid" style="padding: 0;">
-                <div class="item-card"><h3>منصة آمنة</h3><p style="color: var(--dim)">مشفر ومحمي بتقنية SSL.</p></div>
-                <div class="item-card"><h3>سحب سريع</h3><p style="color: var(--dim)">دفعات فورية في أي وقت.</p></div>
-                <div class="item-card"><h3>وصول عالمي</h3><p style="color: var(--dim)">متوفر في جميع أنحاء العالم.</p></div>
-            </div>
-        </section>
+        
+        <div class="grid">
+            <div class="card"><i class="fas fa-gamepad fa-2x" style="color: var(--primary)"></i><h3>اشحن ألعابك</h3></div>
+            <div class="card"><i class="fas fa-wallet fa-2x" style="color: var(--accent)"></i><h3>كاش فوري</h3></div>
+            <div class="card"><i class="fas fa-shield-alt fa-2x" style="color: #4da6ff"></i><h3>نظام آمن</h3></div>
+        </div>
     </div>
 
-    <div id="view-dashboard" class="view">
-        <div style="padding: 40px 8% 0; display: flex; justify-content: space-between; align-items: center;">
-            <h2>عروض الشركاء المتاحة</h2>
-            <div id="balance-display" style="color: var(--primary); font-weight: 900; font-size: 1.5rem;">0 Pts</div>
-        </div>
-        <div class="grid" id="offers-grid"></div>
+    <div id="view-earn" class="view">
+        <h2 class="cat-title">جدران الحظ</h2>
+        <div class="grid" id="offers-list"></div>
     </div>
 
-    <div id="view-withdraw" class="view">
-        <div style="padding: 40px 8% 0;">
-            <h2>سحب الأموال</h2>
-            <p style="color: var(--dim)">اختر الوسيلة المفضلة لتحويل نقاطك.</p>
-        </div>
-        <div class="grid" id="withdraw-grid"></div>
+    <div id="view-shop" class="view">
+        <h2 class="cat-title">متجر المكافآت</h2>
+        
+        <h3 style="margin-top:20px; color: var(--text-dim)">🎮 شحن ألعاب</h3>
+        <div class="grid" id="shop-games"></div>
+
+        <h3 style="margin-top:30px; color: var(--text-dim)">💳 بطاقات هدايا</h3>
+        <div class="grid" id="shop-cards"></div>
+
+        <h3 style="margin-top:30px; color: var(--text-dim)">📱 كاش ومحافظ</h3>
+        <div class="grid" id="shop-wallets"></div>
     </div>
 
-    <footer>
-        <h2 style="color: var(--primary); margin-bottom: 20px;">MonoSurveys</h2>
-        <p>منصة ربح موثوقة منذ عام 2021.</p>
-        <div style="margin: 20px 0; display: flex; justify-content: center; gap: 30px;">
-            <a href="#" style="color: var(--dim)">سياسة الخصوصية</a>
-            <a href="#" style="color: var(--dim)">الشروط والأحكام</a>
-        </div>
-        <p>© 2021–2026 MonoSurveys. جميع الحقوق محفوظة.</p>
-    </footer>
+    <div id="bottom-bar" class="bottom-nav hidden">
+        <div class="nav-item active" onclick="showView('earn', this)"><i class="fas fa-th-large"></i>العروض</div>
+        <div class="nav-item" onclick="showView('shop', this)"><i class="fas fa-shopping-cart"></i>المتجر</div>
+        <div class="nav-link" onclick="auth.signOut()" style="color:#ff4d4d; font-size: 0.7rem; text-align: center; flex:1; cursor:pointer;"><i class="fas fa-power-off" style="font-size: 1.2rem; display: block;"></i>خروج</div>
+    </div>
 
     <div id="auth-overlay" class="hidden">
-        <div class="auth-box">
-            <div class="auth-tabs">
-                <div id="tab-login" class="tab active" onclick="switchTab('login')">دخول</div>
-                <div id="tab-signup" class="tab" onclick="switchTab('signup')">إنشاء حساب</div>
-            </div>
-            <div id="auth-form">
-                <input type="email" id="auth-email" placeholder="البريد الإلكتروني">
-                <input type="password" id="auth-pass" placeholder="كلمة المرور">
-                <button class="btn-main" style="width: 100%; padding: 15px;" onclick="handleAuth()">استمرار</button>
-                <div style="text-align: center; margin: 20px 0; color: var(--dim);">أو</div>
-                <button class="btn-main" style="width: 100%; background: #fff; color: #000;" onclick="googleSignIn()">
-                    <img src="https://www.google.com/favicon.ico" width="18" style="vertical-align: middle; margin-left: 10px;"> الدخول بواسطة جوجل
-                </button>
-            </div>
-            <p onclick="closeAuth()" style="text-align: center; margin-top: 25px; cursor: pointer; color: var(--dim);">إلغاء</p>
+        <div class="modal-box">
+            <h2 id="auth-title" style="margin-bottom: 20px; text-align: center;">إنشاء حساب جديد</h2>
+            <input type="email" id="email" placeholder="البريد الإلكتروني">
+            <input type="password" id="pass" placeholder="كلمة المرور">
+            <button class="btn-main" style="width: 100%; justify-content: center;" onclick="processAuth()">استمرار</button>
+            <div style="text-align: center; margin: 15px 0; color: var(--text-dim);">أو</div>
+            <button class="btn-main" style="width: 100%; background: #fff; color: #000; justify-content: center;" onclick="googleLogin()">
+                <img src="https://www.google.com/favicon.ico" width="18"> دخول بواسطة جوجل
+            </button>
+            <p onclick="closeAuth()" style="text-align: center; margin-top: 20px; cursor: pointer; font-size: 0.9rem;">إغلاق</p>
         </div>
     </div>
 
     <div id="withdraw-modal" class="hidden">
-        <div class="auth-box">
-            <h2 id="modal-method-name">طلب سحب</h2>
-            <p id="modal-method-desc" style="color: var(--dim); margin-bottom: 20px; font-size: 0.8rem;"></p>
-            <input type="text" id="withdraw-address" placeholder="عنوان المحفظة أو الإيميل">
-            <input type="number" id="withdraw-amount" placeholder="النقاط (مثال: 5000)">
-            <button class="btn-main" style="width: 100%;" onclick="submitWithdraw()">تأكيد الطلب</button>
-            <p onclick="closeWithdraw()" style="text-align: center; margin-top: 20px; cursor: pointer; color: var(--dim);">إغلاق</p>
+        <div class="modal-box">
+            <h2 id="wd-title">سحب الأرباح</h2>
+            <p id="wd-desc" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 15px;"></p>
+            <input type="text" id="wd-input" placeholder="رقم الهاتف أو الـ ID">
+            <button class="btn-main" style="width: 100%; justify-content: center;" onclick="submitWD()">تأكيد الطلب</button>
+            <p onclick="closeWD()" style="text-align: center; margin-top: 20px; cursor: pointer;">إلغاء</p>
         </div>
-    </div>
-
-    <div id="app-nav" class="bottom-bar hidden">
-        <div class="nav-link active" onclick="showView('dashboard', this)"><i class="fas fa-rocket fa-lg"></i><div>العروض</div></div>
-        <div class="nav-link" onclick="showView('withdraw', this)"><i class="fas fa-wallet fa-lg"></i><div>السحب</div></div>
-        <div class="nav-link" onclick="auth.signOut()"><i class="fas fa-user fa-lg"></i><div>خروج</div></div>
     </div>
 
     <script>
@@ -182,131 +155,137 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        let currentTab = 'login';
-        let userPoints = 0;
-        let selectedMethod = "";
+        let currentMode = 'signup';
+        let currentPoints = 0;
+        let selectedItem = "";
 
-        // UI Handlers
-        function openAuth(m) { switchTab(m); document.getElementById('auth-overlay').classList.remove('hidden'); }
+        // UI Functions
+        function openAuth(m) {
+            currentMode = m;
+            document.getElementById('auth-title').innerText = m === 'login' ? 'تسجيل الدخول' : 'إنشاء حساب جديد';
+            document.getElementById('auth-overlay').classList.remove('hidden');
+        }
         function closeAuth() { document.getElementById('auth-overlay').classList.add('hidden'); }
-        function switchTab(t) {
-            currentTab = t;
-            document.getElementById('tab-login').classList.toggle('active', t === 'login');
-            document.getElementById('tab-signup').classList.toggle('active', t === 'signup');
+        
+        function showView(v, el) {
+            document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
+            document.getElementById('view-' + v).classList.add('active');
+            if(el) {
+                document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+                el.classList.add('active');
+            }
         }
 
-        async function handleAuth() {
-            const e = document.getElementById('auth-email').value;
-            const p = document.getElementById('auth-pass').value;
+        async function processAuth() {
+            const e = document.getElementById('email').value;
+            const p = document.getElementById('pass').value;
             try {
-                if(currentTab === 'login') await auth.signInWithEmailAndPassword(e, p);
+                if(currentMode === 'login') await auth.signInWithEmailAndPassword(e, p);
                 else await auth.createUserWithEmailAndPassword(e, p);
                 closeAuth();
             } catch(err) { alert(err.message); }
         }
 
-        async function googleSignIn() {
+        async function googleLogin() {
             const provider = new firebase.auth.GoogleAuthProvider();
-            try { await auth.signInWithPopup(provider); closeAuth(); }
-            catch(err) { alert(err.message); }
+            try { await auth.signInWithPopup(provider); closeAuth(); } catch(err) { alert(err.message); }
         }
 
-        function showView(id, el) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById('view-' + id).classList.add('active');
-            if(el) {
-                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-                el.classList.add('active');
-            }
-        }
-
-        // Logic
+        // Logic & Data
         auth.onAuthStateChanged(user => {
             if(user) {
                 document.getElementById('view-home').classList.remove('active');
-                document.getElementById('app-nav').classList.remove('hidden');
-                document.getElementById('nav-actions').innerHTML = `<span style="font-weight:bold">${user.displayName || 'مرحباً'}</span>`;
-                showView('dashboard');
-                loadUserData(user);
+                document.getElementById('nav-user').classList.remove('hidden');
+                document.getElementById('bottom-bar').classList.remove('hidden');
+                document.getElementById('login-btn').classList.add('hidden');
+                showView('earn');
+                loadDashboard(user.uid);
             } else {
                 showView('home');
-                document.getElementById('app-nav').classList.add('hidden');
-                document.getElementById('nav-actions').innerHTML = `<button class="btn-main" onclick="openAuth('login')">تسجيل الدخول</button>`;
+                document.getElementById('nav-user').classList.add('hidden');
+                document.getElementById('bottom-bar').classList.add('hidden');
+                document.getElementById('login-btn').classList.remove('hidden');
             }
         });
 
-        function loadUserData(user) {
-            db.collection('users').doc(user.uid).onSnapshot(doc => {
-                userPoints = doc.data()?.points || 0;
-                document.getElementById('balance-display').innerText = userPoints + " Pts";
+        function loadDashboard(uid) {
+            // مزامنة النقاط
+            db.collection('users').doc(uid).onSnapshot(doc => {
+                currentPoints = doc.data()?.points || 0;
+                document.getElementById('user-points').innerText = currentPoints + " Pts";
             });
 
-            // Offers List
-            const partners = [
-                { n: "Offery.io", i: "https://earng.net/storage/providers/x5v40jKJIoMPSNXMmiyTkK0eWIGXHPXSsAT2QRYb.png", u: "https://offery.io/offerwall/9tns2375b9z4y9lmz8pisa2e6vma05/" },
-                { n: "GemiAd", i: "https://earng.net/storage/providers/5t91vghsZuzh5mBa1uDlmfpjjMH05idKJtU8VjcB.png", u: "https://gemiwall.com/6977536ec6ceefce12a28330/" },
-                { n: "Adlexy", i: "https://monosuirveys.com/admin/images/file_00000000867471f49bc3179f6aa3f452.png", u: "https://adlexy.com/offerwall/h7mx23bis2zaib6apwwe73uv3gr92i/" }
+            // قائمة العروض
+            const offers = [
+                { n: "شركة Offery", i: "https://earng.net/storage/providers/x5v40jKJIoMPSNXMmiyTkK0eWIGXHPXSsAT2QRYb.png", u: "https://offery.io/offerwall/9tns2375b9z4y9lmz8pisa2e6vma05/" },
+                { n: "شركة GemiAd", i: "https://earng.net/storage/providers/5t91vghsZuzh5mBa1uDlmfpjjMH05idKJtU8VjcB.png", u: "https://gemiwall.com/6977536ec6ceefce12a28330/" },
+                { n: "شركة Adlexy", i: "https://monosuirveys.com/admin/images/file_00000000867471f49bc3179f6aa3f452.png", u: "https://adlexy.com/offerwall/h7mx23bis2zaib6apwwe73uv3gr92i/" }
             ];
-            document.getElementById('offers-grid').innerHTML = partners.map(p => `
-                <div class="item-card">
-                    <span class="hot-badge">🔥 ساخن</span>
-                    <img src="${p.i}">
-                    <h3>${p.n}</h3>
-                    <p style="color: var(--dim); font-size: 0.8rem; margin: 10px 0;">أكمل المهام واستلم مكافأتك فوراً</p>
-                    <button class="btn-main" style="width: 100%;" onclick="window.open('${p.u}${user.uid}', '_blank')">فتح الجدار</button>
+            document.getElementById('offers-list').innerHTML = offers.map(o => `
+                <div class="card">
+                    <span class="tag">UP TO 5K</span>
+                    <img src="${o.i}">
+                    <h3>${o.n}</h3>
+                    <button class="btn-main" style="width:100%; margin-top:10px;" onclick="window.open('${o.u}${uid}', '_blank')">بدأ</button>
                 </div>
             `).join('');
 
-            // Withdraw List
-            const methods = [
-                { n: "PayPal", i: "https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg", d: "سحب نقدي مباشر إلى حسابك" },
-                { n: "USDT (TRC20)", i: "https://cryptologos.cc/logos/tether-usdt-logo.png", d: "سحب عملات رقمية مستقرة" },
-                { n: "Bitcoin", i: "https://cryptologos.cc/logos/bitcoin-btc-logo.png", d: "سحب إلى أي محفظة بيتكوين" },
-                { n: "Google Play", i: "https://upload.wikimedia.org/wikipedia/commons/d/d0/Google_Play_Arrow_logo.svg", d: "بطاقات هدايا متجر جوجل" },
-                { n: "Amazon Card", i: "https://upload.wikimedia.org/wikipedia/commons/4/4a/Amazon_icon.svg", d: "بطاقات هدايا أمازون العالمية" },
-                { n: "Visa Card", i: "https://upload.wikimedia.org/wikipedia/commons/d/d6/Visa_2014_logo_detail.svg", d: "بطاقات فيزا مسبقة الدفع" }
+            // متجر السحب
+            const games = [
+                { n: "Free Fire (100💎)", i: "https://upload.wikimedia.org/wikipedia/en/c/c2/Garena_Free_Fire_logo.png", p: 1500 },
+                { n: "PUBG Mobile (60 UC)", i: "https://upload.wikimedia.org/wikipedia/en/a/ad/Pubg_mobile_logo.png", p: 2000 },
+                { n: "Roblox (Robux)", i: "https://upload.wikimedia.org/wikipedia/commons/3/3a/Roblox_player_icon_black.svg", p: 2500 }
             ];
-            document.getElementById('withdraw-grid').innerHTML = methods.map(m => `
-                <div class="item-card">
-                    <img src="${m.i}">
-                    <h3>${m.n}</h3>
-                    <p style="color: var(--dim); font-size: 0.7rem;">الحد الأدنى: 5,000 نقطة ($5)</p>
-                    <button class="btn-main" style="width: 100%; margin-top: 15px; background: #222; color: #fff;" onclick="openWithdraw('${m.n}', '${m.d}')">سحب</button>
+            const cards = [
+                { n: "Google Play ($5)", i: "https://upload.wikimedia.org/wikipedia/commons/d/d0/Google_Play_Arrow_logo.svg", p: 5000 },
+                { n: "Amazon Gift ($10)", i: "https://upload.wikimedia.org/wikipedia/commons/4/4a/Amazon_icon.svg", p: 10000 },
+                { n: "Steam Card", i: "https://upload.wikimedia.org/wikipedia/commons/8/83/Steam_icon_logo.svg", p: 5000 }
+            ];
+            const wallets = [
+                { n: "Vodafone Cash", i: "https://upload.wikimedia.org/wikipedia/commons/a/af/Vodafone_Logo.svg", p: 3000 },
+                { n: "USDT (TRC20)", i: "https://cryptologos.cc/logos/tether-usdt-logo.png", p: 5000 },
+                { n: "PayPal Cash", i: "https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg", p: 5000 }
+            ];
+
+            const mapItem = item => `
+                <div class="card" onclick="openWD('${item.n}', ${item.p})">
+                    <img src="${item.i}">
+                    <h3>${item.n}</h3>
+                    <p>${item.p} Pts</p>
                 </div>
-            `).join('');
+            `;
+            document.getElementById('shop-games').innerHTML = games.map(mapItem).join('');
+            document.getElementById('shop-cards').innerHTML = cards.map(mapItem).join('');
+            document.getElementById('shop-wallets').innerHTML = wallets.map(mapItem).join('');
         }
 
-        function openWithdraw(name, desc) {
-            selectedMethod = name;
-            document.getElementById('modal-method-name').innerText = name;
-            document.getElementById('modal-method-desc').innerText = desc;
+        function openWD(name, price) {
+            selectedItem = { name, price };
+            document.getElementById('wd-title').innerText = "سحب " + name;
+            document.getElementById('wd-desc').innerText = `تحتاج إلى ${price} نقطة لإتمام العملية.`;
             document.getElementById('withdraw-modal').classList.remove('hidden');
         }
-        function closeWithdraw() { document.getElementById('withdraw-modal').classList.add('hidden'); }
+        function closeWD() { document.getElementById('withdraw-modal').classList.add('hidden'); }
 
-        function submitWithdraw() {
-            const addr = document.getElementById('withdraw-address').value;
-            const amt = parseInt(document.getElementById('withdraw-amount').value);
+        async function submitWD() {
+            const input = document.getElementById('wd-input').value;
+            if(!input) return alert("يرجى إدخال البيانات المطلوبة");
+            if(currentPoints < selectedItem.price) return alert("نقاطك غير كافية");
 
-            if(!addr || !amt) return alert("يرجى إكمال البيانات");
-            if(amt < 5000) return alert("الحد الأدنى 5000 نقطة");
-            if(amt > userPoints) return alert("نقاطك غير كافية");
-
-            db.collection('withdrawals').add({
-                uid: auth.currentUser.uid,
-                email: auth.currentUser.email,
-                method: selectedMethod,
-                address: addr,
-                amount: amt,
-                status: 'pending',
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                db.collection('users').doc(auth.currentUser.uid).update({
-                    points: userPoints - amt
+            try {
+                await db.collection('withdrawals').add({
+                    uid: auth.currentUser.uid,
+                    item: selectedItem.name,
+                    account: input,
+                    status: 'pending',
+                    date: new Date()
+                });
+                await db.collection('users').doc(auth.currentUser.uid).update({
+                    points: currentPoints - selectedItem.price
                 });
                 alert("تم إرسال طلب السحب بنجاح!");
-                closeWithdraw();
-            });
+                closeWD();
+            } catch(e) { alert(e.message); }
         }
     </script>
 </body>
