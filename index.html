@@ -3,199 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MrCash | اربح النقود</title>
+    <title>MrCash | اربح المال بسهولة</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <style>
         :root {
-            --bg-color: #0b0b0b;
-            --card-bg: #141414;
-            --primary-color: #00c853; /* أخضر مثل Earng */
-            --accent-color: #ff9800; /* برتقالي للسحب */
-            --text-color: #ffffff;
+            --bg-dark: #050505;
+            --card-bg: #111;
+            --primary: #00c853;
+            --accent: #ff9800;
+            --text: #ffffff;
+            --gray: #888;
         }
 
+        * { box-sizing: border-box; transition: 0.3s; }
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--text);
+            font-family: 'Cairo', sans-serif;
+            margin: 0; padding: 0; overflow-x: hidden;
         }
 
-        /* --- شريط المستخدمين الوهمي --- */
-        .live-feed {
+        /* --- شريط المستخدمين السريع جداً --- */
+        .fast-feed {
             background: #1a1a1a;
-            height: 40px;
+            height: 35px;
             overflow: hidden;
+            border-bottom: 1px solid #333;
             display: flex;
             align-items: center;
-            border-bottom: 1px solid #333;
         }
-
         #feed-container {
             display: flex;
             white-space: nowrap;
-            animation: scroll-left 20s linear infinite;
+            /* سرعة الحركة: 10 ثواني تجعله سريعاً جداً */
+            animation: scroll-fast 10s linear infinite;
         }
-
-        .feed-item {
-            margin: 0 20px;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .feed-item span { color: var(--primary-color); font-weight: bold; }
-
-        @keyframes scroll-left {
+        .feed-item { margin: 0 30px; font-size: 0.85rem; color: #ccc; }
+        .feed-item b { color: var(--primary); }
+        @keyframes scroll-fast {
             0% { transform: translateX(100%); }
             100% { transform: translateX(-100%); }
         }
 
         /* --- الهيدر --- */
-        header {
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--card-bg);
+        nav {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 10%; background: rgba(0,0,0,0.8);
+            position: sticky; top: 0; z-index: 1000;
+        }
+        .logo { font-size: 1.5rem; font-weight: bold; color: var(--primary); text-decoration: none; }
+        .nav-links a { color: white; text-decoration: none; margin: 0 15px; font-size: 0.9rem; }
+
+        /* --- قسم البطولة Hero --- */
+        .hero {
+            text-align: center; padding: 80px 20px;
+            background: radial-gradient(circle at center, #111 0%, #050505 100%);
+        }
+        .hero h1 { font-size: 3rem; margin-bottom: 10px; }
+        .hero p { color: var(--gray); font-size: 1.2rem; margin-bottom: 30px; }
+        .btn-main {
+            background: var(--primary); color: black; padding: 15px 40px;
+            border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 1.1rem;
         }
 
-        .logo { font-size: 1.5rem; font-weight: bold; color: var(--primary-color); }
-
-        /* --- قسم السحب (مثل الصورة) --- */
-        .section-title { padding: 20px; font-size: 1.2rem; }
-        
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
-            padding: 0 20px;
+        /* --- العروض المتاحة CPA --- */
+        .section { padding: 60px 10%; }
+        .section-title { text-align: center; margin-bottom: 40px; }
+        .cpa-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;
+        }
+        .cpa-card {
+            background: var(--card-bg); border-radius: 15px; padding: 20px;
+            border: 1px solid #222; position: relative;
+        }
+        .badge { background: red; font-size: 0.7rem; padding: 2px 8px; border-radius: 5px; position: absolute; top: 10px; right: 10px; }
+        .cpa-card h4 { margin: 10px 0; }
+        .reward-btn {
+            display: block; width: 100%; padding: 10px; background: var(--primary);
+            color: black; text-align: center; border-radius: 8px; text-decoration: none; margin-top: 15px;
         }
 
-        .card {
-            background: var(--card-bg);
-            border: 1px solid #222;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            transition: 0.3s;
-            cursor: pointer;
+        /* --- طرق السحب --- */
+        .payment-methods {
+            display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin-top: 30px;
         }
+        .pay-icon { background: #1a1a1a; padding: 15px 30px; border-radius: 10px; border: 1px solid #333; }
 
-        .card:hover { border-color: var(--primary-color); transform: translateY(-5px); }
-
-        .card img { width: 50px; height: 50px; object-fit: contain; margin-bottom: 10px; }
-
-        /* --- تسجيل الدخول بجوجل --- */
-        .login-btn-container {
-            display: flex;
-            justify-content: center;
-            padding: 50px;
+        /* --- الإحصائيات --- */
+        .stats {
+            display: flex; justify-content: space-around; background: var(--card-bg);
+            padding: 40px; margin: 40px 0; border-top: 2px solid var(--primary);
         }
+        .stat-item h2 { color: var(--primary); font-size: 2rem; margin: 0; }
 
-        /* --- الشركات (Offerwalls) --- */
-        .offer-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            padding: 20px;
-        }
+        /* --- الأسئلة الشائعة FAQ --- */
+        .faq-item { background: #111; margin-bottom: 10px; padding: 15px; border-radius: 10px; border-right: 4px solid var(--primary); }
+        .faq-item h4 { margin: 0 0 10px 0; }
+        .faq-item p { color: #888; margin: 0; }
 
-        .offer-card {
-            background: linear-gradient(145deg, #1a1a1a, #000);
-            border-radius: 15px;
-            padding: 15px;
-            text-align: center;
-            border: 1px solid #333;
-        }
+        /* --- فوتر --- */
+        footer { background: #000; padding: 40px 10%; text-align: center; border-top: 1px solid #222; }
     </style>
 </head>
 <body>
 
-    <div class="live-feed">
+    <div class="fast-feed">
         <div id="feed-container">
             </div>
     </div>
 
-    <header>
-        <div class="logo"><i class="fas fa-coins"></i> MRCASH</div>
-        <div id="g_id_onload"
-             data-client_id="YOUR_GOOGLE_CLIENT_ID"
-             data-callback="handleCredentialResponse">
+    <nav>
+        <a href="#" class="logo">MR<span style="color:white">CASH</span></a>
+        <div class="nav-links">
+            <a href="#features">المميزات</a>
+            <a href="#offers">العروض</a>
+            <a href="#faq">الأسئلة</a>
+            <div id="g_id_onload" data-client_id="YOUR_ID.apps.googleusercontent.com" data-callback="handleSignIn"></div>
+            <div class="g_id_signin" data-type="standard"></div>
         </div>
-        <div class="g_id_signin" data-type="standard"></div>
+    </nav>
+
+    <header class="hero">
+        <h1>اربح المال عبر الإنترنت <br> <span style="color:var(--primary)">بسهولة وأمان</span></h1>
+        <p>حول وقت فراغك إلى دولارات حقيقية من خلال إكمال العروض والاستبيانات البسيطة.</p>
+        <a href="#offers" class="btn-main">ابدأ الربح الآن مجاناً</a>
+        <div style="margin-top:20px; font-size:0.9rem; color:var(--gray)">✔ سحب فوري • ✔ متاح عالمياً • ✔ تسجيل مجاني</div>
     </header>
 
-    <main>
-        <h3 class="section-title">شركاء العروض</h3>
-        <div class="offer-grid">
-            <div class="offer-card">
-                <img src="https://via.placeholder.com/50/FFD700" alt="">
-                <h4>Lootably</h4>
-                <p>عروض ذهبية</p>
-                <span>⭐⭐⭐⭐⭐</span>
-            </div>
-            <div class="offer-card">
-                <img src="https://via.placeholder.com/50/00C853" alt="">
-                <h4>OfferToro</h4>
-                <p>تطبيقات وألعاب</p>
-                <span>⭐⭐⭐⭐⭐</span>
-            </div>
-        </div>
+    <section class="stats">
+        <div class="stat-item"><h2>120K+</h2><p>مستخدم نشط</p></div>
+        <div class="stat-item"><h2>$25.4K+</h2><p>إجمالي المدفوعات</p></div>
+        <div class="stat-item"><h2>190+</h2><p>دولة مدعومة</p></div>
+    </section>
 
-        <h3 class="section-title">طرق السحب المتوفرة</h3>
-        <div class="grid-container">
-            <div class="card">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa">
-                <div>Visa</div>
+    <section class="section" id="offers">
+        <h2 class="section-title">العروض المتاحة حالياً</h2>
+        <div class="cpa-grid">
+            <div class="cpa-card">
+                <span class="badge">🔥 HOT</span>
+                <h4>Super.com</h4>
+                <p>سحب عروض السفر • ⭐ 4.8</p>
+                <div style="font-size:0.8rem; color:var(--gray)">⏱ 7 دقيقة | 🌍 عالمي</div>
+                <div style="color:var(--primary); margin:10px 0; font-weight:bold">$8.00 Reward</div>
+                <a href="javascript:alert('سجل دخولك أولاً')" class="reward-btn">فتح العرض</a>
             </div>
-            <div class="card">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal">
-                <div>PayPal</div>
+            <div class="cpa-card">
+                <span class="badge">🔥 HOT</span>
+                <h4>Cash Cow</h4>
+                <p>استطلاعات رأي سريعة • ⭐ 4.2</p>
+                <div style="font-size:0.8rem; color:var(--gray)">⏱ 10 دقيقة | 🌍 عالمي</div>
+                <div style="color:var(--primary); margin:10px 0; font-weight:bold">$4.50 Reward</div>
+                <a href="#" class="reward-btn">فتح العرض</a>
             </div>
-            <div class="card">
-                <img src="https://w7.pngwing.com/pngs/410/505/png-transparent-pubg-mobile-playerunknown-s-battlegrounds-logo-game-pubg-mobile-logo-text-orange-logo.png" alt="PUBG">
-                <div>PUBG</div>
-            </div>
-            <div class="card">
-                <img src="https://upload.wikimedia.org/wikipedia/en/2/21/Free_Fire_Logo.png" alt="Free Fire">
-                <div>Free Fire</div>
+            <div class="cpa-card">
+                <span class="badge">🔥 HOT</span>
+                <h4>Cash Giraffe</h4>
+                <p>تحميل ألعاب • ⭐ 5.0</p>
+                <div style="font-size:0.8rem; color:var(--gray)">⏱ 5 دقيقة | 🌍 عالمي</div>
+                <div style="color:var(--primary); margin:10px 0; font-weight:bold">$6.20 Reward</div>
+                <a href="#" class="reward-btn">فتح العرض</a>
             </div>
         </div>
-    </main>
+    </section>
+
+    <section class="section" style="background:#080808">
+        <h2 class="section-title">طرق السحب السريعة</h2>
+        <div class="payment-methods">
+            <div class="pay-icon"><i class="fab fa-paypal"></i> PayPal</div>
+            <div class="pay-icon"><i class="fas fa-bitcoin"></i> Binance</div>
+            <div class="pay-icon"><i class="fas fa-wallet"></i> Cash</div>
+            <div class="pay-icon"><i class="fas fa-coins"></i> Litecoin</div>
+        </div>
+    </section>
+
+    <section class="section" id="faq">
+        <h2 class="section-title">الأسئلة الشائعة</h2>
+        <div class="faq-item">
+            <h4>هل موقع MrCash مجاني؟</h4>
+            <p>نعم، التسجيل والعمل على الموقع مجاني 100% ولا يتطلب أي بطاقة ائتمان.</p>
+        </div>
+        <div class="faq-item">
+            <h4>كم يستغرق السحب؟</h4>
+            <p>يتم معالجة معظم طلبات السحب بشكل فوري، وبعضها قد يستغرق 24 ساعة كحد أقصى.</p>
+        </div>
+    </section>
+
+    <footer>
+        <h3>MrCash</h3>
+        <p>منصة الربح الموثوقة منذ 2021.</p>
+        <div style="margin:20px 0; font-size:0.8rem; color:var(--gray)">
+            Terms | Cookies Policy | Legal
+        </div>
+        <p>© 2021–2026 MrCash. All rights reserved.</p>
+    </footer>
 
     <script>
-        // --- برمجة الشريط الوهمي ---
-        const names = ["أحمد", "سارة", "محمد", "ياسين", "عمر", "إيمان", "Sami", "User99"];
-        const amounts = [50, 120, 340, 60, 200, 15, 430];
-        const companies = ["Lootably", "AdGate", "CPALead", "OfferToro"];
+        // توليد بيانات الشريط السريع جداً
+        const users = ["Ahmed", "Sami", "Khaled", "Mona", "Yasser", "Fatima", "User99", "ProGamer"];
+        const amounts = [1.5, 4.0, 10.2, 5.0, 0.8, 20.0];
+        const container = document.getElementById('feed-container');
 
-        function createFeedItems() {
-            const container = document.getElementById('feed-container');
-            for (let i = 0; i < 20; i++) {
-                const name = names[Math.floor(Math.random() * names.length)];
-                const amount = amounts[Math.floor(Math.random() * amounts.length)];
-                const company = companies[Math.floor(Math.random() * companies.length)];
-                
-                const item = document.createElement('div');
-                item.className = 'feed-item';
-                item.innerHTML = `<i class="fas fa-user-circle"></i> ${name} ربح <span>${amount} نقطة</span> عبر ${company}`;
-                container.appendChild(item);
+        function generateFeed() {
+            for(let i=0; i<30; i++) {
+                const user = users[Math.floor(Math.random()*users.length)];
+                const amt = amounts[Math.floor(Math.random()*amounts.length)];
+                const div = document.createElement('div');
+                div.className = 'feed-item';
+                div.innerHTML = `<i class="fas fa-check-circle"></i> <b>${user}</b> سحب للتو <b>$${amt}</b> عبر PayPal`;
+                container.appendChild(div);
             }
         }
+        generateFeed();
 
-        // --- معالجة دخول جوجل ---
-        function handleCredentialResponse(response) {
-            console.log("Encoded JWT ID token: " + response.credential);
-            alert("تم تسجيل دخولك بنجاح في MrCash!");
-            // هنا ترسل الـ Token لسيفرك الخاص
+        function handleSignIn(response) {
+            console.log("تم تسجيل الدخول بنجاح");
+            window.location.href = "/dashboard.html"; // حوله لصفحة السحب التي صممناها سابقاً
         }
-
-        window.onload = createFeedItems;
     </script>
 </body>
 </html>
