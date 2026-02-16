@@ -71,15 +71,6 @@
         .item-card h3 { margin-bottom: 10px; font-weight: 700; }
         .price-tag { color: var(--gold); font-weight: 800; font-size: 1.2rem; margin-bottom: 15px; }
 
-        /* --- CENTERING MODALS (PRO DESIGN) --- */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.96); z-index: 5000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); }
-        .modal-box { background: var(--modal-bg); width: 100%; max-width: 460px; padding: 45px; border-radius: 40px; border: 1px solid var(--border); box-shadow: 0 30px 60px rgba(0,0,0,0.6); position: relative; text-align: center; }
-        
-        .form-group { text-align: left; margin-bottom: 22px; }
-        .form-group label { display: block; margin-bottom: 10px; font-size: 0.9rem; color: var(--text-gray); font-weight: 500; }
-        .input-field { width: 100%; padding: 18px; background: #000; border: 1.5px solid var(--border); color: #fff; border-radius: 18px; outline: none; font-size: 1rem; transition: 0.3s; }
-        .input-field:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(46, 204, 113, 0.1); }
-
         /* --- ACCOUNT SECTION --- */
         .profile-header { background: linear-gradient(135deg, #121212 0%, #080808 100%); padding: 50px; border-radius: 40px; border: 1px solid var(--border); max-width: 700px; margin: 0 auto; }
         .avatar-lg { width: 110px; height: 110px; border-radius: 50%; border: 4px solid var(--primary); margin-bottom: 20px; box-shadow: 0 0 20px var(--primary-glow); }
@@ -94,6 +85,14 @@
         .nav-link.active { color: var(--primary); }
         .nav-link i { display: block; font-size: 1.6rem; margin-bottom: 6px; }
         .nav-link span { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+
+        /* --- MODALS --- */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.96); z-index: 5000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); }
+        .modal-box { background: var(--modal-bg); width: 100%; max-width: 460px; padding: 45px; border-radius: 40px; border: 1px solid var(--border); box-shadow: 0 30px 60px rgba(0,0,0,0.6); position: relative; text-align: center; }
+        .form-group { text-align: left; margin-bottom: 22px; }
+        .form-group label { display: block; margin-bottom: 10px; font-size: 0.9rem; color: var(--text-gray); font-weight: 500; }
+        .input-field { width: 100%; padding: 18px; background: #000; border: 1.5px solid var(--border); color: #fff; border-radius: 18px; outline: none; font-size: 1rem; transition: 0.3s; }
+        .input-field:focus { border-color: var(--primary); }
 
         .hidden { display: none !important; }
         .error-msg { background: rgba(231, 76, 60, 0.15); color: var(--danger); padding: 15px; border-radius: 12px; font-size: 0.9rem; margin-bottom: 25px; border: 1px solid rgba(231, 76, 60, 0.3); display: none; }
@@ -125,34 +124,30 @@
                 <p>Join millions earning rewards by testing apps, completing surveys, and playing the latest mobile games. Instant payouts, zero fees.</p>
                 <button class="btn-main" style="padding: 20px 60px; font-size: 1.3rem;" onclick="openAuth('signup')">Get Started Now</button>
             </section>
-
             <div class="feature-grid">
-                <div class="feature-card"><i class="fas fa-money-check-alt"></i><h3>Real Rewards</h3><p>Cash out via PayPal, Crypto, or Gift Cards. No virtual items, just real value.</p></div>
-                <div class="feature-card"><i class="fas fa-bolt"></i><h3>Instant Credit</h3><p>Our offerwalls credit points instantly so you never have to wait for your work.</p></div>
-                <div class="feature-card"><i class="fas fa-shield-check"></i><h3>24/7 Support</h3><p>Our dedicated team is here to ensure your experience is smooth and profitable.</p></div>
+                <div class="feature-card"><i class="fas fa-money-check-alt"></i><h3>Real Rewards</h3><p>Cash out via PayPal, Crypto, or Gift Cards.</p></div>
+                <div class="feature-card"><i class="fas fa-bolt"></i><h3>Instant Credit</h3><p>Points are credited as soon as you finish tasks.</p></div>
+                <div class="feature-card"><i class="fas fa-shield-check"></i><h3>24/7 Support</h3><p>We're here to help you earn more.</p></div>
             </div>
         </div>
 
         <div id="view-earn" class="view">
             <h2 style="margin-bottom: 40px; font-size: 2.2rem; font-weight: 800;">Available <span>Offerwalls</span></h2>
-            <div class="content-grid" id="walls-list">
-                </div>
+            <div class="content-grid" id="walls-list"></div>
         </div>
 
         <div id="view-shop" class="view">
             <h2 style="margin-bottom: 40px; font-size: 2.2rem; font-weight: 800;">Redeem <span>Rewards</span></h2>
-            <div class="content-grid" id="shop-list">
-                </div>
+            <div class="content-grid" id="shop-list"></div>
         </div>
 
         <div id="view-account" class="view">
             <div class="profile-header">
                 <div style="text-align: center; margin-bottom: 40px;">
                     <img id="acc-big-img" src="" class="avatar-lg">
-                    <h2 id="acc-username-val" style="font-size: 2rem;">Username</h2>
+                    <h2 id="acc-username-val">Username</h2>
                     <p id="acc-email-val" style="color: var(--text-gray);"></p>
                 </div>
-                
                 <div style="background: #000; padding: 30px; border-radius: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 40px; border: 1px solid var(--border);">
                     <div style="text-align: center;">
                         <p style="font-size: 0.8rem; color: var(--text-gray); font-weight: 600;">WALLET BALANCE</p>
@@ -163,69 +158,41 @@
                         <p style="color: var(--primary); font-weight: 900; font-size: 1.8rem;">124</p>
                     </div>
                 </div>
-
                 <div style="display: grid; gap: 15px;">
-                    <button class="btn-main" style="background: #1a1a1a; color: #fff; border: 1px solid var(--border);" onclick="triggerUpdateModal('email')"><i class="fas fa-at"></i> Change Account Email</button>
-                    <button class="btn-main" style="background: #1a1a1a; color: #fff; border: 1px solid var(--border);" onclick="triggerUpdateModal('password')"><i class="fas fa-lock"></i> Change Secure Password</button>
-                    <button class="btn-main" style="background: var(--danger); color: #fff; width: 100%; justify-content: center;" onclick="auth.signOut()">Logout Securely</button>
+                    <button class="btn-main" style="background: #1a1a1a; color: #fff; border: 1px solid var(--border);" onclick="triggerUpdateModal('email')"><i class="fas fa-at"></i> Change Email</button>
+                    <button class="btn-main" style="background: #1a1a1a; color: #fff; border: 1px solid var(--border);" onclick="triggerUpdateModal('password')"><i class="fas fa-lock"></i> Change Password</button>
+                    <button class="btn-main" style="background: var(--danger); color: #fff; justify-content: center;" onclick="auth.signOut()">Logout</button>
                 </div>
             </div>
         </div>
-
     </main>
 
     <div id="modal-auth" class="modal-overlay hidden">
         <div class="modal-box">
-            <h2 id="auth-title-text" style="font-size: 2.2rem; margin-bottom: 30px; font-weight: 900;">Login</h2>
+            <h2 id="auth-title-text" style="font-size: 2.2rem; margin-bottom: 30px;">Login</h2>
             <div id="auth-error-display" class="error-msg"></div>
-
             <button class="btn-google" onclick="initGoogleAuth()">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google">
-                Continue with Google
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg"> Continue with Google
             </button>
-
-            <p style="color: #444; font-size: 0.8rem; font-weight: 800; margin-bottom: 25px;">OR USE EMAIL ADDRESS</p>
-
             <div id="signup-only-fields" class="hidden">
-                <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text" id="reg-name" class="input-field" placeholder="John Doe">
-                </div>
+                <div class="form-group"><label>Full Name</label><input type="text" id="reg-name" class="input-field" placeholder="Name"></div>
             </div>
-            
-            <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" id="auth-email" class="input-field" placeholder="name@example.com">
-            </div>
-            
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="auth-pass" class="input-field" placeholder="••••••••">
-            </div>
-
-            <button class="btn-main" style="width: 100%; justify-content: center; padding: 18px;" onclick="processAuth()">Continue</button>
-            
-            <p style="margin-top: 30px; font-size: 0.9rem; color: var(--text-gray);">
-                <span id="auth-switch-msg">Don't have an account yet?</span>
-                <span style="color: var(--primary); font-weight: 800; cursor: pointer;" onclick="toggleAuthMode()">Register here</span>
+            <div class="form-group"><label>Email</label><input type="email" id="auth-email" class="input-field" placeholder="Email"></div>
+            <div class="form-group"><label>Password</label><input type="password" id="auth-pass" class="input-field" placeholder="••••••••"></div>
+            <button class="btn-main" style="width: 100%; justify-content: center;" onclick="processAuth()">Continue</button>
+            <p style="margin-top: 25px; font-size: 0.9rem; color: var(--text-gray);">
+                <span id="auth-switch-msg">Need an account?</span> <span style="color: var(--primary); cursor: pointer;" onclick="toggleAuthMode()">Click here</span>
             </p>
-            <p style="margin-top: 15px; color: var(--primary); cursor: pointer; font-size: 0.85rem; font-weight: 700;" onclick="handleResetPass()">Forgot your password?</p>
-            <p style="margin-top: 25px; cursor: pointer; color: #555; font-size: 0.85rem;" onclick="closeModal('modal-auth')">Close Window</p>
+            <p style="margin-top: 15px; color: #555; cursor: pointer;" onclick="closeModal('modal-auth')">Close</p>
         </div>
     </div>
 
     <div id="modal-update" class="modal-overlay hidden">
         <div class="modal-box">
-            <h2 id="up-modal-title" style="font-size: 2rem; margin-bottom: 15px;">Update</h2>
-            <p id="up-modal-desc" style="color: var(--text-gray); margin-bottom: 30px; font-size: 0.95rem;"></p>
-            
-            <div class="form-group">
-                <label id="up-modal-label">New Value</label>
-                <input type="text" id="up-modal-input" class="input-field">
-            </div>
-
-            <button class="btn-main" style="width: 100%; justify-content: center;" onclick="executeUpdate()">Confirm & Save</button>
-            <p style="margin-top: 20px; cursor: pointer; color: var(--text-gray);" onclick="closeModal('modal-update')">Cancel</p>
+            <h2 id="up-modal-title">Update</h2>
+            <div class="form-group"><label id="up-modal-label">New Value</label><input type="text" id="up-modal-input" class="input-field"></div>
+            <button class="btn-main" style="width: 100%; justify-content: center;" onclick="executeUpdate()">Save Changes</button>
+            <p style="margin-top: 20px; cursor: pointer;" onclick="closeModal('modal-update')">Cancel</p>
         </div>
     </div>
 
@@ -236,7 +203,6 @@
     </div>
 
     <script>
-        /* --- FIREBASE INITIALIZATION --- */
         const firebaseConfig = {
             apiKey: "AIzaSyAd9KgnzExZ5RdrJVB_hpzxUvrqHiQ3jmU",
             authDomain: "mrcash-com.firebaseapp.com",
@@ -252,7 +218,6 @@
         let currentMode = 'login';
         let upType = '';
 
-        /* --- UI NAVIGATION --- */
         function showView(viewId, el) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById('view-' + viewId).classList.add('active');
@@ -267,14 +232,12 @@
             currentMode = mode;
             document.getElementById('auth-title-text').innerText = mode === 'login' ? 'Welcome Back' : 'Join MrCash';
             document.getElementById('signup-only-fields').classList.toggle('hidden', mode === 'login');
-            document.getElementById('auth-switch-msg').innerText = mode === 'login' ? "Don't have an account yet?" : "Already have an account?";
             document.getElementById('modal-auth').classList.remove('hidden');
         }
 
         function toggleAuthMode() { openAuth(currentMode === 'login' ? 'signup' : 'login'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-        /* --- AUTHENTICATION LOGIC --- */
         async function initGoogleAuth() {
             const provider = new firebase.auth.GoogleAuthProvider();
             try {
@@ -282,11 +245,9 @@
                 const user = result.user;
                 const userRef = db.collection('users').doc(user.uid);
                 const doc = await userRef.get();
-                if(!doc.exists) {
-                    await userRef.set({ username: user.displayName, email: user.email, points: 0, joined: new Date() });
-                }
+                if(!doc.exists) await userRef.set({ username: user.displayName, email: user.email, points: 0, joined: new Date() });
                 closeModal('modal-auth');
-            } catch(error) { showAuthError(error.message); }
+            } catch(error) { alert(error.message); }
         }
 
         async function processAuth() {
@@ -297,55 +258,11 @@
                 if(currentMode === 'signup') {
                     const res = await auth.createUserWithEmailAndPassword(email, pass);
                     await db.collection('users').doc(res.user.uid).set({ username: name, email: email, points: 0, joined: new Date() });
-                } else {
-                    await auth.signInWithEmailAndPassword(email, pass);
-                }
+                } else await auth.signInWithEmailAndPassword(email, pass);
                 closeModal('modal-auth');
-            } catch(error) { showAuthError(error.message); }
+            } catch(error) { alert(error.message); }
         }
 
-        function showAuthError(msg) {
-            const errBox = document.getElementById('auth-error-display');
-            errBox.innerText = msg;
-            errBox.style.display = 'block';
-        }
-
-        async function handleResetPass() {
-            const email = document.getElementById('auth-email').value;
-            if(!email) return alert("Please enter your email address first.");
-            await auth.sendPasswordResetEmail(email);
-            alert("A password reset link has been sent to your inbox!");
-        }
-
-        /* --- ACCOUNT UPDATES --- */
-        function triggerUpdateModal(type) {
-            upType = type;
-            document.getElementById('up-modal-title').innerText = type === 'email' ? 'Update Email' : 'Update Password';
-            document.getElementById('up-modal-desc').innerText = `Change your account ${type} securely. Please enter the new value.`;
-            document.getElementById('up-modal-label').innerText = `New ${type.charAt(0).toUpperCase() + type.slice(1)}`;
-            document.getElementById('up-modal-input').type = type === 'email' ? 'email' : 'password';
-            document.getElementById('up-modal-input').value = "";
-            document.getElementById('modal-update').classList.remove('hidden');
-        }
-
-        async function executeUpdate() {
-            const newVal = document.getElementById('up-modal-input').value;
-            if(!newVal) return;
-            try {
-                if(upType === 'email') {
-                    await auth.currentUser.updateEmail(newVal);
-                    await db.collection('users').doc(auth.currentUser.uid).update({ email: newVal });
-                } else {
-                    await auth.currentUser.updatePassword(newVal);
-                }
-                alert("Account updated successfully!");
-                closeModal('modal-update');
-            } catch(error) {
-                alert("Security Note: For sensitive changes, please logout and login again to verify your identity.");
-            }
-        }
-
-        /* --- CORE APP LOGIC --- */
         auth.onAuthStateChanged(user => {
             if(user) {
                 document.getElementById('visitor-nav').classList.add('hidden');
@@ -379,18 +296,22 @@
 
         function renderOfferwalls(uid) {
             const walls = [
+                // TASKWALL ADDED HERE
+                { 
+                    name: "TaskWall", 
+                    img: "http://publishers.taskwall.io//manager/uploads/favicon%20(1)%20(1).png", 
+                    url: "https://wall.taskwall.io/?app_id=e723adebdbab293255deefe5fe401b43&userid=" 
+                },
                 { name: "Offery Wall", img: "https://earng.net/storage/providers/x5v40jKJIoMPSNXMmiyTkK0eWIGXHPXSsAT2QRYb.png", url: "https://offery.io/offerwall/9tns2375b9z4y9lmz8pisa2e6vma05/" },
                 { name: "GemiAd", img: "https://earng.net/storage/providers/5t91vghsZuzh5mBa1uDlmfpjjMH05idKJtU8VjcB.png", url: "https://gemiwall.com/6977536ec6ceefce12a28330/" },
                 { name: "Adlexy", img: "https://monosuirveys.com/admin/images/file_00000000867471f49bc3179f6aa3f452.png", url: "https://adlexy.com/offerwall/h7mx23bis2zaib6apwwe73uv3gr92i/" },
-                { name: "Monlix", img: "https://monlix.com/img/logo.png", url: "https://monlix.com/offerwall/640673e4b/" },
-                { name: "Lootably", img: "https://lootably.com/logo.png", url: "https://wall.lootably.com/web/wall/12345/" },
-                { name: "AdGate Media", img: "https://adgatemedia.com/img/logo.png", url: "https://wall.adgaterewards.com/wf/12345/" }
+                { name: "Monlix", img: "https://monlix.com/img/logo.png", url: "https://monlix.com/offerwall/640673e4b/" }
             ];
             document.getElementById('walls-list').innerHTML = walls.map(w => `
                 <div class="item-card">
                     <img src="${w.img}">
                     <h3>${w.name}</h3>
-                    <p style="font-size: 0.85rem; color: var(--text-gray); margin-bottom: 20px;">Complete tasks and earn big.</p>
+                    <p style="font-size: 0.85rem; color: var(--text-gray); margin-bottom: 20px;">Complete offers and earn rewards.</p>
                     <button class="btn-main" style="width: 100%; justify-content: center;" onclick="window.open('${w.url}${uid}', '_blank')">Access Wall</button>
                 </div>
             `).join('');
@@ -399,20 +320,15 @@
         function renderShopItems() {
             const shop = [
                 { name: "Vodafone Cash", img: "https://upload.wikimedia.org/wikipedia/commons/a/af/Vodafone_Logo.svg", pts: 1500 },
-                { name: "Payeer Wallet", img: "https://www.payeer.com/favicon.ico", pts: 1000 },
                 { name: "PayPal Cash", img: "https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg", pts: 5000 },
-                { name: "USDT (TRC20)", img: "https://cryptologos.cc/logos/tether-usdt-logo.png", pts: 3000 },
-                { name: "PUBG Mobile UC", img: "https://upload.wikimedia.org/wikipedia/en/a/ad/Pubg_mobile_logo.png", pts: 1800 },
-                { name: "Free Fire Diamonds", img: "https://upload.wikimedia.org/wikipedia/en/c/c2/Garena_Free_Fire_logo.png", pts: 1200 },
-                { name: "Amazon Gift Card", img: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg", pts: 5000 },
-                { name: "Google Play Card", img: "https://upload.wikimedia.org/wikipedia/commons/d/d0/Google_Play_Arrow_logo.svg", pts: 2500 }
+                { name: "PUBG Mobile UC", img: "https://upload.wikimedia.org/wikipedia/en/a/ad/Pubg_mobile_logo.png", pts: 1800 }
             ];
             document.getElementById('shop-list').innerHTML = shop.map(s => `
                 <div class="item-card">
                     <img src="${s.img}">
                     <h3>${s.name}</h3>
                     <p class="price-tag">${s.pts} PTS</p>
-                    <button class="btn-main" style="width: 100%; justify-content: center; background: #1a1a1a; color: #fff;" onclick="alert('Withdrawal request initiated!')">Redeem Now</button>
+                    <button class="btn-main" style="width: 100%; justify-content: center; background: #1a1a1a; color: #fff;">Redeem Now</button>
                 </div>
             `).join('');
         }
