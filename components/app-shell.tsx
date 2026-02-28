@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { LoginScreen } from "./login-screen";
+import { LandingPage } from "./landing-page";
 import { AppHeader } from "./app-header";
 import { LiveTicker } from "./live-ticker";
 import { BalanceNotifier } from "./balance-notifier";
@@ -22,7 +22,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return <LoginScreen />;
+    return <LandingPage />;
   }
 
   return (

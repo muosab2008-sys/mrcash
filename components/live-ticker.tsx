@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { db, collection, query, orderBy, limit, onSnapshot } from "@/lib/firebase";
-import { DollarSign } from "lucide-react";
+import { Zap } from "lucide-react";
 
 interface FeedItem {
   id: string;
@@ -44,7 +44,7 @@ export function LiveTicker() {
     <div className="bg-secondary/50 border-b border-border overflow-hidden">
       <div className="flex items-center">
         <div className="flex-shrink-0 bg-primary/10 px-3 py-1.5 flex items-center gap-1.5 border-r border-border z-10">
-          <DollarSign className="h-3.5 w-3.5 text-primary" />
+          <Zap className="h-3.5 w-3.5 text-primary" />
           <span className="text-xs font-semibold text-primary whitespace-nowrap">LIVE</span>
         </div>
         <div className="overflow-hidden flex-1">

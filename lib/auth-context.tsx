@@ -10,8 +10,9 @@ import {
 import {
   auth,
   db,
-  googleProvider,
-  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
   onAuthStateChanged,
   signOut as firebaseSignOut,
   doc,
@@ -25,7 +26,8 @@ interface AuthContextType {
   user: User | null;
   balance: number;
   loading: boolean;
-  signInWithGoogle: () => Promise<void>;
+  signUp: (email: string, password: string, name: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -33,7 +35,8 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   balance: 0,
   loading: true,
-  signInWithGoogle: async () => {},
+  signUp: async () => {},
+  signIn: async () => {},
   logout: async () => {},
 });
 
@@ -46,7 +49,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
-        // Create user doc if it doesn't exist
         const userRef = doc(db, "users", firebaseUser.uid);
         const userDoc = await getDoc(userRef);
         if (!userDoc.exists()) {
@@ -67,7 +69,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  // Real-time balance listener
   useEffect(() => {
     if (!user) return;
     const userRef = doc(db, "users", user.uid);
@@ -75,7 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (snapshot.exists()) {
         const data = snapshot.data();
         const newBalance = data.balance || 0;
-        // Check if balance increased for notification
         if (newBalance > balance && balance > 0) {
           window.dispatchEvent(
             new CustomEvent("balance-increased", {
@@ -89,8 +89,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, [user, balance]);
 
-  const signInWithGoogle = async () => {
-    await signInWithPopup(auth, googleProvider);
+  const signUp = async (email: string, password: string, name: string) => {
+    const credential = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(credential.user, { displayName: name });
+  };
+
+  const signIn = async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email, password);
   };
 
   const logout = async () => {
@@ -99,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, balance, loading, signInWithGoogle, logout }}
+      value={{ user, balance, loading, signUp, signIn, logout }}
     >
       {children}
     </AuthContext.Provider>

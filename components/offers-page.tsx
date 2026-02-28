@@ -7,50 +7,134 @@ import { ArrowLeft, ExternalLink, X, Star, Shield } from "lucide-react";
 interface OfferWall {
   id: string;
   name: string;
+  displayName: string;
   description: string;
   getUrl: (uid: string) => string;
-  tag: string;
+  badge: string;
+  badgeColor: string;
+  stars: number;
 }
 
 const offerWalls: OfferWall[] = [
   {
-    id: "adlexy",
-    name: "Adlexy",
-    description: "Complete surveys, watch videos, and install apps to earn points.",
-    getUrl: (uid) =>
-      `https://adlexy.com/offerwall/h7mx23bis2zaib6apwwe73uv3gr92i/${uid}`,
-    tag: "Popular",
+    id: "playtimeads",
+    name: "PlayTimeAds",
+    displayName: "playtimeads",
+    description: "Watch videos and play games to earn points quickly.",
+    getUrl: (uid) => `https://wall.playtimeads.com/?app_id=YOUR_ID&userid=${uid}`,
+    badge: "Trendify",
+    badgeColor: "bg-amber-500",
+    stars: 5,
   },
   {
-    id: "taskwall",
-    name: "TaskWall",
-    description: "High-paying tasks and offers from top advertisers.",
-    getUrl: (uid) =>
-      `https://wall.taskwall.io/?app_id=e723adebdbab293255deefe5fe401b43&userid=${uid}`,
-    tag: "High Pay",
+    id: "adtowall",
+    name: "adtowall",
+    displayName: "adtowall",
+    description: "Complete surveys and tasks from top advertisers.",
+    getUrl: (uid) => `https://adtowall.com/offerwall/?userid=${uid}`,
+    badge: "TrueLeads",
+    badgeColor: "bg-emerald-500",
+    stars: 5,
   },
   {
-    id: "bagirawall",
-    name: "BagiraWall",
-    description: "Wide variety of offers with fast crediting system.",
-    getUrl: (uid) => `https://bagirawall.com/offerwall/7/${uid}`,
-    tag: "Fast Credit",
+    id: "gemiad",
+    name: "GemiAd",
+    displayName: "gemiad",
+    description: "Global offers available in multiple regions.",
+    getUrl: (uid) => `https://wall.gemiad.com/view/6977536ec6ceefce12a28330?userid=${uid}`,
+    badge: "TrustOffers",
+    badgeColor: "bg-orange-500",
+    stars: 4,
   },
   {
     id: "offery",
     name: "Offery",
+    displayName: "offery",
     description: "Premium offers with high conversion rates and bonuses.",
-    getUrl: (uid) =>
-      `https://offery.xyz/offerwall/?app_key=YOUR_APP_KEY&subId=${uid}`,
-    tag: "Bonus",
+    getUrl: (uid) => `https://offery.xyz/offerwall/?app_key=YOUR_APP_KEY&subId=${uid}`,
+    badge: "2X",
+    badgeColor: "bg-red-500",
+    stars: 5,
   },
   {
-    id: "gemiad",
-    name: "Gemiad",
-    description: "Global offers available in multiple regions and languages.",
-    getUrl: (uid) =>
-      `https://wall.gemiad.com/view/6977536ec6ceefce12a28330?userid=${uid}`,
-    tag: "Global",
+    id: "lootably",
+    name: "lootably",
+    displayName: "lootably",
+    description: "Wide variety of high-paying tasks and mobile offers.",
+    getUrl: (uid) => `https://wall.lootably.com/?appId=YOUR_ID&userId=${uid}`,
+    badge: "PromoWall",
+    badgeColor: "bg-green-400",
+    stars: 4,
+  },
+  {
+    id: "pixylabs",
+    name: "Pixy",
+    displayName: "pixylabs",
+    description: "Discover new apps and earn rewards for each install.",
+    getUrl: (uid) => `https://pixylabs.com/wall/?id=${uid}`,
+    badge: "PureReward",
+    badgeColor: "bg-emerald-500",
+    stars: 3,
+  },
+  {
+    id: "tplayad",
+    name: "Tplayad",
+    displayName: "tplayad",
+    description: "High-quality ad offers with fast crediting.",
+    getUrl: (uid) => `https://tplayad.com/wall/?user=${uid}`,
+    badge: "Trendify",
+    badgeColor: "bg-amber-500",
+    stars: 5,
+  },
+  {
+    id: "adbreak",
+    name: "AdBreak Media",
+    displayName: "adbreak",
+    description: "Trusted media network with reliable payouts.",
+    getUrl: (uid) => `https://adbreak.com/wall/?uid=${uid}`,
+    badge: "RewardX",
+    badgeColor: "bg-purple-500",
+    stars: 4,
+  },
+  {
+    id: "notik",
+    name: "NOTIK",
+    displayName: "notik",
+    description: "Simple tasks with quick rewards crediting.",
+    getUrl: (uid) => `https://notik.me/wall/?user=${uid}`,
+    badge: "TrustOffers",
+    badgeColor: "bg-orange-500",
+    stars: 3,
+  },
+  {
+    id: "taskwall",
+    name: "TASKWALL",
+    displayName: "taskwall",
+    description: "High-paying tasks and offers from top advertisers.",
+    getUrl: (uid) => `https://wall.taskwall.io/?app_id=e723adebdbab293255deefe5fe401b43&userid=${uid}`,
+    badge: "Trendify",
+    badgeColor: "bg-amber-500",
+    stars: 5,
+  },
+  {
+    id: "vortexwall",
+    name: "MobiVortex",
+    displayName: "vortexwall",
+    description: "Mobile-focused offers with great conversion rates.",
+    getUrl: (uid) => `https://mobivortex.com/wall/?uid=${uid}`,
+    badge: "PureReward",
+    badgeColor: "bg-emerald-500",
+    stars: 4,
+  },
+  {
+    id: "upwall",
+    name: "UpWall",
+    displayName: "upwall",
+    description: "Rising offer wall with competitive payouts.",
+    getUrl: (uid) => `https://upwall.io/?user=${uid}`,
+    badge: "RewardNova",
+    badgeColor: "bg-yellow-500",
+    stars: 4,
   },
 ];
 
@@ -63,7 +147,6 @@ export function OffersPage() {
   if (activeWall) {
     return (
       <div className="flex flex-col h-[calc(100vh-96px)]">
-        {/* Iframe header */}
         <div className="bg-card border-b border-border px-4 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             <button
@@ -102,7 +185,6 @@ export function OffersPage() {
           </div>
         </div>
 
-        {/* Iframe */}
         <iframe
           src={activeWall.getUrl(user.uid)}
           title={`${activeWall.name} Offer Wall`}
@@ -126,9 +208,7 @@ export function OffersPage() {
       <div className="bg-card border border-primary/20 rounded-xl p-4 flex items-start gap-3">
         <Shield className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm text-foreground font-medium">
-            How it works
-          </p>
+          <p className="text-sm text-foreground font-medium">How it works</p>
           <p className="text-xs text-muted-foreground mt-0.5">
             Select an offer wall below, complete the available tasks (surveys,
             app installs, etc.), and your points will be credited to your
@@ -137,29 +217,33 @@ export function OffersPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {offerWalls.map((wall) => (
           <button
             key={wall.id}
             onClick={() => setActiveWall(wall)}
-            className="text-left bg-card border border-border rounded-xl p-5 hover:border-primary/30 transition-all group"
+            className="offer-card-glow text-center bg-card border border-border rounded-xl p-4 hover:border-primary/30 transition-all group flex flex-col items-center gap-2"
           >
-            <div className="flex items-start justify-between mb-3">
-              <div className="h-11 w-11 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Star className="h-5 w-5 text-primary" />
-              </div>
-              <span className="text-[10px] font-semibold uppercase tracking-wider bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                {wall.tag}
+            <span
+              className={`text-[10px] font-bold uppercase tracking-wider text-foreground px-2.5 py-0.5 rounded-full ${wall.badgeColor}`}
+            >
+              {wall.badge}
+            </span>
+            <div className="h-10 flex items-center justify-center">
+              <span className="text-base font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
+                {wall.name}
               </span>
             </div>
-            <h3 className="font-semibold text-foreground mb-1">
-              {wall.name}
-            </h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {wall.description}
-            </p>
-            <div className="mt-4 flex items-center gap-1 text-xs font-medium text-primary group-hover:underline">
-              Open offers <ExternalLink className="h-3 w-3" />
+            <p className="text-xs text-muted-foreground">{wall.displayName}</p>
+            <div className="flex items-center gap-0.5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  className={`h-3.5 w-3.5 ${
+                    i < wall.stars ? "star-filled fill-current" : "star-empty"
+                  }`}
+                />
+              ))}
             </div>
           </button>
         ))}

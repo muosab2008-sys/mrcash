@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { Coins, LogOut, Menu, X } from "lucide-react";
+import { DollarSign, LogOut, Menu, X, User } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -19,16 +19,18 @@ export function AppHeader() {
 
   if (!user) return null;
 
+  const initial = (user.displayName || user.email || "U").charAt(0).toUpperCase();
+
   return (
     <header className="bg-card border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">M</span>
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center neon-glow">
+              <DollarSign className="h-4 w-4 text-primary-foreground" />
             </div>
             <span className="font-bold text-lg text-foreground hidden sm:block">
-              Mr Cash
+              Mr <span className="text-primary">Cash</span>
             </span>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
@@ -50,19 +52,13 @@ export function AppHeader() {
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-full px-3 py-1">
-            <Coins className="h-4 w-4 text-primary" />
+            <DollarSign className="h-3.5 w-3.5 text-primary" />
             <span className="text-sm font-bold text-primary">{balance.toLocaleString()}</span>
           </div>
 
-          {user.photoURL && (
-            <img
-              src={user.photoURL}
-              alt={user.displayName || "User"}
-              className="h-7 w-7 rounded-full border border-border"
-              crossOrigin="anonymous"
-              referrerPolicy="no-referrer"
-            />
-          )}
+          <div className="h-7 w-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+            <span className="text-xs font-bold text-primary">{initial}</span>
+          </div>
 
           <button
             onClick={logout}
@@ -85,6 +81,12 @@ export function AppHeader() {
       {/* Mobile menu */}
       {menuOpen && (
         <div className="md:hidden border-t border-border bg-card px-4 py-3 space-y-1">
+          <div className="flex items-center gap-2 px-3 py-2 mb-2 border-b border-border pb-3">
+            <User className="h-4 w-4 text-primary" />
+            <span className="text-sm text-foreground font-medium truncate">
+              {user.displayName || user.email}
+            </span>
+          </div>
           {navLinks.map((link) => (
             <Link
               key={link.href}

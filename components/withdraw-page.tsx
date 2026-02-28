@@ -87,8 +87,8 @@ export function WithdrawPage() {
   if (success) {
     return (
       <div className="max-w-lg mx-auto px-4 py-16 text-center space-y-4">
-        <div className="mx-auto h-16 w-16 rounded-full bg-accent/10 flex items-center justify-center">
-          <CheckCircle className="h-8 w-8 text-accent" />
+        <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+          <CheckCircle className="h-8 w-8 text-primary" />
         </div>
         <h2 className="text-xl font-bold text-foreground">Request Submitted</h2>
         <p className="text-sm text-muted-foreground">
@@ -128,7 +128,7 @@ export function WithdrawPage() {
         </div>
         <div className="text-right">
           <p className="text-xs text-muted-foreground">Cash Value</p>
-          <p className="text-lg font-bold text-accent">
+          <p className="text-lg font-bold text-primary">
             {"$"}{(balance / 100).toFixed(2)}
           </p>
         </div>
@@ -216,7 +216,7 @@ export function WithdrawPage() {
         {numAmount > 0 && (
           <p className="text-xs text-muted-foreground">
             {"Cash value: "}
-            <span className="text-accent font-medium">
+            <span className="text-primary font-medium">
               {"$"}{(numAmount / 100).toFixed(2)}
             </span>
           </p>
