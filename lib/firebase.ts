@@ -3,6 +3,9 @@ import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  GoogleAuthProvider,
+  signInWithPopup,
   updateProfile,
   onAuthStateChanged,
   signOut,
@@ -37,12 +40,18 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+const googleProvider = new GoogleAuthProvider();
+
 export {
   app,
   auth,
   db,
+  googleProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  GoogleAuthProvider,
+  signInWithPopup,
   updateProfile,
   onAuthStateChanged,
   signOut,
