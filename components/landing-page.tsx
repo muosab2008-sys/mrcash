@@ -33,21 +33,21 @@ const features = [
   },
   {
     icon: <Users className="h-6 w-6" />,
-    title: "15+ Offer Walls",
-    desc: "Access multiple offer walls from top global advertisers.",
+    title: "5+ Offer Walls",
+    desc: "Access 5 offer walls from top global advertisers.",
   },
 ];
 
 const stats = [
   { value: "$125K+", label: "Total Paid Out" },
   { value: "50K+", label: "Active Users" },
-  { value: "15+", label: "Offer Walls" },
+  { value: "5+", label: "Offer Walls" },
   { value: "24h", label: "Withdrawal Time" },
 ];
 
 const steps = [
   { num: "01", title: "Create Account", desc: "Sign up with your email in seconds." },
-  { num: "02", title: "Complete Offers", desc: "Choose from 15+ offer walls and start earning." },
+  { num: "02", title: "Complete Offers", desc: "Choose from 5+ offer walls and start earning." },
   { num: "03", title: "Withdraw Cash", desc: "Cash out your points through multiple methods." },
 ];
 
@@ -155,25 +155,18 @@ export function LandingPage() {
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-bold text-foreground text-balance">
-              15+ <span className="text-primary">Offer Walls</span> Available
+              5+ <span className="text-primary">Offer Walls</span> Available
             </h2>
             <p className="text-muted-foreground mt-2 max-w-md mx-auto text-pretty">
               Choose from top networks and start completing offers right away
             </p>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            <OfferCard name="PlayTimeAds" badge="Trendify" badgeColor="bg-amber-500" stars={5} />
-            <OfferCard name="adtowall" badge="TrueLeads" badgeColor="bg-emerald-500" stars={5} />
-            <OfferCard name="gemiad" badge="TrustOffers" badgeColor="bg-orange-500" stars={4} />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <OfferCard name="Adlexy" badge="Trendify" badgeColor="bg-amber-500" stars={5} />
+            <OfferCard name="TaskWall" badge="TrueLeads" badgeColor="bg-emerald-500" stars={5} />
+            <OfferCard name="BagiraWall" badge="TrustOffers" badgeColor="bg-orange-500" stars={4} />
             <OfferCard name="Offery" badge="2X" badgeColor="bg-red-500" stars={5} />
-            <OfferCard name="lootably" badge="PromoWall" badgeColor="bg-green-400" stars={4} />
-            <OfferCard name="pixylabs" badge="PureReward" badgeColor="bg-emerald-500" stars={3} />
-            <OfferCard name="tplayad" badge="Trendify" badgeColor="bg-amber-500" stars={5} />
-            <OfferCard name="adbreak" badge="RewardX" badgeColor="bg-purple-500" stars={4} />
-            <OfferCard name="notik" badge="TrustOffers" badgeColor="bg-orange-500" stars={3} />
-            <OfferCard name="taskwall" badge="Trendify" badgeColor="bg-amber-500" stars={5} />
-            <OfferCard name="vortexwall" badge="PureReward" badgeColor="bg-emerald-500" stars={4} />
-            <OfferCard name="upwall" badge="RewardNova" badgeColor="bg-yellow-500" stars={4} />
+            <OfferCard name="GemiAd" badge="PureReward" badgeColor="bg-emerald-500" stars={4} />
           </div>
         </div>
       </section>

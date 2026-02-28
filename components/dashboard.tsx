@@ -13,12 +13,11 @@ import {
 import Link from "next/link";
 
 const offerCompanies = [
-  { name: "PlayTimeAds", displayName: "playtimeads", badge: "Trendify", badgeColor: "bg-amber-500", stars: 5 },
-  { name: "adtowall", displayName: "adtowall", badge: "TrueLeads", badgeColor: "bg-emerald-500", stars: 5 },
-  { name: "GemiAd", displayName: "gemiad", badge: "TrustOffers", badgeColor: "bg-orange-500", stars: 4 },
+  { name: "Adlexy", displayName: "adlexy", badge: "Trendify", badgeColor: "bg-amber-500", stars: 5 },
+  { name: "TaskWall", displayName: "taskwall", badge: "TrueLeads", badgeColor: "bg-emerald-500", stars: 5 },
+  { name: "BagiraWall", displayName: "bagirawall", badge: "TrustOffers", badgeColor: "bg-orange-500", stars: 4 },
   { name: "Offery", displayName: "offery", badge: "2X", badgeColor: "bg-red-500", stars: 5 },
-  { name: "lootably", displayName: "lootably", badge: "PromoWall", badgeColor: "bg-green-400", stars: 4 },
-  { name: "TASKWALL", displayName: "taskwall", badge: "Trendify", badgeColor: "bg-amber-500", stars: 5 },
+  { name: "GemiAd", displayName: "gemiad", badge: "PureReward", badgeColor: "bg-emerald-500", stars: 4 },
 ];
 
 export function Dashboard() {
@@ -83,7 +82,7 @@ export function Dashboard() {
               <div>
                 <h3 className="font-semibold text-foreground">Browse Offers</h3>
                 <p className="text-xs text-muted-foreground">
-                  12+ offer walls available
+                  5 offer walls available
                 </p>
               </div>
             </div>
@@ -127,7 +126,7 @@ export function Dashboard() {
             View all <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {offerCompanies.map((company) => (
             <Link
               href="/offers"
