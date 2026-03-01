@@ -55,7 +55,7 @@ const offerWalls: OfferWall[] = [
     displayName: "offery",
     description: "Premium offers with high conversion rates and bonuses.",
     getUrl: (uid) =>
-      `https://offery.xyz/offerwall/?app_key=YOUR_APP_KEY&subId=${uid}`,
+      `https://offery.xyz/offerwall/?app_key=rvzyjt0dpo0ogh392veso95xr1ok01=${uid}`,
     badge: "2X",
     badgeColor: "bg-red-500",
     stars: 5,
