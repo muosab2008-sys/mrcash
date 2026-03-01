@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export', // ضروري جداً للنشر على GitHub Pages
-  basePath: '/mrcash', // يجب أن يطابق اسم المستودع تماماً
+  output: 'export', 
+  basePath: '/mrcash', 
   images: { unoptimized: true },
 };
 
