@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export', // ضروري لإنشاء ملفات HTML ثابتة
-  basePath: '/mrcash', // يجب أن يطابق اسم المستودع
-  images: { unoptimized: true }, // GitHub Pages لا يدعم تحسين الصور تلقائياً
+  output: 'export', // ضروري جداً للنشر على GitHub Pages
+  basePath: '/mrcash', // يجب أن يطابق اسم المستودع تماماً
+  images: { unoptimized: true },
 };
 
 export default nextConfig;
