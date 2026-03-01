@@ -55,7 +55,7 @@ const offerWalls: OfferWall[] = [
     displayName: "offery",
     description: "Premium offers with high conversion rates and bonuses.",
     getUrl: (uid) =>
-      `https://offery.xyz/offerwall/?app_key=rvzyjt0dpo0ogh392veso95xr1ok01=${uid}`,
+      `https://https://offery.io/offerwall/?app_key=rvzyjt0dpo0ogh392veso95xr1ok01=${uid}`,
     badge: "2X",
     badgeColor: "bg-red-500",
     stars: 5,
@@ -66,7 +66,7 @@ const offerWalls: OfferWall[] = [
     displayName: "gemiad",
     description: "Global offers available in multiple regions with great payouts.",
     getUrl: (uid) =>
-      `https://wall.gemiad.com/view/6977536ec6ceefce12a28330?userid=${uid}`,
+      `https://gemiadwall.com/view/6977536ec6ceefce12a28330?userid=${uid}`,
     badge: "PureReward",
     badgeColor: "bg-emerald-500",
     stars: 4,
