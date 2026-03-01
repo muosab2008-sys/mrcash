@@ -49,13 +49,14 @@ const offerWalls: OfferWall[] = [
     badgeColor: "bg-orange-500",
     stars: 4,
   },
-  {
+ {
     id: "offery",
     name: "Offery",
     displayName: "offery",
     description: "Premium offers with high conversion rates and bonuses.",
+    // تم تصحيح الرابط ليطابق إعدادات Offery الرسمية
     getUrl: (uid) =>
-      `https://offery.io/offerwall/?app_key=24eb3f5a11db38b0455ff4570fa831ff=${uid}`,
+      `https://offery.io/offerwall/rvzyjt0dpo0ogh392veso95xr1ok01/${uid}`, 
     badge: "2X",
     badgeColor: "bg-red-500",
     stars: 5,
