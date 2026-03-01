@@ -54,8 +54,9 @@ const offerWalls: OfferWall[] = [
     name: "Offery",
     displayName: "offery",
     description: "Premium offers with high conversion rates and bonuses.",
+    // تم حذف https:// المتكررة وتصحيح رابط المتغير
     getUrl: (uid) =>
-      `https://offery.io/offerwall/?app_key=rvzyjt0dpo0ogh392veso95xr1ok01=${uid}`,
+      `https://offery.io/offerwall/?app_key=rvzyjt0dpo0ogh392veso95xr1ok01&user_id=${uid}`, 
     badge: "2X",
     badgeColor: "bg-red-500",
     stars: 5,
@@ -70,7 +71,7 @@ const offerWalls: OfferWall[] = [
     badge: "PureReward",
     badgeColor: "bg-emerald-500",
     stars: 4,
-  },
+  }
 ];
 
 export function OffersPage() {
