@@ -17,6 +17,18 @@ interface OfferWall {
 
 const offerWalls: OfferWall[] = [
   {
+    id: "revtoo",
+    name: "Revtoo",
+    displayName: "revtoo",
+    description: "Exclusive high-paying tasks and instant reward offers.",
+    // تم ربطها بمفتاحك الحقيقي من شركة Revtoo
+    getUrl: (uid) =>
+      `https://revtoo.com/offerwall/mhvkxh5tm0j7710rcp7g4cvf6irlal/${uid}`,
+    badge: "Hot",
+    badgeColor: "bg-purple-600",
+    stars: 5,
+  },
+  {
     id: "adlexy",
     name: "Adlexy",
     displayName: "adlexy",
@@ -49,24 +61,22 @@ const offerWalls: OfferWall[] = [
     badgeColor: "bg-orange-500",
     stars: 4,
   },
- {
+  {
     id: "offery",
     name: "Offery",
     displayName: "offery",
     description: "Premium offers with high conversion rates and bonuses.",
-    // تم تصحيح الرابط ليطابق إعدادات Offery الرسمية
     getUrl: (uid) =>
       `https://offery.io/offerwall/rvzyjt0dpo0ogh392veso95xr1ok01/${uid}`, 
     badge: "2X",
     badgeColor: "bg-red-500",
     stars: 5,
   },
- {
+  {
     id: "gemiad",
     name: "GemiAd",
     displayName: "gemiad",
     description: "Global offers available in multiple regions with great payouts.",
-    // تم التعديل ليطابق الخيار رقم 1 الموصى به في الوثائق
     getUrl: (uid) =>
       `https://gemiwall.com/6977536ec6ceefce12a28330/${uid}`, 
     badge: "PureReward",
