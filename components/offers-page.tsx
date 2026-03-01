@@ -54,9 +54,8 @@ const offerWalls: OfferWall[] = [
     name: "Offery",
     displayName: "offery",
     description: "Premium offers with high conversion rates and bonuses.",
-    // تم حذف https:// المتكررة وتصحيح رابط المتغير
     getUrl: (uid) =>
-      `https://offery.io/offerwall/rvzyjt0dpo0ogh392veso95xr1ok01 
+      `https://offery.xyz/offerwall/?app_key=YOUR_APP_KEY&subId=${uid}`,
     badge: "2X",
     badgeColor: "bg-red-500",
     stars: 5,
@@ -67,11 +66,11 @@ const offerWalls: OfferWall[] = [
     displayName: "gemiad",
     description: "Global offers available in multiple regions with great payouts.",
     getUrl: (uid) =>
-      `https://gemiadwall.com/6977536ec6ceefce12a28330?userid=${uid}`,
+      `https://wall.gemiad.com/view/6977536ec6ceefce12a28330?userid=${uid}`,
     badge: "PureReward",
     badgeColor: "bg-emerald-500",
     stars: 4,
-  }
+  },
 ];
 
 export function OffersPage() {
