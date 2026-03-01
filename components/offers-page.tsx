@@ -17,11 +17,22 @@ interface OfferWall {
 
 const offerWalls: OfferWall[] = [
   {
+    id: "mylead",
+    name: "Reward-Me",
+    displayName: "mylead",
+    description: "Global tasks and premium surveys from the MyLead network.",
+    // تم ربطها برابط الـ iframe الخاص بك مع تمرير المعرف الفريد
+    getUrl: (uid) =>
+      `https://reward-me.eu/a1efb724-15b2-11f1-8a24-129a1c289511?player_id=${uid}`,
+    badge: "New",
+    badgeColor: "bg-blue-600",
+    stars: 5,
+  },
+  {
     id: "revtoo",
     name: "Revtoo",
     displayName: "revtoo",
     description: "Exclusive high-paying tasks and instant reward offers.",
-    // تم ربطها بمفتاحك الحقيقي من شركة Revtoo
     getUrl: (uid) =>
       `https://revtoo.com/offerwall/mhvkxh5tm0j7710rcp7g4cvf6irlal/${uid}`,
     badge: "Hot",
