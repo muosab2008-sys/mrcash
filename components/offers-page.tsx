@@ -17,8 +17,8 @@ interface OfferWall {
 
 const offerWalls: OfferWall[] = [
   {
-    id: "mylead",
-    name: "Reward-Me",
+    id: "MyLead",
+    name: "mylead",
     displayName: "mylead",
     description: "Global tasks and premium surveys from the MyLead network.",
     // تم ربطها برابط الـ iframe الخاص بك مع تمرير المعرف الفريد
