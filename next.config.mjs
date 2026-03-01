@@ -1,11 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  images: {
-    unoptimized: true,
-  },
-}
+  output: 'export', // ضروري لإنشاء ملفات HTML ثابتة
+  basePath: '/mrcash', // يجب أن يطابق اسم المستودع
+  images: { unoptimized: true }, // GitHub Pages لا يدعم تحسين الصور تلقائياً
+};
 
-export default nextConfig
+export default nextConfig;
