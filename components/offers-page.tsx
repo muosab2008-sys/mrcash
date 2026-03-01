@@ -61,13 +61,14 @@ const offerWalls: OfferWall[] = [
     badgeColor: "bg-red-500",
     stars: 5,
   },
-  {
+ {
     id: "gemiad",
     name: "GemiAd",
     displayName: "gemiad",
     description: "Global offers available in multiple regions with great payouts.",
+    // تم التعديل ليطابق الخيار رقم 1 الموصى به في الوثائق
     getUrl: (uid) =>
-      `https://wall.gemiad.com/view/6977536ec6ceefce12a28330?userid=${uid}`,
+      `https://gemiwall.com/6977536ec6ceefce12a28330/${uid}`, 
     badge: "PureReward",
     badgeColor: "bg-emerald-500",
     stars: 4,
