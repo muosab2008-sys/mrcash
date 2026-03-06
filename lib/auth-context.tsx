@@ -1,0 +1,140 @@
+"use client";
+
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  auth,
+  db,
+  googleProvider,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signInWithPopup,
+  updateProfile,
+  onAuthStateChanged,
+  signOut as firebaseSignOut,
+  doc,
+  getDoc,
+  setDoc,
+  onSnapshot,
+  type User,
+} from "./firebase";
+
+interface AuthContextType {
+  user: User | null;
+  balance: number;
+  loading: boolean;
+  signUp: (email: string, password: string, name: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  logout: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  balance: 0,
+  loading: true,
+  signUp: async () => {},
+  signIn: async () => {},
+  signInWithGoogle: async () => {},
+  resetPassword: async () => {},
+  logout: async () => {},
+});
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [balance, setBalance] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        const userRef = doc(db, "users", firebaseUser.uid);
+        const userDoc = await getDoc(userRef);
+        if (!userDoc.exists()) {
+          await setDoc(userRef, {
+            displayName: firebaseUser.displayName || "User",
+            email: firebaseUser.email || "",
+            photoURL: firebaseUser.photoURL || "",
+            balance: 0,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      } else {
+        setUser(null);
+        setBalance(0);
+      }
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const userRef = doc(db, "users", user.uid);
+    const unsubscribe = onSnapshot(userRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        const newBalance = data.balance || 0;
+        if (newBalance > balance && balance > 0) {
+          window.dispatchEvent(
+            new CustomEvent("balance-increased", {
+              detail: { amount: newBalance - balance },
+            })
+          );
+        }
+        setBalance(newBalance);
+      }
+    });
+    return () => unsubscribe();
+  }, [user, balance]);
+
+  const signUp = async (email: string, password: string, name: string) => {
+    const credential = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(credential.user, { displayName: name });
+  };
+
+  const signIn = async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const handleSignInWithGoogle = async () => {
+    await signInWithPopup(auth, googleProvider);
+  };
+
+  const resetPassword = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
+  };
+
+  const logout = async () => {
+    await firebaseSignOut(auth);
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        balance,
+        loading,
+        signUp,
+        signIn,
+        signInWithGoogle: handleSignInWithGoogle,
+        resetPassword,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
