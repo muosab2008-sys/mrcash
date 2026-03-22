@@ -21,24 +21,63 @@ const adminDb = getFirestore();
 
 // Offerwall configurations with their secret keys
 const OFFERWALL_CONFIGS: Record<string, { secretKey: string; name: string }> = {
-  lootably: { secretKey: process.env.LOOTABLY_SECRET || "", name: "Lootably" },
-  offertoro: { secretKey: process.env.OFFERTORO_SECRET || "", name: "OfferToro" },
-  adgatemedia: { secretKey: process.env.ADGATEMEDIA_SECRET || "", name: "AdGate Media" },
-  cpxresearch: { secretKey: process.env.CPXRESEARCH_SECRET || "", name: "CPX Research" },
-  bitlabs: { secretKey: process.env.BITLABS_SECRET || "", name: "BitLabs" },
-  timewall: { secretKey: process.env.TIMEWALL_SECRET || "", name: "Timewall" },
-  ayet: { secretKey: process.env.AYET_SECRET || "", name: "ayeT-Studios" },
-  notik: { secretKey: process.env.NOTIK_SECRET || "", name: "Notik" },
-  torox: { secretKey: process.env.TOROX_SECRET || "", name: "ToroX" },
-  revu: { secretKey: process.env.REVU_SECRET || "", name: "Revenue Universe" },
-  mychips: { secretKey: process.env.MYCHIPS_SECRET || "", name: "myChips" },
-  hangmyads: { secretKey: process.env.HANGMYADS_SECRET || "", name: "HangMyAds" },
-  mmwall: { secretKey: process.env.MMWALL_SECRET || "", name: "MMWall" },
+  lootably: {
+    secretKey: process.env.LOOTABLY_SECRET || "",
+    name: "Lootably",
+  },
+  offertoro: {
+    secretKey: process.env.OFFERTORO_SECRET || "",
+    name: "OfferToro",
+  },
+  adgatemedia: {
+    secretKey: process.env.ADGATEMEDIA_SECRET || "",
+    name: "AdGate Media",
+  },
+  cpxresearch: {
+    secretKey: process.env.CPXRESEARCH_SECRET || "",
+    name: "CPX Research",
+  },
+  bitlabs: {
+    secretKey: process.env.BITLABS_SECRET || "",
+    name: "BitLabs",
+  },
+  timewall: {
+    secretKey: process.env.TIMEWALL_SECRET || "",
+    name: "Timewall",
+  },
+  ayet: {
+    secretKey: process.env.AYET_SECRET || "",
+    name: "ayeT-Studios",
+  },
+  notik: {
+    secretKey: process.env.NOTIK_SECRET || "",
+    name: "Notik",
+  },
+  torox: {
+    secretKey: process.env.TOROX_SECRET || "",
+    name: "ToroX",
+  },
+  revu: {
+    secretKey: process.env.REVU_SECRET || "",
+    name: "Revenue Universe",
+  },
+  mychips: {
+    secretKey: process.env.MYCHIPS_SECRET || "",
+    name: "myChips",
+  },
+  hangmyads: {
+    secretKey: process.env.HANGMYADS_SECRET || "",
+    name: "HangMyAds",
+  },
+  mmwall: {
+    secretKey: process.env.MMWALL_SECRET || "",
+    name: "MMWall",
+  },
 };
 
-// Points conversion rate
+// Points conversion rate (adjust as needed)
 const USD_TO_POINTS = 1000; // $1 = 1000 points
-const FRAGMENTS_PER_OFFER = 50; // الشظايا التي تضاف لكل عرض
+const FRAGMENTS_PER_OFFER = 50; // الإضافة الجديدة: عدد الشظايا لكل عرض
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,13 +94,19 @@ export async function GET(request: NextRequest) {
 
     // Validate required parameters
     if (!wall || !userId || !transactionId || payout <= 0) {
-      return NextResponse.json({ success: false, error: "Missing required parameters" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Missing required parameters" },
+        { status: 400 }
+      );
     }
 
     // Get offerwall config
     const config = OFFERWALL_CONFIGS[wall];
     if (!config) {
-      return NextResponse.json({ success: false, error: "Unknown offerwall" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Unknown offerwall" },
+        { status: 400 }
+      );
     }
 
     // Check for duplicate transaction
@@ -72,7 +117,10 @@ export async function GET(request: NextRequest) {
       .get();
 
     if (!existingTx.empty) {
-      return NextResponse.json({ success: false, error: "Duplicate transaction" }, { status: 200 });
+      return NextResponse.json(
+        { success: false, error: "Duplicate transaction" },
+        { status: 200 } // Return 200 to prevent retries
+      );
     }
 
     // Calculate points
@@ -83,32 +131,35 @@ export async function GET(request: NextRequest) {
     const userSnap = await userRef.get();
 
     if (!userSnap.exists) {
-      return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: "User not found" },
+        { status: 404 }
+      );
     }
 
     const userData = userSnap.data();
 
     // Check if user is banned
     if (userData?.isBanned) {
-      return NextResponse.json({ success: false, error: "User is banned" }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: "User is banned" },
+        { status: 403 }
+      );
     }
 
-    // --- [ نظام المستويات التصاعدي ] ---
+    // --- [ الإضافة: حساب المستوى والترقية ] ---
     const totalEarnedBefore = userData?.totalEarned || 0;
     const currentLevel = userData?.level || 1;
-    const nextLevelThreshold = currentLevel * 10000; // 10k, 20k, 30k...
-    
-    let levelReward = 0;
+    const nextLevelThreshold = currentLevel * 10000;
+    let levelUpBonus = 0;
     let newLevel = currentLevel;
 
     if ((totalEarnedBefore + points) >= nextLevelThreshold) {
       newLevel = currentLevel + 1;
-      levelReward = 1000; // مكافأة ليفل أب $1
+      levelUpBonus = 1000; // مكافأة ليفل أب
     }
 
-    // --- [ تنفيذ العمليات بصيغة Batch أو متتالية ] ---
-    
-    // 1. Create transaction record
+    // Create transaction record
     await adminDb.collection("transactions").add({
       userId,
       transactionId,
@@ -117,21 +168,21 @@ export async function GET(request: NextRequest) {
       offerName,
       payout,
       points,
-      fragments: FRAGMENTS_PER_OFFER, // إضافة الشظايا هنا
+      fragments: FRAGMENTS_PER_OFFER, // أضفنا الشظايا للسجل
       ip,
       status: "completed",
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // 2. Update user points, level, and fragments
+    // Update user points
     await userRef.update({
-      points: FieldValue.increment(points + levelReward),
+      points: FieldValue.increment(points + levelUpBonus),
       totalEarned: FieldValue.increment(points),
-      fragments: FieldValue.increment(FRAGMENTS_PER_OFFER),
-      level: newLevel,
+      fragments: FieldValue.increment(FRAGMENTS_PER_OFFER), // أضفنا الشظايا للمستخدم
+      level: newLevel, // تحديث الليفل
     });
 
-    // 3. Handle referral bonus (10% of earned points)
+    // Handle referral bonus (10% of earned points)
     if (userData?.referredBy) {
       const referralBonus = Math.round(points * 0.1);
       const referrerRef = adminDb.collection("users").doc(userData.referredBy);
@@ -154,7 +205,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 4. Update offerwall statistics (الجزء الذي نقص في الكود السابق)
+    // Update offerwall statistics
     const statsRef = adminDb.collection("stats").doc("offerwalls");
     await statsRef.set(
       {
@@ -171,23 +222,26 @@ export async function GET(request: NextRequest) {
       { merge: true }
     );
 
-    // 5. إضافة إشعار لحظي (Real-time Notification)
+    // --- [ الإضافة: إرسال الإشعار اللحظي للمستخدم ] ---
     await adminDb.collection("notifications").add({
       userId,
-      title: "عملية ناجحة",
-      message: `كسبت ${points} نقطة و ${FRAGMENTS_PER_OFFER} شظية من ${offerName}.` + (levelReward > 0 ? ` مبروك! وصلت للمستوى ${newLevel} وحصلت على 1000 نقطة هدية.` : ""),
-      type: "reward",
+      title: "عملية ناجحة!",
+      message: `تم إضافة ${points} نقطة و ${FRAGMENTS_PER_OFFER} شظية.` + (levelUpBonus > 0 ? ` مبروك الترقية لمستوى ${newLevel}!` : ""),
       createdAt: FieldValue.serverTimestamp(),
-      read: false
+      read: false,
     });
 
-    return NextResponse.json({ success: true, points, fragments: FRAGMENTS_PER_OFFER });
+    return NextResponse.json({ success: true, points });
   } catch (error) {
     console.error("Postback error:", error);
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
 
+// Some offerwalls use POST method
 export async function POST(request: NextRequest) {
   return GET(request);
 }
