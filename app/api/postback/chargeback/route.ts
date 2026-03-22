@@ -2,25 +2,28 @@ import { NextRequest, NextResponse } from "next/server";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
-// Initialize Firebase Admin
-if (!getApps().length) {
-  try {
-    initializeApp({
-      credential: cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-      }),
-    });
-  } catch (error) {
-    console.error("Firebase Admin initialization error:", error);
+// 1. دالة التهيئة الآمنة (نقلنا الاستدعاء لداخل دالة)
+function getDb() {
+  if (!getApps().length) {
+    try {
+      initializeApp({
+        credential: cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+        }),
+      });
+    } catch (error) {
+      console.error("Firebase Admin initialization error:", error);
+    }
   }
+  return getFirestore();
 }
-
-const adminDb = getFirestore();
 
 export async function GET(request: NextRequest) {
   try {
+    // 2. استدعاء قاعدة البيانات داخل الدالة لتجنب أخطاء Vercel Build
+    const adminDb = getDb();
     const { searchParams } = new URL(request.url);
 
     const wall = searchParams.get("wall")?.toLowerCase() || "";
@@ -34,7 +37,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Find the original transaction
+    // البحث عن المعاملة الأصلية
     const txQuery = await adminDb
       .collection("transactions")
       .where("transactionId", "==", transactionId)
@@ -60,20 +63,20 @@ export async function GET(request: NextRequest) {
 
     const points = txData.points || 0;
 
-    // Update transaction status
+    // تحديث حالة المعاملة
     await txDoc.ref.update({
       status: "chargedback",
       chargebackAt: FieldValue.serverTimestamp(),
     });
 
-    // Deduct points from user
+    // خصم النقاط من المستخدم (الرصيد الحالي والإجمالي)
     const userRef = adminDb.collection("users").doc(userId);
     await userRef.update({
       points: FieldValue.increment(-points),
       totalEarned: FieldValue.increment(-points),
     });
 
-    // If there was a referral bonus, deduct that too
+    // --- نظام الإحالة: خصم العمولة من الشخص اللي دعا المستخدم ---
     const referralQuery = await adminDb
       .collection("referral_earnings")
       .where("sourceTransaction", "==", transactionId)
@@ -82,10 +85,14 @@ export async function GET(request: NextRequest) {
     for (const refDoc of referralQuery.docs) {
       const refData = refDoc.data();
       const referrerRef = adminDb.collection("users").doc(refData.referrerId);
+      
+      // خصم النقاط من رصيد الداعي (Referrer)
       await referrerRef.update({
         points: FieldValue.increment(-refData.earnedPoints),
         totalEarned: FieldValue.increment(-refData.earnedPoints),
       });
+      
+      // حذف سجل الربح الخاص بالإحالة لأنه لم يعد صالحاً
       await refDoc.ref.delete();
     }
 
