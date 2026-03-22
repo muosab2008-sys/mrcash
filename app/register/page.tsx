@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -13,7 +13,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from "sonner";
 import { Loader2, Mail, Lock, User, Link2 } from "lucide-react";
 
-export default function RegisterPage() {
+// المكون الذي يحتوي على المنطق (Logic)
+function RegisterForm() {
   const searchParams = useSearchParams();
   const referralCodeParam = searchParams.get("ref") || "";
   
@@ -128,5 +129,18 @@ export default function RegisterPage() {
         </form>
       </Card>
     </div>
+  );
+}
+
+// المكون الرئيسي الذي يتم تصديره مغلفاً بـ Suspense
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   );
 }
