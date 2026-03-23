@@ -97,7 +97,7 @@ export default function EarnPage() {
       return `https://web.playtimeads.com/index.php?app_id=6d186de0e9e5e8d7&user_id=${userData.uid}`;
     }
     if (wall.id === "pubscale") {
-      return `https://sdk.pubscale.com/wall/v1/?appId=99429038&subId=${userData.uid}`;
+      return `https://wow.pubscale.com?app_id=99429038&user_id=${userData.uid}`;
     }
     if (wall.id === "adgate") {
       return `https://wall.adgaterewards.com/YOUR_ADGATE_ID/${userData.uid}`;
