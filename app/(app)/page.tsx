@@ -100,8 +100,9 @@ export default function EarnPage() {
     if (wall.id === "pubscale") {
       return `https://wow.pubscale.com?app_id=99429038&user_id=${userData.uid}`;
     }
-    if (wall.id === "adgate") {
-      return `https://wall.adgaterewards.com/YOUR_ADGATE_ID/${userData.uid}`;
+   if (wall.id === "gemiad") {
+    // الرابط المعتمد من التوثيق باستخدام الـ Placement ID الخاص بك
+    return `https://gemiwall.com/69c1622e82a1cd59c17a2e21/${userData.uid}`;
     }
     return wall.url;
   };
