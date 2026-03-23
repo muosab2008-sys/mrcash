@@ -72,6 +72,17 @@ const defaultOfferwalls: Offerwall[] = [
     url: "#",
     color: "#0ea5e9", // لون سماوي (Sky Blue) احترافي جداً
   },
+  {
+  id: "offery",
+  name: "Offery",
+  description: "Maximize your earnings with high-reward premium offers and instant, verified surveys",
+  logoUrl: "https://earng.net/storage/providers/x5v40jKJIoMPSNXMmiyTkK0eWIGXHPXSsAT2QRYb.png", 
+  avgPoints: 1600,
+  pointsPerFragment: 19,
+  isActive: true,
+  url: "#",
+  color: "#ffc107", // توهج أصفر ذهبي
+}
 ];
 
 export default function EarnPage() {
@@ -119,6 +130,11 @@ export default function EarnPage() {
     if (wall.id === "revtoo") {
       return `https://revtoo.com/offerwall/xol9xws01wsarkpuv7miwdair6ikvu/${userData.uid}`;
     }
+    if (wall.id === "offery") {
+  // الـ API Key الخاص بك من لوحة التحكم
+  const API_KEY = "uccnjpr7cd6llvbomgr04no1hofoobb1";
+  return `https://offery.io/offerwall/${API_KEY}/${userData.uid}`;
+}
 
     return wall.url;
   };
