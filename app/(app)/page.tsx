@@ -117,8 +117,10 @@ export default function EarnPage() {
     return `https://gemiwall.com/69c1622e82a1cd59c17a2e21/${userData.uid}`;
     }
    if (wall.id === "revtoo") {
-    // استبدل الرابط أدناه برابط الـ iFrame الخاص بك من لوحة تحكم Revtoo
-    return `https://revtoo.com/wall/YOUR_WALL_ID?user_id=${userData.uid}`;
+    // استبدل 'YOUR_REVTOO_API_KEY' بالـ Key الخاص بك من لوحة تحكم Revtoo
+    const API_KEY = "xol9xws01wsarkpuv7miwdair6ikvu"; 
+    return `https://revtoo.com/offerwall/${API_KEY}/${userData.uid}`;
+  }
   }
   };
 
