@@ -49,15 +49,16 @@ const defaultOfferwalls: Offerwall[] = [
     color: "#2563eb",
   },
   {
-    id: "adgate",
-    name: "AdGate Media",
-    description: "Download apps and watch videos for rewards",
-    logoUrl: "/offerwalls/adgate.png",
-    avgPoints: 750,
-    pointsPerFragment: 15,
+   id: "gemiad",
+    name: "GemiAd",
+    description: "High paying offers and instant surveys",
+    // شعار GemiAd الرسمي (من الأصول الخاصة بهم)
+    logoUrl: "https://gemiad.com/assets/images/logo-icon.png", 
+    avgPoints: 1500,
+    pointsPerFragment: 18,
     isActive: true,
     url: "#",
-    color: "#2196F3",
+    color: "#ff5722", // برتقالي مميز
   }
 ];
 
