@@ -173,7 +173,7 @@ export default function AdminDashboard() {
             <div>
               <p className="text-sm text-muted-foreground">Total Users</p>
               <p className="text-2xl font-bold text-[var(--brand-cyan)]">
-                {stats.totalUsers.toLocaleString()}
+                {(stats.activeToday || 0).toLocaleString()}
               </p>
             </div>
           </CardContent>
