@@ -6,117 +6,114 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Star, Flame, LayoutGrid, ExternalLink, Coins } from "lucide-react";
+import { Star, Flame, LayoutGrid, Zap } from "lucide-react";
 
 interface Offerwall {
   id: string;
   name: string;
   tag: string;
+  tagColor: string;
   logoUrl: string;
-  avgPoints: number;
   url: any;
-  glowColor: string; 
+  glowClass: string; 
   category: "featured" | "standard";
 }
 
 const defaultOfferwalls: Offerwall[] = [
+  // --- Featured Partners (الشركات المميزة) ---
   {
     id: "playtime",
     name: "PlayTimeAds",
-    tag: "Trending 🔥",
+    tag: "Most Popular 🔥",
+    tagColor: "bg-purple-600/20 text-purple-300 border border-purple-600/30",
     logoUrl: "https://earng.net/storage/providers/zeG92gZZxlLyVw6nTwvBWeFN4eV6l1Lqy90xQzHZ.webp",
-    avgPoints: 5000,
     url: (uid: string) => `https://web.playtimeads.com/index.php?app_id=6d186de0e9e5e8d7&user_id=${uid}`,
-    glowColor: "shadow-[0_0_20px_rgba(147,51,234,0.3)] border-purple-500/50",
+    glowClass: "shadow-[0_4px_15px_-3px_rgba(147,51,234,0.5)] border-b-purple-500",
     category: "featured"
+  },
+  // --- Offer Partners (شركات العروض العادية) ---
+  {
+    id: "dtowall",
+    name: "Adtowall",
+    tag: "TrueLeads 🎯",
+    tagColor: "bg-blue-600/20 text-blue-300 border border-blue-600/30",
+    logoUrl: "https://bagirawall.com/favicon.ico",
+    url: (uid: string) => `https://bagirawall.com/wall/YOUR_ID?subId=${uid}`,
+    glowClass: "shadow-[0_4px_15px_-3px_rgba(37,99,235,0.5)] border-b-blue-500",
+    category: "standard"
   },
   {
     id: "pixylabs",
-    name: "PixyLabs",
-    tag: "High Payout",
+    name: "pixylabs",
+    tag: "PureReward 💎",
+    tagColor: "bg-emerald-600/20 text-emerald-300 border border-emerald-600/30",
     logoUrl: "https://offerwall.pixylabs.co/favicon.ico",
-    avgPoints: 3200,
     url: (uid: string) => `https://offerwall.pixylabs.co/230?uid=${uid}`,
-    glowColor: "shadow-[0_0_20px_rgba(6,182,212,0.3)] border-cyan-500/50",
+    glowClass: "shadow-[0_4px_15px_-3px_rgba(16,185,129,0.5)] border-b-emerald-500",
     category: "standard"
   }
 ];
 
-export default function EarnPage() {
+export default function OffersPage() {
   const { userData } = useAuth();
   const [offerwalls] = useState<Offerwall[]>(defaultOfferwalls);
 
+  // دالة مساعدة لرسم القسم
   const renderSection = (title: string, icon: any, category: "featured" | "standard") => {
     const filtered = offerwalls.filter(w => w.category === category);
     if (filtered.length === 0) return null;
 
     return (
-      <div className="space-y-8">
-        {/* العنوان باللون السماوي (Cyan) مطابق لشعارك */}
+      <div className="space-y-6 pt-4">
+        {/* العناوين باللون السماوي الخاص بالشعار */}
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-cyan-500/10">
+          <div className="p-2 rounded-lg bg-[var(--brand-cyan)]/10">
             {icon}
           </div>
-          <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{title}</h2>
+          <h2 className="text-2xl font-black text-white uppercase tracking-tighter">
+            {title}
+          </h2>
         </div>
         
-        {/* Grid: مستطيلات عمودية احترافية */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {/* Grid Layout - المربعات الصغيرة الاحترافية (طبق الأصل) */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {filtered.map((wall) => (
             <Card 
               key={wall.id}
-              className={`relative bg-[#050505] border-2 ${wall.glowColor} rounded-[35px] p-6 flex flex-col items-center text-center transition-all duration-300 hover:scale-[1.03] group overflow-hidden`}
+              onClick={() => {
+                  const finalUrl = typeof wall.url === 'function' ? wall.url(userData?.email || "guest") : wall.url;
+                  window.open(finalUrl, "_blank");
+              }}
+              // تصميم المربعات الصغيرة (aspect-square) مع الحدود الملونة المتوهجة
+              className={`relative group bg-[#000000] aspect-square border-2 border-white/5 rounded-[24px] p-5 cursor-pointer transition-all duration-300 hover:scale-[1.05] active:scale-95 border-b-[3px] ${wall.glowClass}`}
             >
               {/* Badge العلوي */}
-              <div className="absolute top-4 right-4 z-10">
-                <Badge className="bg-[#6A3AB1] text-white border-none font-bold rounded-full py-1 px-3 text-[10px]">
+              <div className="absolute top-3 right-3 z-10">
+                <Badge className={`${wall.tagColor} text-[9px] px-2 py-0.5 rounded-lg border-none text-white font-bold uppercase tracking-widest`}>
                   {wall.tag}
                 </Badge>
               </div>
 
-              {/* تأثير النور خلف الأيقونة */}
-              <div className="absolute top-10 w-32 h-32 bg-purple-600/20 blur-[50px] rounded-full group-hover:bg-purple-600/30 transition-all"></div>
-
-              {/* الأيقونة الدائرية الكبيرة (طبق الأصل) */}
-              <div className="relative z-10 h-28 w-28 rounded-full border-[6px] border-[#1a102d] bg-[#0a0a0a] p-1 shadow-2xl transition-transform group-hover:scale-110">
+              {/* Logo Section - أيقونة الشركة في منتصف المربع */}
+              <div className="flex-1 flex items-center justify-center mt-6 h-16 w-16 mx-auto">
                 <img 
                   src={wall.logoUrl} 
                   alt={wall.name} 
-                  className="h-full w-full object-contain rounded-full" 
+                  className="max-h-full max-w-full object-contain filter group-hover:brightness-125 transition-all" 
                 />
               </div>
 
-              {/* المعلومات */}
-              <div className="mt-6 space-y-3 z-10 w-full">
-                <h3 className="text-2xl font-black text-white uppercase tracking-tight italic">
-                  {wall.name}
-                </h3>
+              {/* Info Section - الاسم والنجوم في أسفل المربع */}
+              <div className="space-y-1.5 border-t border-white/5 pt-4">
+                <h3 className="text-white font-black text-sm truncate uppercase tracking-tight text-center">{wall.name}</h3>
                 
-                {/* النجوم */}
-                <div className="flex justify-center gap-1">
+                {/* Stars - النجوم الذهبية */}
+                <div className="flex gap-0.5 text-yellow-500 justify-center">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={`h-4 w-4 ${i < 4 ? "fill-yellow-400 text-yellow-400" : "fill-zinc-800 text-zinc-800"}`} />
+                    <Star key={i} className={`h-3 w-3 ${i < 4 ? "fill-yellow-500" : "fill-zinc-800 text-zinc-800"}`} />
                   ))}
                 </div>
-
-                <div className="flex items-center justify-center gap-2 text-emerald-400 font-bold text-sm">
-                  <Coins className="h-4 w-4" />
-                  <span>Up to {wall.avgPoints.toLocaleString()} Points</span>
-                </div>
               </div>
-
-              {/* زر التشغيل الأسفل */}
-              <Button
-                className="mt-8 w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black h-12 rounded-2xl shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40"
-                onClick={() => {
-                  const finalUrl = typeof wall.url === 'function' ? wall.url(userData?.email || "guest") : wall.url;
-                  window.open(finalUrl, "_blank");
-                }}
-              >
-                START EARNING
-                <ExternalLink className="ml-2 h-4 w-4" />
-              </Button>
             </Card>
           ))}
         </div>
@@ -125,9 +122,14 @@ export default function EarnPage() {
   };
 
   return (
-    <div className="p-6 md:p-10 min-h-screen bg-black space-y-20">
-      {renderSection("Featured Partners", <Flame className="text-cyan-400 h-7 w-7" />, "featured")}
-      renderSection("Offer Partners", <LayoutGrid className="text-cyan-400 h-7 w-7" />, "standard")}
+    <div className="p-6 md:p-10 min-h-screen space-y-16 bg-black text-white">
+      
+      {/* القسم الأول: الشركات المميزة */}
+      {renderSection("Featured Partners", <Flame className="text-[var(--brand-cyan)] h-6 w-6" />, "featured")}
+
+      {/* القسم الثاني: شركات العروض */}
+      {renderSection("Offer Partners", <LayoutGrid className="text-[var(--brand-cyan)] h-6 w-6" />, "standard")}
+
     </div>
   );
 }
