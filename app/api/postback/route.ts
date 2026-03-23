@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     const userIdentifier = searchParams.get("user_id") || searchParams.get("uid") || searchParams.get("email") || "";
     // هذا السطر أضفته لك تحت سطر userIdentifier
 const offerName = searchParams.get("offer_name") || searchParams.get("offerName") || "Special Task";
-    const transactionId = searchParams.get("transaction_id") || `TX-${Date.now()}`;
+    const transactionId = searchParams.get("transaction_id") || searchParams.get("offer_id") || `TX-${Date.now()}`;
     const payout = parseFloat(searchParams.get("payout") || searchParams.get("amount") || "0");
 
     if (!userIdentifier) {
