@@ -115,10 +115,14 @@ export default function EarnPage() {
    if (wall.id === "gemiad") {
     // الرابط المعتمد من التوثيق باستخدام الـ Placement ID الخاص بك
     return `https://gemiwall.com/69c1622e82a1cd59c17a2e21/${userData.uid}`;
+     }
    if (wall.id === "revtoo") {
-  // استخدام الـ API Key الخاص بك: xol9xws01wsarkpuv7miwdair6ikvu
-  return `https://revtoo.com/offerwall/xol9xws01wsarkpuv7miwdair6ikvu/${userData.uid}`;
-}
+      // الـ API Key الخاص بك تم وضعه هنا بشكل صحيح
+      return `https://revtoo.com/offerwall/xol9xws01wsarkpuv7miwdair6ikvu/${userData.uid}`;
+    }
+
+    return wall.url;
+  };
   };
 
   const currentLevelThreshold = (userData?.level || 1) * 10000;
