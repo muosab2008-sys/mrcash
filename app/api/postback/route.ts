@@ -117,11 +117,11 @@ export async function GET(request: NextRequest) {
       totalEarned: FieldValue.increment(points),
     });
 
-    // 3. إضافة الإشعار العربي للجرس
+    // 3. Add Notification for the Bell icon (English)
     batch.set(adminDb.collection("notifications").doc(), {
       userId: userSnap.id,
-      title: "نقاط جديدة! 💰",
-      message: `مبروك! تم إضافة ${points} نقطة لرصيدك من ${config.name}.`,
+      title: "New Points Added! 💰",
+      message: `Congratulations! ${points} points have been added to your balance from ${config.name}.`,
       isRead: false,
       type: "reward",
       createdAt: FieldValue.serverTimestamp(),
