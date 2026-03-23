@@ -15,26 +15,35 @@ export function AppShell({ children }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* Live Feed at top */}
-      <LiveFeed />
-      
+    <div className="flex min-h-screen flex-col bg-background">
+      {/* الهيدر الأساسي الذي يحتوي على الرصيد */}
       <Header 
         onMenuClick={() => setSidebarOpen(true)} 
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         isCollapsed={sidebarCollapsed}
       />
       
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar 
           isOpen={sidebarOpen} 
           onClose={() => setSidebarOpen(false)}
           isCollapsed={sidebarCollapsed}
         />
-        <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
-          <div className="container mx-auto p-4 lg:p-6">{children}</div>
+
+        <main className="flex-1 overflow-y-auto pb-20 lg:pb-0 bg-[#050505]">
+          
+          {/* --- هذا هو المكان الجديد للشريط --- */}
+          {/* وضعناه هنا ليكون تحت الرصيد مباشرة وبنفس المحاذاة */}
+          <div className="w-full border-b border-white/5 bg-[#0d0d0d]/40 backdrop-blur-md">
+             <LiveFeed />
+          </div>
+
+          <div className="container mx-auto p-4 lg:p-6">
+            {children}
+          </div>
         </main>
       </div>
+
       <BottomNav />
     </div>
   );
