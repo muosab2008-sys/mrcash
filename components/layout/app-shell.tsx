@@ -16,18 +16,19 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {/* 1. الهيدر (الجرس، الإعدادات، الرصيد) في أعلى الشاشة */}
+      
+      {/* 1. الشريط المتحرك (Live Feed) - الآن في أعلى نقطة في الموقع */}
+      <div className="w-full bg-[#050505] border-b border-white/5 py-1 z-[100]">
+         <LiveFeed />
+      </div>
+
+      {/* 2. الهيدر (اللوجو، الرصيد، الجرس) - الآن يظهر تحت الشريط المتحرك مباشرة */}
       <Header 
         onMenuClick={() => setSidebarOpen(true)} 
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         isCollapsed={sidebarCollapsed}
       />
       
-      {/* 2. شريط الـ Live Feed مباشرة تحت الهيدر */}
-      <div className="w-full bg-[#050505] border-b border-white/5 py-1">
-         <LiveFeed />
-      </div>
-
       <div className="flex flex-1 overflow-hidden">
         {/* السايد بار الجانبي */}
         <Sidebar 
