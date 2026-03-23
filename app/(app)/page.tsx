@@ -116,7 +116,10 @@ export default function EarnPage() {
     // الرابط المعتمد من التوثيق باستخدام الـ Placement ID الخاص بك
     return `https://gemiwall.com/69c1622e82a1cd59c17a2e21/${userData.uid}`;
     }
-    return wall.url;
+   if (wall.id === "revtoo") {
+    // استبدل الرابط أدناه برابط الـ iFrame الخاص بك من لوحة تحكم Revtoo
+    return `https://revtoo.com/wall/YOUR_WALL_ID?user_id=${userData.uid}`;
+  }
   };
 
   const currentLevelThreshold = (userData?.level || 1) * 10000;
