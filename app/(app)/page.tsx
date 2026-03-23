@@ -51,9 +51,9 @@ const defaultOfferwalls: Offerwall[] = [
   {
    id: "gemiad",
     name: "GemiAd",
-    description: "High paying offers and instant surveys",
+    description: "Access the highest paying tasks and complete instant surveys for rapid rewards",
     // شعار GemiAd الرسمي (من الأصول الخاصة بهم)
-    logoUrl: "https://gemiad.s3.eu-central-1.amazonaws.com/logos/Asset_7.png", 
+    logoUrl: "https://earng.net/storage/providers/5t91vghsZuzh5mBa1uDlmfpjjMH05idKJtU8VjcB.png", 
     avgPoints: 1500,
     pointsPerFragment: 18,
     isActive: true,
