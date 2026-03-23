@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     // هذا السطر أضفته لك تحت سطر userIdentifier
 const offerName = searchParams.get("offer_name") || searchParams.get("offerName") || "Special Task";
     const transactionId = searchParams.get("transaction_id") || `TX-${Date.now()}`;
-    const payout = parseFloat(searchParams.get("payout") || "0");
+    const payout = parseFloat(searchParams.get("payout") || searchParams.get("amount") || "0");
 
     if (!userIdentifier) {
       return NextResponse.json({ success: false, error: "Missing User ID" }, { status: 400 });
