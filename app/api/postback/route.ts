@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { initializeApp, getApps, cert, ServiceAccount } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
-// دالة تهيئة قاعدة البيانات مع معالجة ذكية للمفتاح السري
+// دالة تهيئة قاعدة البيانات
 function getAdminDb() {
   if (getApps().length === 0) {
-    // المفتاح السري الذي أرسلته (قمنا بمعالجته ليكون متوافقاً مع السيرفر)
     const privateKey = `-----BEGIN PRIVATE KEY-----
 MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDkfPT57bRgONCx
 kzsKgx+GWI3jNxjnu9VWpnAL1MSCd++KYs8L3afZlAIuhWCpMd22/xUzvGGtTyCC
@@ -63,6 +62,7 @@ export async function GET(request: NextRequest) {
     const userIdentifier = searchParams.get("user_id") || searchParams.get("uid") || searchParams.get("email") || "";
     const transactionId = searchParams.get("transaction_id") || `TX-${Date.now()}`;
     const payout = parseFloat(searchParams.get("payout") || "0");
+    const offerName = searchParams.get("offer_name") || "Task Completion";
 
     if (!wall || !userIdentifier) {
       return NextResponse.json({ success: false, error: "Missing Parameters" }, { status: 400 });
@@ -71,18 +71,15 @@ export async function GET(request: NextRequest) {
     const config = OFFERWALL_CONFIGS[wall];
     if (!config) return NextResponse.json({ success: false, error: "Unknown Wall" }, { status: 400 });
 
-    // البحث عن المستخدم
     let userRef = adminDb.collection("users").doc(userIdentifier);
     let userSnap = await userRef.get();
 
-    // إذا لم يوجد، نبحث بالإيميل
     if (!userSnap.exists) {
       const emailQuery = await adminDb.collection("users").where("email", "==", userIdentifier).limit(1).get();
       if (!emailQuery.empty) {
         userRef = emailQuery.docs[0].ref;
         userSnap = emailQuery.docs[0];
       } else {
-        // إنشاء مستخدم جديد للتجربة
         const newUserRef = await adminDb.collection("users").add({
           email: userIdentifier.includes("@") ? userIdentifier : `${userIdentifier}@mrcash.com`,
           username: userIdentifier.split("@")[0],
@@ -99,13 +96,12 @@ export async function GET(request: NextRequest) {
     const userData = userSnap.data();
     const points = Math.round(payout * USD_TO_POINTS) || 100;
 
-    // فحص التكرار
     const dupCheck = await adminDb.collection("transactions").where("transactionId", "==", transactionId).get();
     if (!dupCheck.empty) return NextResponse.json({ success: true, message: "Already Processed" });
 
     const batch = adminDb.batch();
 
-    // تسجيل المعاملة
+    // 1. تسجيل المعاملة
     batch.set(adminDb.collection("transactions").doc(), {
       userId: userSnap.id,
       transactionId,
@@ -114,7 +110,7 @@ export async function GET(request: NextRequest) {
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // تحديث النقاط والمستوى
+    // 2. تحديث النقاط والمستوى
     const newTotal = (userData?.totalEarned || 0) + points;
     const newLevel = Math.floor(newTotal / 10000) + 1;
     batch.update(userRef, {
@@ -123,7 +119,18 @@ export async function GET(request: NextRequest) {
       level: newLevel
     });
 
-    // تحديث الـ Live Feed
+    // --- الجزء الجديد: إضافة الإشعار للجرس ---
+    batch.set(adminDb.collection("notifications").doc(), {
+      userId: userSnap.id, // ربط الإشعار بمعرف المستخدم
+      title: "تم إضافة نقاط! 💰",
+      message: `مبروك! لقد حصلت على ${points} نقطة من عرض ${offerName}`,
+      isRead: false, // لضمان ظهور العلامة الحمراء
+      type: "reward",
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    // ---------------------------------------
+
+    // 4. تحديث الـ Live Feed
     batch.set(adminDb.collection("live_feed").doc(), {
       username: userData?.username || "User",
       points,
