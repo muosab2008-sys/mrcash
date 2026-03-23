@@ -14,8 +14,9 @@ interface Offerwall {
   tag: string;
   tagColor: string;
   logoUrl: string;
+  isActive: boolean;
   url: any;
-  glowClass: string; 
+  glowColor: string; 
 }
 
 const defaultOfferwalls: Offerwall[] = [
@@ -23,28 +24,31 @@ const defaultOfferwalls: Offerwall[] = [
     id: "playtime",
     name: "PlayTimeAds",
     tag: "Trendify 🔥",
-    tagColor: "bg-[#7c3aed]", // بنفسجي مطابق للوجو
+    tagColor: "bg-purple-600",
     logoUrl: "https://earng.net/storage/providers/zeG92gZZxlLyVw6nTwvBWeFN4eV6l1Lqy90xQzHZ.webp",
+    isActive: true,
     url: (uid: string) => `https://web.playtimeads.com/index.php?app_id=6d186de0e9e5e8d7&user_id=${uid}`,
-    glowClass: "shadow-[0_0_15px_-5px_#7c3aed] border-b-[#7c3aed]",
+    glowColor: "shadow-[0_4px_15px_-3px_rgba(147,51,234,0.5)] border-b-purple-500",
   },
   {
     id: "pixylabs",
-    name: "pixylabs",
+    name: "PixyLabs",
     tag: "PureReward 💎",
-    tagColor: "bg-[#10b981]", // أخضر زمردي
+    tagColor: "bg-emerald-600",
     logoUrl: "https://offerwall.pixylabs.co/favicon.ico",
+    isActive: true,
     url: (uid: string) => `https://offerwall.pixylabs.co/230?uid=${uid}`,
-    glowClass: "shadow-[0_0_15px_-5px_#10b981] border-b-[#10b981]",
+    glowColor: "shadow-[0_4px_15px_-3px_rgba(16,185,129,0.5)] border-b-emerald-500",
   },
   {
-    id: "dtowall",
-    name: "adtowall",
-    tag: "TrueLeads 🎯",
-    tagColor: "bg-[#2563eb]", // أزرق ملكي
-    logoUrl: "https://bagirawall.com/favicon.ico",
-    url: (uid: string) => `#`,
-    glowClass: "shadow-[0_0_15px_-5px_#2563eb] border-b-[#2563eb]",
+    id: "mylead",
+    name: "MyLead",
+    tag: "Exclusive 🎯",
+    tagColor: "bg-blue-600",
+    logoUrl: "https://mylead.global/favicon.ico",
+    isActive: true,
+    url: (uid: string) => `https://mylead.global/sl/YOUR_LINK?ml_sub1=${uid}`,
+    glowColor: "shadow-[0_4px_15px_-3px_rgba(37,99,235,0.5)] border-b-blue-500",
   }
 ];
 
@@ -53,12 +57,13 @@ export default function EarnPage() {
   const [offerwalls] = useState<Offerwall[]>(defaultOfferwalls);
 
   return (
-    <div className="p-6 bg-black min-h-screen text-white">
+    // تم إزالة bg-black وجعل الخلفية شفافة لكي تأخذ لون الموقع الأصلي
+    <div className="p-6 min-h-screen">
       {/* Title */}
-      <h2 className="text-3xl font-black mb-10 tracking-tight">Earn Points</h2>
+      <h2 className="text-2xl font-bold text-white mb-8">Earn Points</h2>
 
-      {/* Grid Layout */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+      {/* Grid Layout - المربعات الصغيرة */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {offerwalls.map((wall) => (
           <Card 
             key={wall.id}
@@ -66,41 +71,36 @@ export default function EarnPage() {
                 const finalUrl = typeof wall.url === 'function' ? wall.url(userData?.email || "guest") : wall.url;
                 window.open(finalUrl, "_blank");
             }}
-            className={`group relative bg-black border border-white/5 rounded-[22px] p-5 cursor-pointer transition-all duration-300 hover:scale-[1.03] active:scale-95 border-b-[3px] ${wall.glowClass}`}
+            // استخدام bg-card أو bg-opacity لدمج اللون مع خلفية الموقع
+            className={`relative bg-card/40 backdrop-blur-sm border border-white/10 rounded-2xl p-4 cursor-pointer transition-all hover:scale-105 active:scale-95 border-b-2 ${wall.glowColor}`}
           >
-            {/* Badge */}
-            <div className="absolute top-3 right-3 z-10">
-              <Badge className={`${wall.tagColor} text-[10px] font-bold px-2.5 py-1 rounded-lg border-none text-white shadow-lg`}>
+            {/* Badge - التاج العلوي */}
+            <div className="absolute top-2 right-2">
+              <Badge className={`${wall.tagColor} text-[10px] px-2 py-0.5 rounded-full border-none text-white`}>
                 {wall.tag}
               </Badge>
             </div>
 
             {/* Logo Section */}
-            <div className="h-20 flex items-center justify-start mb-6 mt-4">
+            <div className="h-16 flex items-center mb-4 mt-2">
               <img 
                 src={wall.logoUrl} 
                 alt={wall.name} 
-                className="max-h-full max-w-[85%] object-contain filter brightness-110 group-hover:brightness-125 transition-all"
+                className="max-h-full max-w-[80%] object-contain"
               />
             </div>
 
-            {/* Content Section */}
-            <div className="space-y-2">
-              <h3 className="text-white font-extrabold text-lg tracking-wide uppercase italic">{wall.name}</h3>
+            {/* Info Section */}
+            <div className="space-y-1">
+              <h3 className="text-white font-bold text-sm truncate uppercase tracking-tight">{wall.name}</h3>
               
-              {/* Stars */}
-              <div className="flex gap-1">
+              {/* Stars - النجوم */}
+              <div className="flex gap-0.5">
                 {[...Array(5)].map((_, i) => (
-                  <Star 
-                    key={i} 
-                    className={`h-3.5 w-3.5 ${i < 4 ? "fill-yellow-400 text-yellow-400" : "fill-zinc-800 text-zinc-800"}`} 
-                  />
+                  <Star key={i} className={`h-3 w-3 ${i < 4 ? "fill-yellow-500 text-yellow-500" : "fill-zinc-800 text-zinc-800"}`} />
                 ))}
               </div>
             </div>
-
-            {/* Hover Glow Effect Layer */}
-            <div className="absolute inset-0 rounded-[22px] bg-gradient-to-b from-transparent to-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity"></div>
           </Card>
         ))}
       </div>
