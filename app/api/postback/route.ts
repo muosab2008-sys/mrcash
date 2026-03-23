@@ -45,32 +45,26 @@ slmtyUkuZDNy/ESBNJCEjA==
   return getFirestore();
 }
 
-const OFFERWALL_CONFIGS: Record<string, { secretKey: string; name: string }> = {
-  test: { secretKey: "123", name: "Test Offers" },
-  lootably: { secretKey: process.env.LOOTABLY_SECRET || "", name: "Lootably" },
-  offertoro: { secretKey: process.env.OFFERTORO_SECRET || "", name: "OfferToro" },
-};
-
-const تحويل_الدولار_لنقاط = 1000;
+const POINTS_PER_DOLLAR = 1000;
 
 export async function GET(request: NextRequest) {
   try {
     const adminDb = getAdminDb();
     const { searchParams } = new URL(request.url);
 
-    const wall = searchParams.get("wall")?.toLowerCase() || "";
-    const userIdentifier = searchParams.get("user_id") || searchParams.get("uid") || searchParams.get("email") || "";
-    const transactionId = searchParams.get("transaction_id") || `عملية-${Date.now()}`;
-    const payout = parseFloat(searchParams.get("payout") || "0");
-    const offerName = searchParams.get("offer_name") || "إتمام مهمة";
+    // استخراج اسم الشركة ديناميكياً من الرابط
+    const wallParam = searchParams.get("wall") || "Offerwall";
+    const wallName = wallParam.charAt(0).toUpperCase() + wallParam.slice(1);
 
-    if (!wall || !userIdentifier) {
-      return NextResponse.json({ success: false, error: "بيانات ناقصة" }, { status: 400 });
+    const userIdentifier = searchParams.get("user_id") || searchParams.get("uid") || searchParams.get("email") || "";
+    const transactionId = searchParams.get("transaction_id") || `TX-${Date.now()}`;
+    const payout = parseFloat(searchParams.get("payout") || "0");
+
+    if (!userIdentifier) {
+      return NextResponse.json({ success: false, error: "Missing User ID" }, { status: 400 });
     }
 
-    const config = شركات_العروض[wall];
-    if (!config) return NextResponse.json({ success: false, error: "شركة غير معروفة" }, { status: 400 });
-
+    // البحث عن المستخدم أو إنشاؤه
     let userRef = adminDb.collection("users").doc(userIdentifier);
     let userSnap = await userRef.get();
 
@@ -88,16 +82,17 @@ export async function GET(request: NextRequest) {
           level: 1,
           createdAt: FieldValue.serverTimestamp(),
         });
-        userRef = newUserRef;
+        userRef = adminDb.collection("users").doc(newUserRef.id);
         userSnap = await userRef.get();
       }
     }
 
     const userData = userSnap.data();
-    const points = Math.round(payout * تحويل_الدولار_لنقاط) || 100;
+    const points = Math.round(payout * POINTS_PER_DOLLAR) || 100;
 
+    // فحص التكرار
     const dupCheck = await adminDb.collection("transactions").where("transactionId", "==", transactionId).get();
-    if (!dupCheck.empty) return NextResponse.json({ success: true, message: "تمت معالجتها مسبقاً" });
+    if (!dupCheck.empty) return NextResponse.json({ success: true, message: "Already Processed" });
 
     const batch = adminDb.batch();
 
@@ -105,7 +100,7 @@ export async function GET(request: NextRequest) {
     batch.set(adminDb.collection("transactions").doc(), {
       userId: userSnap.id,
       transactionId,
-      offerwall: config.name,
+      offerwall: wallName,
       points,
       createdAt: FieldValue.serverTimestamp(),
     });
@@ -116,26 +111,26 @@ export async function GET(request: NextRequest) {
       totalEarned: FieldValue.increment(points),
     });
 
-    // 3. Add Notification for the Bell icon (English)
+    // 3. إضافة الإشعار (English Only)
     batch.set(adminDb.collection("notifications").doc(), {
       userId: userSnap.id,
       title: "New Points Added! 💰",
-      message: `Congratulations! ${points} points have been added to your balance from ${config.name}.`,
+      message: `Congratulations! ${points} points have been added to your balance from ${wallName}.`,
       isRead: false,
       type: "reward",
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // 4. تحديث الـ Live Feed بالعربي
+    // 4. تحديث الـ Live Feed
     batch.set(adminDb.collection("live_feed").doc(), {
-      username: userData?.username || "مستخدم",
+      username: userData?.username || "User",
       points,
-      source: config.name,
+      source: wallName,
       createdAt: FieldValue.serverTimestamp(),
     });
 
     await batch.commit();
-    return NextResponse.json({ success: true, message: "تم إضافة النقاط بنجاح" });
+    return NextResponse.json({ success: true, message: "Points added successfully", wall: wallName });
 
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
