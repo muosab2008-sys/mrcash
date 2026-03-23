@@ -5,115 +5,134 @@ import { useAuth } from "@/contexts/auth-context";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Star, Flame, LayoutGrid, X, Loader2, ChevronRight } from "lucide-react";
+import { Star, Flame, X, Loader2, ExternalLink, LayoutGrid } from "lucide-react";
 
+// بيانات الشركات مع ألوان التوهج الخاصة بكل واحدة
 const offerwalls = [
   {
     id: "playtime",
     name: "PlayTimeAds",
-    tag: "Trendify 🔥",
+    tag: "Hot 🔥",
     logo: "https://earng.net/storage/providers/zeG92gZZxlLyVw6nTwvBWeFN4eV6l1Lqy90xQzHZ.webp",
     url: (uid: string) => `https://web.playtimeads.com/index.php?app_id=6d186de0e9e5e8d7&user_id=${uid}`,
-    color: "rgba(147, 51, 234, 0.5)"
+    glowColor: "rgba(147, 51, 234, 0.6)", // توهج بنفسجي لـ PlayTime
+    borderColor: "border-purple-500/50"
   },
   {
     id: "adtowall",
-    name: "adtowall",
-    tag: "TrueLeads 🎯",
+    name: "Adtowall",
+    tag: "New",
     logo: "https://bagirawall.com/favicon.ico",
     url: (uid: string) => `https://bagirawall.com/wall/YOUR_ID?subId=${uid}`,
-    color: "rgba(6, 182, 212, 0.5)"
+    glowColor: "rgba(6, 182, 212, 0.6)", // توهج سماوي
+    borderColor: "border-cyan-500/50"
   }
 ];
 
 export default function EarnPage() {
   const { userData } = useAuth();
-  const [open, setOpen] = useState(false);
-  const [activeUrl, setActiveUrl] = useState("");
+  const [selectedWall, setSelectedWall] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const handleOpen = (urlFn: any) => {
-    const finalUrl = typeof urlFn === "function" ? urlFn(userData?.email || "guest") : urlFn;
-    setActiveUrl(finalUrl);
+  const handleOpen = (wall: any) => {
+    setSelectedWall(wall);
     setLoading(true);
-    setOpen(true);
   };
 
   return (
-    <div className="p-4 md:p-8 bg-black min-h-screen text-white space-y-12">
-      {/* Featured Partners Section */}
-      <section className="space-y-6">
-        <div className="flex items-center gap-2">
-          <Flame className="text-cyan-400 w-6 h-6" />
-          <h2 className="text-xl font-bold uppercase tracking-tight">Featured Partners</h2>
-        </div>
+    <div className="p-6 bg-black min-h-screen text-white space-y-10">
+      
+      <header className="flex items-center gap-3 border-l-4 border-cyan-400 pl-4">
+        <LayoutGrid className="text-cyan-400 w-6 h-6" />
+        <h2 className="text-2xl font-black uppercase italic tracking-tighter">Offerwalls</h2>
+      </header>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {offerwalls.map((wall) => (
-            <Card 
-              key={wall.id}
-              onClick={() => handleOpen(wall.url)}
-              className="relative bg-[#0a0a0a] border border-white/5 rounded-2xl p-4 cursor-pointer hover:border-white/20 transition-all group overflow-hidden"
-              style={{ boxShadow: `0 4px 20px -10px ${wall.color}` }}
-            >
-              {/* Badge */}
-              <div className="absolute top-2 right-2 z-10">
-                <Badge className="bg-purple-600/20 text-purple-400 text-[8px] px-2 border-none">
-                  {wall.tag}
-                </Badge>
-              </div>
-
-              {/* Logo */}
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white/5 p-2 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <img src={wall.logo} alt={wall.name} className="w-full h-full object-contain" />
-                </div>
-                
-                <div className="text-center">
-                  <p className="text-sm font-bold text-gray-200 truncate">{wall.name}</p>
-                  <div className="flex justify-center mt-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className={`w-3 h-3 ${i < 4 ? "fill-yellow-500 text-yellow-500" : "text-gray-700"}`} />
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Hover Effect Line */}
-              <div className="absolute bottom-0 left-0 h-[2px] bg-cyan-400 w-0 group-hover:w-full transition-all duration-300" />
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* Iframe Modal (The View you wanted) */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-[100vw] w-full h-full md:h-[95vh] md:max-w-[90vw] p-0 bg-[#0f0f0f] border-white/10 overflow-hidden rounded-none md:rounded-3xl">
-          {/* Custom Header for the Iframe */}
-          <div className="flex items-center justify-between p-4 border-b border-white/5 bg-[#0a0a0a]">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center">
-                <div className="w-4 h-4 rounded-sm bg-cyan-400" />
-              </div>
-              <p className="font-bold text-white uppercase text-sm tracking-widest">Offerwall Terminal</p>
+      {/* Grid: المربعات الصغيرة "الكيوت" بزوايا دائرية وتوهج */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+        {offerwalls.map((wall) => (
+          <Card 
+            key={wall.id}
+            onClick={() => handleOpen(wall)}
+            // الزوايا دائرية جداً (rounded-[2.5rem]) والتوهج متغير حسب الشركة
+            className={`relative bg-[#0c0c0c] border-2 ${wall.borderColor} rounded-[2rem] p-6 cursor-pointer hover:scale-105 transition-all duration-300 group overflow-hidden`}
+            style={{ boxShadow: `0 0 25px -10px ${wall.glowColor}` }}
+          >
+            {/* Badge */}
+            <div className="absolute top-3 right-3">
+              <Badge className="bg-white/5 text-white/70 text-[8px] border-none px-2 rounded-full font-bold uppercase">
+                {wall.tag}
+              </Badge>
             </div>
-            <button onClick={() => setOpen(false)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
-              <X className="w-6 h-6 text-gray-400" />
-            </button>
+
+            {/* Logo & Name */}
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-black border border-white/10 p-2 flex items-center justify-center shadow-inner group-hover:rotate-3 transition-transform">
+                <img src={wall.logo} alt={wall.name} className="w-full h-full object-contain" />
+              </div>
+              <div className="text-center">
+                <p className="text-xs font-black uppercase tracking-widest text-gray-300">{wall.name}</p>
+                <div className="flex justify-center mt-1 gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className={`w-3 h-3 ${i < 4 ? "fill-yellow-500 text-yellow-500" : "text-zinc-800"}`} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* النافذة المنبثقة (Full Screen Modal) */}
+      <Dialog open={!!selectedWall} onOpenChange={() => setSelectedWall(null)}>
+        <DialogContent className="max-w-[100vw] w-full h-full md:h-[96vh] md:max-w-[95vw] p-0 bg-black border-white/10 overflow-hidden rounded-none md:rounded-[2rem] flex flex-col">
+          
+          {/* Header الاحترافي: (شعار + اسم + زر الرابط الخارجي + زر إغلاق) */}
+          <div className="flex items-center justify-between p-4 bg-[#0a0a0a] border-b border-white/5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-white/5 p-1.5 border border-white/10 shadow-lg">
+                <img src={selectedWall?.logo} alt="icon" className="w-full h-full object-contain rounded-full" />
+              </div>
+              <div>
+                <p className="text-sm font-black text-white uppercase tracking-tighter">{selectedWall?.name}</p>
+                <p className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest leading-none">Terminal Active</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* زر المربع الصغير (رابط خارجي) */}
+              <button 
+                onClick={() => window.open(typeof selectedWall?.url === 'function' ? selectedWall.url(userData?.email || "guest") : selectedWall?.url, "_blank")}
+                className="p-2.5 bg-white/5 hover:bg-cyan-500/20 text-white rounded-xl transition-all border border-white/5 group"
+                title="Open in new tab"
+              >
+                <ExternalLink className="w-5 h-5 group-hover:scale-110" />
+              </button>
+              
+              {/* زر الإغلاق (X) */}
+              <button 
+                onClick={() => setSelectedWall(null)}
+                className="p-2.5 bg-white/5 hover:bg-red-500/20 text-white rounded-xl transition-all border border-white/5 group"
+              >
+                <X className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+              </button>
+            </div>
           </div>
 
-          <div className="relative w-full h-full">
+          {/* منطقة العرض (Iframe) */}
+          <div className="flex-1 relative bg-[#050505]">
             {loading && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0a0a0a] z-50">
-                <Loader2 className="w-10 h-10 text-cyan-400 animate-spin" />
-                <p className="mt-4 text-gray-500 font-medium">Securing connection...</p>
+              <div className="absolute inset-0 flex flex-col items-center justify-center z-50 bg-black">
+                <Loader2 className="w-12 h-12 text-cyan-400 animate-spin" />
+                <p className="mt-4 text-[10px] font-black uppercase tracking-[0.3em] text-gray-500">Connecting to Partner...</p>
               </div>
             )}
-            <iframe 
-              src={activeUrl} 
-              className="w-full h-full border-none" 
-              onLoad={() => setLoading(false)}
-            />
+            {selectedWall && (
+              <iframe 
+                src={typeof selectedWall.url === 'function' ? selectedWall.url(userData?.email || "guest") : selectedWall.url} 
+                className="w-full h-full border-none" 
+                onLoad={() => setLoading(false)}
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>
