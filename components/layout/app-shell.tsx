@@ -16,28 +16,28 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {/* الهيدر الأساسي الذي يحتوي على الرصيد */}
+      {/* 1. الهيدر (الجرس، الإعدادات، الرصيد) في أعلى الشاشة */}
       <Header 
         onMenuClick={() => setSidebarOpen(true)} 
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         isCollapsed={sidebarCollapsed}
       />
       
+      {/* 2. شريط الـ Live Feed مباشرة تحت الهيدر */}
+      <div className="w-full bg-[#050505] border-b border-white/5 py-1">
+         <LiveFeed />
+      </div>
+
       <div className="flex flex-1 overflow-hidden">
+        {/* السايد بار الجانبي */}
         <Sidebar 
           isOpen={sidebarOpen} 
           onClose={() => setSidebarOpen(false)}
           isCollapsed={sidebarCollapsed}
         />
 
+        {/* منطقة المحتوى الرئيسي */}
         <main className="flex-1 overflow-y-auto pb-20 lg:pb-0 bg-[#050505]">
-          
-          {/* --- هذا هو المكان الجديد للشريط --- */}
-          {/* وضعناه هنا ليكون تحت الرصيد مباشرة وبنفس المحاذاة */}
-          <div className="w-full border-b border-white/5 bg-[#0d0d0d]/40 backdrop-blur-md">
-             <LiveFeed />
-          </div>
-
           <div className="container mx-auto p-4 lg:p-6">
             {children}
           </div>
