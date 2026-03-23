@@ -59,7 +59,7 @@ const defaultOfferwalls: Offerwall[] = [
     isActive: true,
     url: "#",
     color: "#ff5722", // برتقالي مميز
-  }
+  },
   {
     id: "revtoo",
     name: "Revtoo",
