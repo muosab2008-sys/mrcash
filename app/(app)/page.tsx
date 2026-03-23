@@ -6,7 +6,8 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, Flame, LayoutGrid, Zap, Coins } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Star, Flame, LayoutGrid, ExternalLink, Coins } from "lucide-react";
 
 interface Offerwall {
   id: string;
@@ -20,106 +21,102 @@ interface Offerwall {
 }
 
 const defaultOfferwalls: Offerwall[] = [
-  // --- المميزة (Featured Partners) ---
   {
     id: "playtime",
     name: "PlayTimeAds",
-    tag: "Most Popular 🔥",
+    tag: "Trending 🔥",
     logoUrl: "https://earng.net/storage/providers/zeG92gZZxlLyVw6nTwvBWeFN4eV6l1Lqy90xQzHZ.webp",
-    avgPoints: 2000,
+    avgPoints: 5000,
     url: (uid: string) => `https://web.playtimeads.com/index.php?app_id=6d186de0e9e5e8d7&user_id=${uid}`,
-    glowColor: "shadow-[0_4px_15px_-3px_rgba(147,51,234,0.5)] border-purple-500",
+    glowColor: "shadow-[0_0_20px_rgba(147,51,234,0.3)] border-purple-500/50",
     category: "featured"
-  },
-  // --- Offer Partners (شركات العروض العادية) ---
-  {
-    id: "dtowall",
-    name: "adtowall",
-    tag: "TrueLeads 🎯",
-    logoUrl: "https://bagirawall.com/favicon.ico", // مثال
-    avgPoints: 950,
-    url: (uid: string) => `#`,
-    glowColor: "shadow-[0_4px_15px_-3px_rgba(6,182,212,0.5)] border-cyan-500",
-    category: "standard"
   },
   {
     id: "pixylabs",
-    name: "pixylabs",
-    tag: "PureReward 💎",
+    name: "PixyLabs",
+    tag: "High Payout",
     logoUrl: "https://offerwall.pixylabs.co/favicon.ico",
-    avgPoints: 1200,
+    avgPoints: 3200,
     url: (uid: string) => `https://offerwall.pixylabs.co/230?uid=${uid}`,
-    glowColor: "shadow-[0_4px_15px_-3px_rgba(16,185,129,0.5)] border-emerald-500",
+    glowColor: "shadow-[0_0_20px_rgba(6,182,212,0.3)] border-cyan-500/50",
     category: "standard"
   }
 ];
 
-export default function OffersPage() {
+export default function EarnPage() {
   const { userData } = useAuth();
   const [offerwalls] = useState<Offerwall[]>(defaultOfferwalls);
 
-  // دالة مساعدة لرسم القسم
   const renderSection = (title: string, icon: any, category: "featured" | "standard") => {
     const filtered = offerwalls.filter(w => w.category === category);
     if (filtered.length === 0) return null;
 
     return (
-      <div className="space-y-6 pt-4">
-        {/* العناوين باللون السماوي الخاص بالشعار */}
+      <div className="space-y-8">
+        {/* العنوان باللون السماوي (Cyan) مطابق لشعارك */}
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-[var(--brand-cyan)]/10">
+          <div className="p-2 rounded-lg bg-cyan-500/10">
             {icon}
           </div>
-          <h2 className="text-2xl font-black text-white uppercase tracking-tighter">
-            {title}
-          </h2>
+          <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{title}</h2>
         </div>
         
-        {/* شبكة العروض بتصميم المربعات الجانبية الاحترافي (طبق الأصل) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-7xl mx-auto">
+        {/* Grid: مستطيلات عمودية احترافية */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filtered.map((wall) => (
             <Card 
               key={wall.id}
-              onClick={() => {
-                  const finalUrl = typeof wall.url === 'function' ? wall.url(userData?.email || "guest") : wall.url;
-                  window.open(finalUrl, "_blank");
-              }}
-              className={`relative bg-[#0a0a0a] border border-white/5 rounded-[22px] p-6 cursor-pointer transition-all hover:scale-[1.03] active:scale-95 border-b-2 ${wall.glowColor} group flex items-center gap-6 overflow-hidden`}
+              className={`relative bg-[#050505] border-2 ${wall.glowColor} rounded-[35px] p-6 flex flex-col items-center text-center transition-all duration-300 hover:scale-[1.03] group overflow-hidden`}
             >
-              {/* تأثير التوهج الخلفي البنفسجي (طبق الأصل) */}
-              <div className="absolute -top-10 -left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all z-0"></div>
-              
-              {/* 1. المربع الصغير المتوهج (أيقونة P أو الشعار) */}
-              <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl bg-[#2A1B4A] border-2 border-purple-900 shadow-xl shadow-purple-500/50 p-2 flex items-center justify-center transition-transform group-hover:scale-105 z-10">
+              {/* Badge العلوي */}
+              <div className="absolute top-4 right-4 z-10">
+                <Badge className="bg-[#6A3AB1] text-white border-none font-bold rounded-full py-1 px-3 text-[10px]">
+                  {wall.tag}
+                </Badge>
+              </div>
+
+              {/* تأثير النور خلف الأيقونة */}
+              <div className="absolute top-10 w-32 h-32 bg-purple-600/20 blur-[50px] rounded-full group-hover:bg-purple-600/30 transition-all"></div>
+
+              {/* الأيقونة الدائرية الكبيرة (طبق الأصل) */}
+              <div className="relative z-10 h-28 w-28 rounded-full border-[6px] border-[#1a102d] bg-[#0a0a0a] p-1 shadow-2xl transition-transform group-hover:scale-110">
                 <img 
                   src={wall.logoUrl} 
                   alt={wall.name} 
-                  className="h-full w-full object-contain filter group-hover:brightness-110 transition-all" 
+                  className="h-full w-full object-contain rounded-full" 
                 />
               </div>
-              
-              {/* 2. النصوص على الجانب (طبق الأصل) */}
-              <div className="flex-1 space-y-3 z-10 relative">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-2xl text-white font-extrabold truncate uppercase tracking-tight">{wall.name}</h3>
-                  <Badge className="bg-white/10 backdrop-blur-md text-white border-none font-bold rounded-full py-1.5 px-4 text-[10px] tracking-widest uppercase">
-                    {wall.tag}
-                  </Badge>
-                </div>
+
+              {/* المعلومات */}
+              <div className="mt-6 space-y-3 z-10 w-full">
+                <h3 className="text-2xl font-black text-white uppercase tracking-tight italic">
+                  {wall.name}
+                </h3>
                 
-                {/* النجوم الذهبية */}
-                <div className="flex gap-1.5 text-yellow-400">
+                {/* النجوم */}
+                <div className="flex justify-center gap-1">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={`h-4 w-4 ${i < 4 ? "fill-yellow-500" : "fill-zinc-800 text-zinc-800"}`} />
+                    <Star key={i} className={`h-4 w-4 ${i < 4 ? "fill-yellow-400 text-yellow-400" : "fill-zinc-800 text-zinc-800"}`} />
                   ))}
                 </div>
-                
-                {/* النقاط Up to ... */}
-                <div className="flex items-center gap-3 text-emerald-400 font-semibold text-sm">
-                  <Coins className="h-5 w-5" />
+
+                <div className="flex items-center justify-center gap-2 text-emerald-400 font-bold text-sm">
+                  <Coins className="h-4 w-4" />
                   <span>Up to {wall.avgPoints.toLocaleString()} Points</span>
                 </div>
               </div>
+
+              {/* زر التشغيل الأسفل */}
+              <Button
+                className="mt-8 w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black h-12 rounded-2xl shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40"
+                onClick={() => {
+                  const finalUrl = typeof wall.url === 'function' ? wall.url(userData?.email || "guest") : wall.url;
+                  window.open(finalUrl, "_blank");
+                }}
+              >
+                START EARNING
+                <ExternalLink className="ml-2 h-4 w-4" />
+              </Button>
             </Card>
           ))}
         </div>
@@ -128,14 +125,9 @@ export default function OffersPage() {
   };
 
   return (
-    <div className="p-6 md:p-10 min-h-screen space-y-16 bg-black text-white">
-      
-      {/* القسم الأول: الشركات المميزة */}
-      {renderSection("Featured Partners", <Flame className="text-[var(--brand-cyan)] h-6 w-6" />, "featured")}
-
-      {/* القسم الثاني: شركات العروض */}
-      {renderSection("Offer Partners", <LayoutGrid className="text-[var(--brand-cyan)] h-6 w-6" />, "standard")}
-
+    <div className="p-6 md:p-10 min-h-screen bg-black space-y-20">
+      {renderSection("Featured Partners", <Flame className="text-cyan-400 h-7 w-7" />, "featured")}
+      renderSection("Offer Partners", <LayoutGrid className="text-cyan-400 h-7 w-7" />, "standard")}
     </div>
   );
 }
