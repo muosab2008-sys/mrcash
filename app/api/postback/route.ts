@@ -45,13 +45,14 @@ slmtyUkuZDNy/ESBNJCEjA==
   return getFirestore();
 }
 
-const OFFERWALL_CONFIGS: Record<string, { secretKey: string; name: string }> = {
-  test: { secretKey: "123", name: "Test Wall" },
-  lootably: { secretKey: process.env.LOOTABLY_SECRET || "", name: "Lootably" },
-  offertoro: { secretKey: process.env.OFFERTORO_SECRET || "", name: "OfferToro" },
+// أسماء الشركات بالعربي للعرض في الإشعارات
+const شركات_العروض: Record<string, { secretKey: string; name: string }> = {
+  test: { secretKey: "123", name: "عروض تجريبية" },
+  lootably: { secretKey: process.env.LOOTABLY_SECRET || "", name: "لوتابلي (Lootably)" },
+  offertoro: { secretKey: process.env.OFFERTORO_SECRET || "", name: "أوفر تورو (OfferToro)" },
 };
 
-const USD_TO_POINTS = 1000;
+const تحويل_الدولار_لنقاط = 1000;
 
 export async function GET(request: NextRequest) {
   try {
@@ -60,16 +61,16 @@ export async function GET(request: NextRequest) {
 
     const wall = searchParams.get("wall")?.toLowerCase() || "";
     const userIdentifier = searchParams.get("user_id") || searchParams.get("uid") || searchParams.get("email") || "";
-    const transactionId = searchParams.get("transaction_id") || `TX-${Date.now()}`;
+    const transactionId = searchParams.get("transaction_id") || `عملية-${Date.now()}`;
     const payout = parseFloat(searchParams.get("payout") || "0");
-    const offerName = searchParams.get("offer_name") || "Task Completion";
+    const offerName = searchParams.get("offer_name") || "إتمام مهمة";
 
     if (!wall || !userIdentifier) {
-      return NextResponse.json({ success: false, error: "Missing Parameters" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "بيانات ناقصة" }, { status: 400 });
     }
 
-    const config = OFFERWALL_CONFIGS[wall];
-    if (!config) return NextResponse.json({ success: false, error: "Unknown Wall" }, { status: 400 });
+    const config = شركات_العروض[wall];
+    if (!config) return NextResponse.json({ success: false, error: "شركة غير معروفة" }, { status: 400 });
 
     let userRef = adminDb.collection("users").doc(userIdentifier);
     let userSnap = await userRef.get();
@@ -94,10 +95,10 @@ export async function GET(request: NextRequest) {
     }
 
     const userData = userSnap.data();
-    const points = Math.round(payout * USD_TO_POINTS) || 100;
+    const points = Math.round(payout * تحويل_الدولار_لنقاط) || 100;
 
     const dupCheck = await adminDb.collection("transactions").where("transactionId", "==", transactionId).get();
-    if (!dupCheck.empty) return NextResponse.json({ success: true, message: "Already Processed" });
+    if (!dupCheck.empty) return NextResponse.json({ success: true, message: "تمت معالجتها مسبقاً" });
 
     const batch = adminDb.batch();
 
@@ -105,41 +106,37 @@ export async function GET(request: NextRequest) {
     batch.set(adminDb.collection("transactions").doc(), {
       userId: userSnap.id,
       transactionId,
-      offerwall: wall,
+      offerwall: config.name,
       points,
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // 2. تحديث النقاط والمستوى
-    const newTotal = (userData?.totalEarned || 0) + points;
-    const newLevel = Math.floor(newTotal / 10000) + 1;
+    // 2. تحديث النقاط
     batch.update(userRef, {
       points: FieldValue.increment(points),
       totalEarned: FieldValue.increment(points),
-      level: newLevel
     });
 
-    // --- الجزء الجديد: إضافة الإشعار للجرس ---
+    // 3. إضافة الإشعار العربي للجرس
     batch.set(adminDb.collection("notifications").doc(), {
-      userId: userSnap.id, // ربط الإشعار بمعرف المستخدم
-      title: "تم إضافة نقاط! 💰",
-      message: `مبروك! لقد حصلت على ${points} نقطة من عرض ${offerName}`,
-      isRead: false, // لضمان ظهور العلامة الحمراء
+      userId: userSnap.id,
+      title: "نقاط جديدة! 💰",
+      message: `مبروك! تم إضافة ${points} نقطة لرصيدك من ${config.name}.`,
+      isRead: false,
       type: "reward",
       createdAt: FieldValue.serverTimestamp(),
     });
-    // ---------------------------------------
 
-    // 4. تحديث الـ Live Feed
+    // 4. تحديث الـ Live Feed بالعربي
     batch.set(adminDb.collection("live_feed").doc(), {
-      username: userData?.username || "User",
+      username: userData?.username || "مستخدم",
       points,
       source: config.name,
       createdAt: FieldValue.serverTimestamp(),
     });
 
     await batch.commit();
-    return NextResponse.json({ success: true, points_added: points, level: newLevel });
+    return NextResponse.json({ success: true, message: "تم إضافة النقاط بنجاح" });
 
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
