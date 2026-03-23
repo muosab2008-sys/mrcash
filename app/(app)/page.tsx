@@ -6,13 +6,15 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, Flame, LayoutGrid } from "lucide-react";
+import { Star, Flame, LayoutGrid, Zap } from "lucide-react";
 
 interface Offerwall {
   id: string;
   name: string;
   tag: string;
+  tagColor: string;
   logoUrl: string;
+  points: number;
   url: any;
   glowColor: string; 
   category: "featured" | "standard";
@@ -23,55 +25,58 @@ const defaultOfferwalls: Offerwall[] = [
   {
     id: "playtime",
     name: "PlayTimeAds",
-    tag: "Popular 🔥",
+    tag: "Trendify 🔥",
+    tagColor: "bg-purple-600/20 text-purple-300 border border-purple-600/30",
     logoUrl: "https://earng.net/storage/providers/zeG92gZZxlLyVw6nTwvBWeFN4eV6l1Lqy90xQzHZ.webp",
+    points: 1000,
     url: (uid: string) => `https://web.playtimeads.com/index.php?app_id=6d186de0e9e5e8d7&user_id=${uid}`,
-    glowColor: "shadow-[0_8px_25px_-5px_rgba(147,51,234,0.6)] border-purple-900",
+    glowColor: "shadow-[0_4px_15px_-3px_rgba(147,51,234,0.5)] border-purple-500",
     category: "featured"
   },
   // --- Offer Partners (شركات العروض العادية) ---
   {
-    id: "pixylabs",
-    name: "PixyLabs",
-    tag: "Surveys 💎",
-    logoUrl: "https://offerwall.pixylabs.co/favicon.ico",
-    url: (uid: string) => `https://offerwall.pixylabs.co/230?uid=${uid}`,
-    glowColor: "shadow-[0_8px_25px_-5px_rgba(6,182,212,0.6)] border-cyan-900",
+    id: "bagira",
+    name: "adtowall",
+    tag: "TrueLeads ✅",
+    tagColor: "bg-blue-600/20 text-blue-300 border border-blue-600/30",
+    logoUrl: "https://bagirawall.com/favicon.ico",
+    points: 800,
+    url: (uid: string) => `https://bagirawall.com/wall/YOUR_ID?subId=${uid}`,
+    glowColor: "shadow-[0_4px_15px_-3px_rgba(37,99,235,0.5)] border-blue-500",
     category: "standard"
   },
   {
-    id: "mylead",
-    name: "MyLead",
-    tag: "Exclusive 🎯",
-    logoUrl: "https://mylead.global/favicon.ico",
-    url: (uid: string) => `https://mylead.global/sl/YOUR_LINK?ml_sub1=${uid}`,
-    glowColor: "shadow-[0_8px_25px_-5px_rgba(37,99,235,0.6)] border-blue-900",
+    id: "pixylabs",
+    name: "pixylabs",
+    tag: "PureReward 💎",
+    tagColor: "bg-emerald-600/20 text-emerald-300 border border-emerald-600/30",
+    logoUrl: "https://offerwall.pixylabs.co/favicon.ico",
+    points: 750,
+    url: (uid: string) => `https://offerwall.pixylabs.co/230?uid=${uid}`,
+    glowColor: "shadow-[0_4px_15px_-3px_rgba(16,185,129,0.5)] border-emerald-500",
     category: "standard"
   }
 ];
 
-export default function OffersPage() {
+export default function EarnPage() {
   const { userData } = useAuth();
   const [offerwalls] = useState<Offerwall[]>(defaultOfferwalls);
 
+  // دالة مساعدة لرسم القسم
   const renderSection = (title: string, icon: any, category: "featured" | "standard") => {
     const filtered = offerwalls.filter(w => w.category === category);
     if (filtered.length === 0) return null;
 
     return (
-      <div className="space-y-6">
-        {/* العناوين باللون السماوي الخاص بالشعار */}
+      <div className="space-y-6 pt-4">
+        {/* عنوان القسم */}
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-[var(--brand-cyan)]/10 border border-[var(--brand-cyan)]/20">
-            {icon}
-          </div>
-          <h2 className="text-2xl font-black text-white uppercase tracking-tighter">
-            {title}
-          </h2>
+          {icon}
+          <h2 className="text-2xl font-black text-white uppercase tracking-tight leading-none">{title}</h2>
         </div>
         
-        {/* Grid Layout - المربعات الاحترافية */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {/* شبكة العروض - عرض الكروت لتعطي شكل المستطيل الأفقي */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((wall) => (
             <Card 
               key={wall.id}
@@ -79,33 +84,40 @@ export default function OffersPage() {
                   const finalUrl = typeof wall.url === 'function' ? wall.url(userData?.email || "guest") : wall.url;
                   window.open(finalUrl, "_blank");
               }}
-              // الإضافة السحرية: aspect-square تجعل البطاقة مربعة تماماً
-              className={`relative group bg-[#000000] aspect-square border-2 border-white/5 rounded-[28px] p-5 cursor-pointer transition-all duration-300 hover:scale-[1.05] active:scale-95 flex flex-col justify-between ${wall.glowColor}`}
+              // تصميم المستطيل الأفقي (bg-[#0a0a0a]) مع الحدود الملونة المتوهجة
+              className={`relative bg-[#0a0a0a] border border-white/5 rounded-2xl p-5 cursor-pointer transition-all hover:scale-102 hover:border-white/10 active:scale-98 border-b-2 ${wall.glowColor} group flex items-center gap-5`}
             >
-              {/* Badge العلوي */}
+              {/* Badge - التاج العلوي في الزاوية */}
               <div className="absolute top-3 right-3 z-10">
-                <Badge className="bg-white/5 backdrop-blur-sm text-[9px] px-2 py-0.5 rounded-lg border border-white/10 text-gray-300 font-bold uppercase tracking-widest">
+                <Badge className={`${wall.tagColor} text-[10px] px-2.5 py-1 rounded-full border-none font-bold`}>
                   {wall.tag}
                 </Badge>
               </div>
 
-              {/* Logo Section - أيقونة الشركة (في منتصف المربع) */}
-              <div className="flex-1 flex items-center justify-center mt-6">
+              {/* Logo Section - الأيقونة */}
+              <div className="h-20 w-20 flex-shrink-0 flex items-center justify-center rounded-xl bg-black border border-white/5 p-2">
                 <img 
                   src={wall.logoUrl} 
                   alt={wall.name} 
-                  className="max-h-[60px] max-w-[80%] object-contain filter group-hover:brightness-125 transition-all" 
+                  className="max-h-full max-w-full object-contain filter group-hover:brightness-125 transition-all" 
                 />
               </div>
 
-              {/* Info Section - الاسم والنجوم (في أسفل المربع) */}
-              <div className="space-y-1.5 border-t border-white/5 pt-4">
-                <h3 className="text-white font-black text-sm truncate uppercase tracking-tight text-center">{wall.name}</h3>
+              {/* Info Section - البيانات بجانب الأيقونة */}
+              <div className="flex-1 space-y-2">
+                <h3 className="text-white font-black text-xl truncate uppercase tracking-tight">{wall.name}</h3>
                 
-                <div className="flex gap-0.5 text-yellow-500 justify-center">
+                {/* Stars - النجوم */}
+                <div className="flex gap-1 text-yellow-500">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={`h-3 w-3 ${i < 4 ? "fill-yellow-500" : "fill-zinc-800 text-zinc-800"}`} />
+                    <Star key={i} className={`h-4 w-4 ${i < 4 ? "fill-yellow-500 text-yellow-500" : "fill-zinc-800 text-zinc-800"}`} />
                   ))}
+                </div>
+
+                {/* Points - النقاط */}
+                <div className="flex items-center gap-2 text-sm font-bold text-gray-400 mt-2">
+                    <Zap className="h-4 w-4 text-emerald-500" />
+                    <span>~{wall.points.toLocaleString()} pts</span>
                 </div>
               </div>
             </Card>
@@ -116,14 +128,12 @@ export default function OffersPage() {
   };
 
   return (
-    <div className="p-6 md:p-10 min-h-screen space-y-16">
-      
-      {/* القسم الأول: الشركات المميزة */}
-      {renderSection("Featured Partners", <Flame className="text-[var(--brand-cyan)] h-6 w-6" />, "featured")}
+    <div className="p-4 md:p-8 min-h-screen space-y-12 bg-black text-white">
+      {/* 1. Featured Section */}
+      {renderSection("Featured Partners", <Flame className="text-purple-500 h-7 w-7" />, "featured")}
 
-      {/* القسم الثاني: شركات العروض */}
-      {renderSection("Offer Partners", <LayoutGrid className="text-[var(--brand-cyan)] h-6 w-6" />, "standard")}
-
+      {/* 2. Offer Partners Section */}
+      {renderSection("Offer Partners", <LayoutGrid className="text-emerald-500 h-7 w-7" />, "standard")}
     </div>
   );
 }
