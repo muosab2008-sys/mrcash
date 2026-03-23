@@ -24,7 +24,7 @@ interface Offerwall {
   color: string;
 }
 
-// Default offerwalls for demo (in production these would be from Firestore)
+// تم تحديث الشركات هنا وحذف القديم وإضافة PlayTime و PubScale
 const defaultOfferwalls: Offerwall[] = [
   {
     id: "playtime",
@@ -34,9 +34,8 @@ const defaultOfferwalls: Offerwall[] = [
     avgPoints: 1200,
     pointsPerFragment: 15,
     isActive: true,
-    // رابط بلاي تايم مع الـ App ID الخاص بك
-    url: (uid: string) => `https://web.playtimeads.com/index.php?app_id=6d186de0e9e5e8d7&user_id=${uid}`,
-    color: "#9333ea", // بنفسجي (توهج فخم)
+    url: "#", // سيتم استبداله برابط المستخدم تلقائياً
+    color: "#9333ea",
   },
   {
     id: "pubscale",
@@ -46,54 +45,20 @@ const defaultOfferwalls: Offerwall[] = [
     avgPoints: 850,
     pointsPerFragment: 12,
     isActive: true,
-    // رابط بوب سكيل مع المعرف 99429038
-    url: (uid: string) => `https://sdk.pubscale.com/wall/v1/?appId=99429038&subId=${uid}`,
-    color: "#2563eb", // أزرق (توهج احترافي)
+    url: "#", // سيتم استبداله برابط المستخدم تلقائياً
+    color: "#2563eb",
   },
   {
-    id: "3",
-    name: "Lootably",
-    description: "Premium offers with high payouts",
-    logoUrl: "/offerwalls/lootably.png",
-    avgPoints: 1000,
-    pointsPerFragment: 20,
+    id: "adgate",
+    name: "AdGate Media",
+    description: "Download apps and watch videos for rewards",
+    logoUrl: "/offerwalls/adgate.png",
+    avgPoints: 750,
+    pointsPerFragment: 15,
     isActive: true,
     url: "#",
-    color: "#9C27B0",
-  },
-  {
-    id: "4",
-    name: "CPX Research",
-    description: "Market research surveys for cash",
-    logoUrl: "/offerwalls/cpx.png",
-    avgPoints: 600,
-    pointsPerFragment: 12,
-    isActive: true,
-    url: "#",
-    color: "#FF9800",
-  },
-  {
-    id: "5",
-    name: "Bitlabs",
-    description: "Quick surveys with instant credit",
-    logoUrl: "/offerwalls/bitlabs.png",
-    avgPoints: 450,
-    pointsPerFragment: 9,
-    isActive: true,
-    url: "#",
-    color: "#E91E63",
-  },
-  {
-    id: "6",
-    name: "Revenue Universe",
-    description: "Diverse offers from top brands",
-    logoUrl: "/offerwalls/revenue.png",
-    avgPoints: 800,
-    pointsPerFragment: 16,
-    isActive: true,
-    url: "#",
-    color: "#00BCD4",
-  },
+    color: "#2196F3",
+  }
 ];
 
 export default function EarnPage() {
@@ -102,7 +67,6 @@ export default function EarnPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Try to fetch offerwalls from Firestore, fallback to defaults
     const q = query(collection(db, "offerwalls"), orderBy("avgPoints", "desc"));
     
     const unsubscribe = onSnapshot(
@@ -118,7 +82,6 @@ export default function EarnPage() {
         setLoading(false);
       },
       () => {
-        // On error, use defaults
         setLoading(false);
       }
     );
@@ -126,14 +89,28 @@ export default function EarnPage() {
     return () => unsubscribe();
   }, []);
 
-  // Calculate level progress
+  // تحديث روابط الشركات برقم ID المستخدم الحالي
+  const getDynamicUrl = (wall: Offerwall) => {
+    if (!userData?.uid) return "#";
+    
+    if (wall.id === "playtime") {
+      return `https://web.playtimeads.com/index.php?app_id=6d186de0e9e5e8d7&user_id=${userData.uid}`;
+    }
+    if (wall.id === "pubscale") {
+      return `https://sdk.pubscale.com/wall/v1/?appId=99429038&subId=${userData.uid}`;
+    }
+    if (wall.id === "adgate") {
+      return `https://wall.adgaterewards.com/YOUR_ADGATE_ID/${userData.uid}`;
+    }
+    return wall.url;
+  };
+
   const currentLevelThreshold = (userData?.level || 1) * 10000;
   const previousLevelThreshold = ((userData?.level || 1) - 1) * 10000;
   const pointsInCurrentLevel = (userData?.totalEarned || 0) - previousLevelThreshold;
   const pointsNeededForLevel = currentLevelThreshold - previousLevelThreshold;
   const levelProgress = Math.min((pointsInCurrentLevel / pointsNeededForLevel) * 100, 100);
 
-  // Sort offerwalls by avgPoints (highest first)
   const sortedOfferwalls = [...offerwalls].sort((a, b) => b.avgPoints - a.avgPoints);
 
   return (
@@ -221,7 +198,7 @@ export default function EarnPage() {
         <h2 className="mb-4 text-xl font-bold">Earn Points</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {loading ? (
-            Array.from({ length: 6 }).map((_, i) => (
+            Array.from({ length: 3 }).map((_, i) => (
               <Card key={i} className="border-border bg-card animate-pulse">
                 <CardContent className="p-6">
                   <div className="h-12 w-12 rounded-xl bg-muted mb-4" />
@@ -236,17 +213,26 @@ export default function EarnPage() {
               <Card key={wall.id} className="border-border bg-card transition-all hover:border-[var(--brand-cyan)]/50 hover:shadow-lg hover:shadow-[var(--brand-cyan)]/10">
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
-                    <div
-                      className="flex h-12 w-12 items-center justify-center rounded-xl text-white font-bold text-lg"
-                      style={{ backgroundColor: wall.color }}
-                    >
-                      {wall.name.charAt(0)}
-                    </div>
+                    {/* عرض الشعار كصورة إذا كانت موجودة، وإلا عرض أول حرف */}
+                    {wall.logoUrl.startsWith("http") || wall.logoUrl.startsWith("/") ? (
+                        <img 
+                            src={wall.logoUrl} 
+                            alt={wall.name} 
+                            className="h-12 w-12 rounded-xl object-contain bg-white/5 p-1"
+                        />
+                    ) : (
+                        <div
+                          className="flex h-12 w-12 items-center justify-center rounded-xl text-white font-bold text-lg"
+                          style={{ backgroundColor: wall.color }}
+                        >
+                          {wall.name.charAt(0)}
+                        </div>
+                    )}
                     <Badge variant="secondary" className="bg-[var(--brand-cyan)]/10 text-[var(--brand-cyan)]">
                       ~{(wall.avgPoints ?? 0).toLocaleString()} pts
                     </Badge>
                   </div>
-                  <CardTitle className="text-lg">{wall.name}</CardTitle>
+                  <CardTitle className="text-lg mt-2">{wall.name}</CardTitle>
                   <CardDescription>{wall.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-2">
@@ -255,8 +241,8 @@ export default function EarnPage() {
                     <span>+{wall.pointsPerFragment} fragments per task</span>
                   </div>
                   <Button
-                    className="w-full brand-gradient text-primary-foreground"
-                    onClick={() => window.open(wall.url, "_blank")}
+                    className="w-full brand-gradient text-primary-foreground font-bold"
+                    onClick={() => window.open(getDynamicUrl(wall), "_blank")}
                   >
                     Start Earning
                     <ExternalLink className="ml-2 h-4 w-4" />
