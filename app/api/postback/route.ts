@@ -121,13 +121,16 @@ export async function GET(request: NextRequest) {
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // 4. تحديث الـ Live Feed
-    batch.set(adminDb.collection("live_feed").doc(), {
-      username: userData?.username || "User",
-      points,
-      source: wallName,
-      createdAt: FieldValue.serverTimestamp(),
-    });
+    // 4. تحديث الـ Live Feed (التعديل المطلوب للبيانات الحقيقية)
+batch.set(adminDb.collection("live_feed").doc(), {
+  userId: userSnap.id,           // أضفنا الـ ID الحقيقي لفتح البروفايل
+  username: userData?.username || "User",
+  photoURL: userData?.photoURL || "", // أضفنا سحب الصورة الشخصية
+  points: points,
+  source: wallName,
+  offerName: offerName || "Task", // أضفنا اسم العرض الحقيقي
+  createdAt: FieldValue.serverTimestamp(),
+});
 
     await batch.commit();
     return NextResponse.json({ success: true, message: "Points added successfully", wall: wallName });
