@@ -45,11 +45,10 @@ slmtyUkuZDNy/ESBNJCEjA==
   return getFirestore();
 }
 
-// أسماء الشركات بالعربي للعرض في الإشعارات
-const شركات_العروض: Record<string, { secretKey: string; name: string }> = {
-  test: { secretKey: "123", name: "عروض تجريبية" },
-  lootably: { secretKey: process.env.LOOTABLY_SECRET || "", name: "لوتابلي (Lootably)" },
-  offertoro: { secretKey: process.env.OFFERTORO_SECRET || "", name: "أوفر تورو (OfferToro)" },
+const OFFERWALL_CONFIGS: Record<string, { secretKey: string; name: string }> = {
+  test: { secretKey: "123", name: "Test Offers" },
+  lootably: { secretKey: process.env.LOOTABLY_SECRET || "", name: "Lootably" },
+  offertoro: { secretKey: process.env.OFFERTORO_SECRET || "", name: "OfferToro" },
 };
 
 const تحويل_الدولار_لنقاط = 1000;
