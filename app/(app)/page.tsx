@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Zap, Gamepad2, Star } from "lucide-react";
+import { ExternalLink, Zap, Coins } from "lucide-react";
 
 interface Offerwall {
   id: string;
@@ -23,6 +23,7 @@ interface Offerwall {
   color: string;
 }
 
+// قائمة الشركات المحدثة والمنظمة
 const defaultOfferwalls: Offerwall[] = [
   {
     id: "playtimeads",
@@ -38,7 +39,7 @@ const defaultOfferwalls: Offerwall[] = [
   {
     id: "pixylabs",
     name: "PixyLabs",
-    description: "High-paying surveys and exclusive mobile offers",
+    description: "Complete premium surveys and exclusive tasks",
     logoUrl: "https://offerwall.pixylabs.co/favicon.ico",
     avgPoints: 1200,
     pointsPerFragment: 25,
@@ -49,7 +50,7 @@ const defaultOfferwalls: Offerwall[] = [
   {
     id: "bagirawall",
     name: "Bagira Wall",
-    description: "Install apps and complete quick tasks for rewards",
+    description: "Install apps and get instant rewards",
     logoUrl: "https://bagirawall.com/favicon.ico",
     avgPoints: 950,
     pointsPerFragment: 15,
@@ -60,7 +61,7 @@ const defaultOfferwalls: Offerwall[] = [
   {
     id: "mylead",
     name: "MyLead",
-    description: "Unlock exclusive global tasks and rewards",
+    description: "Exclusive global offers and smartlinks",
     logoUrl: "https://mylead.global/favicon.ico",
     avgPoints: 1100,
     pointsPerFragment: 20,
@@ -75,46 +76,55 @@ export default function EarnPage() {
   const [offerwalls, setOfferwalls] = useState<Offerwall[]>(defaultOfferwalls);
   const [loading, setLoading] = useState(false);
 
+  // ترتيب العروض حسب النقاط الأفضل
   const sortedOfferwalls = [...offerwalls].sort((a, b) => b.avgPoints - a.avgPoints);
 
   return (
     <div className="space-y-8 p-4 max-w-7xl mx-auto">
-      {/* Page Title */}
+      {/* عنوان الصفحة فقط (بعد حذف الإحصائيات العلوية) */}
       <div>
         <h1 className="text-3xl font-extrabold text-white tracking-tight">Offerwalls</h1>
-        <p className="text-muted-foreground mt-2 text-lg">Complete tasks from our partners to earn points instantly.</p>
+        <p className="text-muted-foreground mt-2 text-lg">Complete tasks to earn points instantly.</p>
       </div>
 
-      {/* Offerwalls Grid */}
+      {/* شبكة العروض (Offers Grid) */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {sortedOfferwalls.map((wall) => (
           <Card 
             key={wall.id} 
             className="border-border bg-card/40 backdrop-blur-md border-white/5 transition-all hover:border-[var(--brand-cyan)]/50 hover:shadow-2xl hover:translate-y-[-5px]"
           >
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="h-14 w-14 overflow-hidden rounded-2xl bg-white p-2 shadow-inner">
+            <CardHeader className="pb-3 relative">
+              <div className="flex items-start justify-between relative">
+                {/* تعديل الأيقونة: المربع الآن بخلفية سوداء */}
+                <div className="h-16 w-16 overflow-hidden rounded-2xl bg-black border-2 border-white/10 p-2 flex items-center justify-center">
                   <img 
                     src={wall.logoUrl} 
                     alt={wall.name} 
                     className="h-full w-full object-contain"
                   />
                 </div>
-                <Badge variant="secondary" className="bg-[var(--brand-cyan)]/20 text-[var(--brand-cyan)] border-none font-bold">
+                
+                <Badge variant="secondary" className="bg-[#6A3AB1] text-white border-none font-bold rounded-full py-1.5 px-4">
                   HOT
                 </Badge>
               </div>
-              <CardTitle className="text-xl mt-4 text-white font-bold">{wall.name}</CardTitle>
-              <CardDescription className="text-sm text-gray-400 line-clamp-2">{wall.description}</CardDescription>
+              
+              <div className="mt-5 space-y-1">
+                <CardTitle className="text-xl text-white font-extrabold">{wall.name}</CardTitle>
+              </div>
+              
+              <CardDescription className="text-sm text-gray-400 mt-2 line-clamp-2">{wall.description}</CardDescription>
             </CardHeader>
 
             <CardContent className="pt-2">
+              {/* تفاصيل العرض */}
               <div className="mb-6 flex items-center gap-3 text-sm font-semibold text-emerald-400">
-                <Star className="h-4 w-4 fill-emerald-400" />
+                <Coins className="h-4 w-4 text-emerald-400" />
                 <span>Up to {wall.avgPoints.toLocaleString()} Points</span>
               </div>
               
+              {/* زر التشغيل */}
               <Button
                 className="w-full brand-gradient text-white font-bold h-12 rounded-xl shadow-lg shadow-blue-500/20"
                 onClick={() => {
@@ -130,25 +140,6 @@ export default function EarnPage() {
             </CardContent>
           </Card>
         ))}
-      </div>
-
-      {/* Featured Banner for Playtime */}
-      <div className="mt-10 rounded-3xl p-8 bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-white/10 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-5">
-            <div className="bg-yellow-400 p-4 rounded-2xl animate-bounce">
-                <Gamepad2 className="h-8 w-8 text-black" />
-            </div>
-            <div>
-                <h2 className="text-2xl font-bold text-white">Play & Earn</h2>
-                <p className="text-gray-300">Get paid for every minute you play games on your phone.</p>
-            </div>
-        </div>
-        <Button 
-            className="bg-white text-black hover:bg-gray-200 font-bold px-10 h-12 rounded-full"
-            onClick={() => window.open(`https://web.playtimeads.com/index.php?app_id=6d186de0e9e5e8d7&user_id=${userData?.email || 'guest'}`, "_blank")}
-        >
-            Launch Games
-        </Button>
       </div>
     </div>
   );
