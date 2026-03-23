@@ -12,86 +12,27 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ExternalLink, Coins, Trophy, Zap, Star } from "lucide-react";
 
-interface Offerwall {
-  id: string;
-  name: string;
-  description: string;
-  logoUrl: string;
-  avgPoints: number;
-  pointsPerFragment: number;
-  isActive: boolean;
-  url: string;
-  color: string;
-}
-
-// Default offerwalls for demo (in production these would be from Firestore)
-const defaultOfferwalls: Offerwall[] = [
+const offerwalls = [
   {
-    id: "1",
-    name: "OfferToro",
-    description: "Complete surveys and offers to earn points",
-    logoUrl: "/offerwalls/offertoro.png",
-    avgPoints: 500,
-    pointsPerFragment: 10,
-    isActive: true,
-    url: "#",
-    color: "#4CAF50",
+    id: "playtime",
+    name: "PlayTimeAds",
+    tag: "Trendify 🔥",
+    // الصورة اللي أرسلتها لبلاي تايم
+    logo: "https://earng.net/storage/providers/zeG92gZZxlLyVw6nTwvBWeFN4eV6l1Lqy90xQzHZ.webp",
+    url: (uid: string) => `https://web.playtimeads.com/index.php?app_id=6d186de0e9e5e8d7&user_id=${uid}`,
+    glowColor: "rgba(147, 51, 234, 0.6)", // توهج بنفسجي شعار بلاي تايم
+    borderColor: "border-purple-500/50"
   },
   {
-    id: "2",
-    name: "AdGate Media",
-    description: "Download apps and watch videos for rewards",
-    logoUrl: "/offerwalls/adgate.png",
-    avgPoints: 750,
-    pointsPerFragment: 15,
-    isActive: true,
-    url: "#",
-    color: "#2196F3",
-  },
-  {
-    id: "3",
-    name: "Lootably",
-    description: "Premium offers with high payouts",
-    logoUrl: "/offerwalls/lootably.png",
-    avgPoints: 1000,
-    pointsPerFragment: 20,
-    isActive: true,
-    url: "#",
-    color: "#9C27B0",
-  },
-  {
-    id: "4",
-    name: "CPX Research",
-    description: "Market research surveys for cash",
-    logoUrl: "/offerwalls/cpx.png",
-    avgPoints: 600,
-    pointsPerFragment: 12,
-    isActive: true,
-    url: "#",
-    color: "#FF9800",
-  },
-  {
-    id: "5",
-    name: "Bitlabs",
-    description: "Quick surveys with instant credit",
-    logoUrl: "/offerwalls/bitlabs.png",
-    avgPoints: 450,
-    pointsPerFragment: 9,
-    isActive: true,
-    url: "#",
-    color: "#E91E63",
-  },
-  {
-    id: "6",
-    name: "Revenue Universe",
-    description: "Diverse offers from top brands",
-    logoUrl: "/offerwalls/revenue.png",
-    avgPoints: 800,
-    pointsPerFragment: 16,
-    isActive: true,
-    url: "#",
-    color: "#00BCD4",
-  },
+    id: "pubscale",
+    name: "PubScale",
+    tag: "New 🚀",
+    // الصورة والرابط اللي أرسلتهم لبوب سكيل
+    logo: "https://cashlyearn.com/storage/providers/oEfGzXHjrQMaKUZCf1uiT5tv4xvDSwVqsXsZccSl.webp",
+    url: (uid: string) => `https://sdk.pubscale.com/wall/v1/?appId=99429038&subId=${uid}`,
+    glowColor: "rgba(59, 130, 246, 0.6)", // توهج أزرق شعار بوب سكيل
+    borderColor: "border-blue-500/50"
+  }
 ];
 
 export default function EarnPage() {
