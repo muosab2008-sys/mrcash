@@ -60,6 +60,18 @@ const defaultOfferwalls: Offerwall[] = [
     url: "#",
     color: "#ff5722", // برتقالي مميز
   }
+  {
+    id: "revtoo",
+    name: "Revtoo",
+    description: "Maximize your earnings with high-reward premium offers and instant, verified surveys",
+    // شعار Revtoo (يمكنك استخدام شعارهم الرسمي)
+    logoUrl: "https://revtoo.com/assets/offerwall/images/revtoo-dark.svg", 
+    avgPoints: 1800,
+    pointsPerFragment: 20,
+    isActive: true,
+    url: "#",
+    color: "#0ea5e9", // لون سماوي (Sky Blue) احترافي جداً
+  },
 ];
 
 export default function EarnPage() {
