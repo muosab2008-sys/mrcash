@@ -56,12 +56,33 @@ export async function GET(request: NextRequest) {
     const wallParam = searchParams.get("wall") || "Offerwall";
     const wallName = wallParam.charAt(0).toUpperCase() + wallParam.slice(1);
 
-   const userIdentifier = searchParams.get("user_id") || searchParams.get("uid") || searchParams.get("ml_sub1") || searchParams.get("email") || "";
-    // هذا السطر أضفته لك تحت سطر userIdentifier
-const offerName = searchParams.get("offer_name") || searchParams.get("offerName") || "Special Task";
-    const transactionId = searchParams.get("transaction_id") || searchParams.get("offer_id") || `TX-${Date.now()}`;
-    const payout = parseFloat(searchParams.get("payout") || searchParams.get("payout_decimal") || searchParams.get("amount") || "0");
+   const userIdentifier = 
+      searchParams.get("user_id") || 
+      searchParams.get("ml_sub1") || 
+      searchParams.get("subId") ||     // خاص بـ BagiraWall
+      searchParams.get("subid") ||     // خاص بـ Growdeck
+      searchParams.get("uid")   || 
+      searchParams.get("email") || 
+      "";
 
+    const offerName = 
+      searchParams.get("offer_name") || 
+      searchParams.get("offerName") || 
+      "Special Task";
+
+    const transactionId = 
+      searchParams.get("transaction_id") || 
+      searchParams.get("transId") ||    // خاص بـ BagiraWall
+      searchParams.get("offer_id") || 
+      `TX-${Date.now()}`;
+
+    const payout = parseFloat(
+      searchParams.get("payout") || 
+      searchParams.get("payout_decimal") || 
+      searchParams.get("reward") ||     // خاص بـ BagiraWall
+      searchParams.get("amount") || 
+      "0"
+    );
     if (!userIdentifier) {
       return NextResponse.json({ success: false, error: "Missing User ID" }, { status: 400 });
     }
