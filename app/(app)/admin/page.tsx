@@ -366,7 +366,7 @@ export default function AdminDashboard() {
                       }`}
                     >
                       {tx.type === "withdraw" ? "-" : "+"}
-                      {tx.amount.toLocaleString()} pts
+                      {(tx.amount || 0).toLocaleString()} pts
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {tx.createdAt.toLocaleTimeString()}
