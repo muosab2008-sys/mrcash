@@ -15,29 +15,32 @@ export function AppShell({ children }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      
-      {/* 1. هذا هو التعديل: الـ Live Feed صار في القمة تماماً */}
-      <div className="w-full bg-[#050505] border-b border-white/5 py-1 z-50">
-         <LiveFeed />
-      </div>
-
-      {/* 2. الهيدر (اللي فيه الجرس والرصيد) صار تحته مباشرة */}
-      <Header 
-        onMenuClick={() => setSidebarOpen(true)} 
-        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* 1. السايد بار الجانبي ثابت على اليسار */}
+      <Sidebar 
+        isOpen={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)}
         isCollapsed={sidebarCollapsed}
       />
-      
-      <div className="flex flex-1 overflow-hidden">
-        {/* السايد بار الجانبي */}
-        <Sidebar 
-          isOpen={sidebarOpen} 
-          onClose={() => setSidebarOpen(false)}
+
+      {/* 2. منطقة المحتوى الأيمن بالكامل */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        
+        {/* --- هنا الترتيب الجديد داخل الجزء الأيمن فقط --- */}
+        
+        {/* شريط الـ Live Feed في القمة (فوق الجرس فقط) */}
+        <div className="w-full bg-[#050505] border-b border-white/5 py-1 z-50">
+           <LiveFeed />
+        </div>
+
+        {/* الهيدر الذي يحتوي على الجرس والرصيد */}
+        <Header 
+          onMenuClick={() => setSidebarOpen(true)} 
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           isCollapsed={sidebarCollapsed}
         />
 
-        {/* منطقة المحتوى الرئيسي */}
+        {/* باقي محتوى الصفحة */}
         <main className="flex-1 overflow-y-auto pb-20 lg:pb-0 bg-[#050505]">
           <div className="container mx-auto p-4 lg:p-6">
             {children}
