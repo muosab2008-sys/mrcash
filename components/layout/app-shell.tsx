@@ -15,7 +15,9 @@ export function AppShell({ children }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background text-white">
+    // أزلنا h-screen و overflow-hidden لجعل الصفحة تتمدد طبيعياً
+    <div className="flex min-h-screen bg-background text-white">
+      
       {/* 1. السايد بار الجانبي */}
       <Sidebar 
         isOpen={sidebarOpen} 
@@ -23,23 +25,23 @@ export function AppShell({ children }: AppShellProps) {
         isCollapsed={sidebarCollapsed}
       />
 
-      {/* 2. منطقة المحتوى الأيمن */}
-      <div className="flex flex-col flex-1 overflow-hidden">
+      {/* 2. منطقة المحتوى الأيمن - جعلناها تأخذ الطول الكامل */}
+      <div className="flex flex-col flex-1 min-w-0">
         
-        {/* التبديل تم هنا: الهيدر أصبح هو الأول في الأعلى */}
+        {/* الهيدر في الأعلى (الجرس والرصيد) */}
         <Header 
           onMenuClick={() => setSidebarOpen(true)} 
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           isCollapsed={sidebarCollapsed}
         />
 
-        {/* ثم يأتي شريط الـ Live Feed تحته مباشرة */}
+        {/* شريط الـ Live Feed تحت الهيدر مباشرة */}
         <div className="w-full bg-[#050505] border-b border-white/5 py-1 z-40">
            <LiveFeed />
         </div>
 
-        {/* 3. محتوى الصفحة الرئيسي */}
-        <main className="flex-1 overflow-y-auto pb-20 lg:pb-0 bg-[#050505]">
+        {/* 3. محتوى الصفحة الرئيسي - ينزل مع الصفحة بشكل طبيعي */}
+        <main className="flex-1 pb-20 lg:pb-10 bg-[#050505]">
           <div className="container mx-auto p-4 lg:p-6">
             {children}
           </div>
