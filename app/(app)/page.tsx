@@ -260,27 +260,53 @@ export default function EarnPage() {
         </div>
       </div>
 
-      {/* الفوتر الجديد في نهاية الصفحة */}
-      <footer className="w-full py-10 mt-20 border-t border-white/5 bg-[#030617]/50 backdrop-blur-xl rounded-t-3xl">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col items-center text-center">
-          <p className="text-slate-500 text-[11px] font-mono tracking-[0.3em] uppercase mb-6">
-            © 2023 - 2026 <span className="text-purple-500 font-black">MR. CASH</span>. ALL RIGHTS RESERVED.
-          </p>
-          
-          <div className="flex flex-wrap justify-center gap-8 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-            <a href="/terms-of-service" className="hover:text-purple-400 transition-all duration-300 flex items-center gap-2">
-              <span className="w-1 h-1 bg-purple-500 rounded-full"></span> Terms of Service
-            </a>
-            <a href="/privacy-policy" className="hover:text-purple-400 transition-all duration-300 flex items-center gap-2">
-              <span className="w-1 h-1 bg-purple-500 rounded-full"></span> Privacy Policy
-            </a>
-            <a href="/" className="hover:text-purple-400 transition-all duration-300 flex items-center gap-2">
-              <span className="w-1 h-1 bg-purple-500 rounded-full"></span> Home
-            </a>
-          </div>
-          <div className="mt-8 w-16 h-[1px] bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
+     {/* --- قسم الهوية والروابط السفلي --- */}
+<div className="mt-auto relative z-10 border-t border-white/5 pt-8 px-4">
+  <div className="flex flex-col gap-6">
+    
+    {/* لوجو واسم الموقع ووصفه */}
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-3">
+        {/* اللوجو بنفس ألوانك القديمة */}
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00D2FF] to-[#A65FFF] flex items-center justify-center shadow-lg shadow-purple-500/20">
+          <DollarSign className="w-6 h-6 text-white" />
         </div>
-      </footer>
+        <span className="text-xl font-black bg-gradient-to-r from-[#00D2FF] to-[#A65FFF] bg-clip-text text-transparent tracking-tighter">
+          MrCash
+        </span>
+      </div>
+      
+      {/* وصف الموقع */}
+      <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+        MrCash هي منصتك الموثوقة لتحويل وقتك إلى أرباح حقيقية من خلال إكمال المهام الرقمية وتجربة الألعاب والاستطلاعات.
+      </p>
     </div>
-  );
-}
+
+    {/* روابط التواصل (التيليجرام فقط كما طلبت) */}
+    <div className="space-y-3">
+      <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] px-2">Connect With Us</p>
+      
+      <a 
+        href="https://t.me/+HaIWYiOHx-FkNzY0" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-[#00D2FF]/10 hover:border-[#00D2FF]/20 transition-all duration-300 group"
+      >
+        <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center group-hover:bg-cyan-500 transition-colors">
+          <Send className="w-4 h-4 text-cyan-400 group-hover:text-white" />
+        </div>
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-white group-hover:text-cyan-400 transition-colors">Telegram</span>
+          <span className="text-[9px] text-slate-500">انضم لمجتمعنا الخاص</span>
+        </div>
+      </a>
+    </div>
+
+    {/* حقوق النشر */}
+    <div className="pt-4 pb-2 text-center">
+      <p className="text-[9px] font-mono text-slate-600 uppercase tracking-widest">
+        © 2026 MR.CASH. ALL RIGHTS RESERVED.
+      </p>
+    </div>
+  </div>
+</div>
