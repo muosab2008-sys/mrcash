@@ -158,19 +158,30 @@ export default function EarnPage() {
         </Card>
       </div>
 
-      {/* 2. Level Progress - تم فصله ليكون تحت المربعات مباشرة وبشكل مستقل لضمان ظهوره */}
+     {/* 2. Level Progress - تم توحيد الألوان مع الهوية الجديدة */}
       <Card className="border-border bg-[#0D0D0D] border-white/5">
         <CardContent className="p-4">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-amber-500" />
-              <span className="font-black text-sm text-white">Level {userData?.level || 1} Progress</span>
+              {/* استبدلنا amber-500 باللون البنفسجي الخاص بالموقع */}
+              <Trophy className="h-5 w-5 text-[#A65FFF]" />
+              <span className="font-black text-sm text-white uppercase tracking-wider">
+                Level {userData?.level || 1} Progress
+              </span>
             </div>
             <span className="text-xs font-bold text-white/40 tracking-tighter">
               {(pointsInCurrentLevel ?? 0).toLocaleString()} / {(pointsNeededForLevel ?? 0).toLocaleString()} PTS
             </span>
           </div>
-          <Progress value={levelProgress} className="h-2.5 bg-white/5" />
+          
+          {/* شريط تقدم مخصص بتدرج ألوان الموقع بدلاً من اللون السادة */}
+          <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+            <div 
+              className="h-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] transition-all duration-500 shadow-[0_0_10px_rgba(166,95,255,0.3)]" 
+              style={{ width: `${levelProgress}%` }}
+            ></div>
+          </div>
+          
           <p className="mt-3 text-[11px] text-white/30 font-medium">
             Earn {Math.max(0, pointsNeededForLevel - pointsInCurrentLevel).toLocaleString()} more points to reach Level {(userData?.level || 1) + 1}
           </p>
@@ -201,7 +212,7 @@ export default function EarnPage() {
                         alt={wall.name} 
                         className="h-12 w-12 rounded-xl object-contain bg-white/5 p-1"
                     />
-                    {/* Badge النقاط - وضعنا صورة العملة داخله أيضاً */}
+                    {/* Badge النقاط - متناسق مع اللون البنفسجي */}
                     <Badge variant="secondary" className="bg-[#A65FFF]/10 text-[#A65FFF] border border-[#A65FFF]/20 flex items-center gap-1 font-bold">
                       <Image src="/coin.png" width={10} height={10} alt="coin" />
                       ~{(wall.avgPoints ?? 0).toLocaleString()} pts
@@ -211,7 +222,6 @@ export default function EarnPage() {
                   <CardDescription className="line-clamp-2 text-xs">{wall.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-2">
-                  {/* تم حذف وسم Zap من هنا ليكون التصميم أنظف */}
                   <Button
                     className="w-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] text-white font-black text-xs hover:opacity-90 transition-all active:scale-95 border-none shadow-lg shadow-purple-500/10"
                     onClick={() => window.open(getDynamicUrl(wall), "_blank")}
@@ -225,6 +235,3 @@ export default function EarnPage() {
           )}
         </div>
       </div>
-    </div>
-  );
-}
