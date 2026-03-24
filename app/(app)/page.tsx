@@ -9,11 +9,11 @@ import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Trophy, X, ArrowLeft, Maximize2 } from "lucide-react"; // أضفت أيقونات للإطار
+import { ExternalLink, Trophy, X, ArrowLeft, Maximize2 } from "lucide-react"; 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 
-// --- مكون الـ Live Feed المعدل (فقط لضبط المسافة) ---
+// --- مكون الـ Live Feed ---
 function LiveFeed() {
   const [feedItems, setFeedItems] = useState<any[]>([]);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
@@ -65,12 +65,6 @@ function LiveFeed() {
                       </span>
                     </div>
                   </div>
-
-                  <div className={`absolute bottom-[120%] left-1/2 -translate-x-1/2 w-48 bg-[#0f0f0f] border border-white/10 rounded-xl p-3 shadow-2xl transition-all duration-300 z-[999] pointer-events-none ${activeTooltip === itemId ? "opacity-100 visible translate-y-0" : "opacity-0 invisible translate-y-2"}`}>
-                    <p className="text-[10px] font-bold text-cyan-400 truncate">{item.offerName || "Task Completed"}</p>
-                    <p className="text-[9px] text-white/40 uppercase">{item.source}</p>
-                    <div className="absolute top-[98%] left-1/2 -translate-x-1/2 w-3 h-3 bg-[#0f0f0f] border-b border-r border-white/10 rotate-45"></div>
-                  </div>
                 </div>
               );
             })}
@@ -111,12 +105,11 @@ const defaultOfferwalls: Offerwall[] = [
   { id: "cpx", name: "CPX Research", description: "Earn high rewards by participating in premium global surveys with CPX Research", logoUrl: "https://cashlyearn.com/storage/providers/Ba1959cqhHLfqj2QWML7tgDSx4LiBOIdLdO7ePRX.png", avgPoints: 3000, isActive: true, url: "#", color: "#2563eb" },
   { id: "timewall", name: "TimeWall", description: "Complete micro-tasks, clicks, and surveys for instant rewards with TimeWall", logoUrl: "https://gamehag.com/_next/image?url=%2Fimg%2Fofferwalls%2Ftimewall.png&w=1920&q=100", avgPoints: 1500, isActive: true, url: "#", color: "#00b894" },
 ];
+
 export default function EarnPage() {
   const { userData } = useAuth();
   const [offerwalls, setOfferwalls] = useState<Offerwall[]>(defaultOfferwalls);
   const [loading, setLoading] = useState(true);
-
-  // --- إضافة الحالة للإطار بدون حذف أي شيء ---
   const [activeOffer, setActiveOffer] = useState<{url: string, title: string} | null>(null);
 
   useEffect(() => {
@@ -158,7 +151,6 @@ export default function EarnPage() {
   const pointsInCurrentLevel = (userData?.totalEarned || 0) % pointsPerLevel;
   const levelProgress = (pointsInCurrentLevel / pointsPerLevel) * 100;
 
-  // --- عرض الإطار إذا تم اختياره ---
   if (activeOffer) {
     return (
       <div className="fixed inset-0 z-[100] bg-black flex flex-col">
@@ -185,7 +177,6 @@ export default function EarnPage() {
 
   return (
     <div className="flex flex-col gap-3 sm:gap-4 w-full">
-      
       <LiveFeed />
 
       <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
@@ -196,7 +187,6 @@ export default function EarnPage() {
             </div>
             <div className="min-w-0">
               <p className="text-xs sm:text-sm text-muted-foreground font-medium">Points Balance</p>
-              {/* تعديل الرصيد لضمان الظهور */}
               <p className="text-xl sm:text-2xl font-black text-white truncate">
                 {Number(userData?.points ?? 0).toLocaleString()}
               </p>
@@ -254,7 +244,6 @@ export default function EarnPage() {
                   <CardDescription className="line-clamp-2 text-[10px] sm:text-xs">{wall.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-1 sm:pt-2 px-3 sm:px-4 pb-3 sm:pb-4">
-                  {/* تغيير هنا فقط لفتح الإطار داخلياً */}
                   <Button 
                     className="w-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] text-white font-black text-[10px] sm:text-xs hover:opacity-90 active:scale-95 border-none shadow-lg shadow-purple-500/10 h-8 sm:h-10" 
                     onClick={() => {
@@ -268,4 +257,30 @@ export default function EarnPage() {
               </Card>
             ))
           )}
-       
+        </div>
+      </div>
+
+      {/* الفوتر الجديد في نهاية الصفحة */}
+      <footer className="w-full py-10 mt-20 border-t border-white/5 bg-[#030617]/50 backdrop-blur-xl rounded-t-3xl">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col items-center text-center">
+          <p className="text-slate-500 text-[11px] font-mono tracking-[0.3em] uppercase mb-6">
+            © 2023 - 2026 <span className="text-purple-500 font-black">MR. CASH</span>. ALL RIGHTS RESERVED.
+          </p>
+          
+          <div className="flex flex-wrap justify-center gap-8 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            <a href="/terms-of-service" className="hover:text-purple-400 transition-all duration-300 flex items-center gap-2">
+              <span className="w-1 h-1 bg-purple-500 rounded-full"></span> Terms of Service
+            </a>
+            <a href="/privacy-policy" className="hover:text-purple-400 transition-all duration-300 flex items-center gap-2">
+              <span className="w-1 h-1 bg-purple-500 rounded-full"></span> Privacy Policy
+            </a>
+            <a href="/" className="hover:text-purple-400 transition-all duration-300 flex items-center gap-2">
+              <span className="w-1 h-1 bg-purple-500 rounded-full"></span> Home
+            </a>
+          </div>
+          <div className="mt-8 w-16 h-[1px] bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
+        </div>
+      </footer>
+    </div>
+  );
+}
