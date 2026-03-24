@@ -109,7 +109,7 @@ const defaultOfferwalls: Offerwall[] = [
   { id: "bagirawall", name: "BagiraWall", description: "Unlock exclusive high-payout offers and premium tasks with BagiraWall", logoUrl: "https://bagiracash.com/assets/images/networks/698b5555a836d.png", avgPoints: 2300, isActive: true, url: "#", color: "#f59e0b" },
   { id: "flexwall", name: "Flex Wall", description: "Complete high-paying offers and premium tasks with Flex Wall", logoUrl: "https://media.licdn.com/dms/image/v2/D4D0BAQGjjGNPMg4b5A/company-logo_200_200/B4DZdj2GDwHAAM-/0/1749726817858/flex_wall_logo?e=2147483647&v=beta&t=FX9Rns8aGV87i0C6XdTSsPag5BpWgXrfFnK38vzM4ts", avgPoints: 2200, isActive: true, url: "#", color: "#6366f1" },
   { id: "cpx", name: "CPX Research", description: "Earn high rewards by participating in premium global surveys with CPX Research", logoUrl: "https://cashlyearn.com/storage/providers/Ba1959cqhHLfqj2QWML7tgDSx4LiBOIdLdO7ePRX.png", avgPoints: 3000, isActive: true, url: "#", color: "#2563eb" },
-  { id: "timewall", name: "TimeWall", description: "Complete micro-tasks, clicks, and surveys for instant rewards with TimeWall", logoUrl: "https://gamehag.com/_next/image?url=%2Fimg%2Fofferwalls%2Ftimewall.png&w=1920&q=100", avgPoints: 1500, isActive: true, url: "#", color: "#00b894" }
+  { id: "timewall", name: "TimeWall", description: "Complete micro-tasks, clicks, and surveys for instant rewards with TimeWall", logoUrl: "https://gamehag.com/_next/image?url=%2Fimg%2Fofferwalls%2Ftimewall.png&w=1920&q=100", avgPoints: 1500, isActive: true, url: "#", color: "#00b894" },
 ];
 export default function EarnPage() {
   const { userData } = useAuth();
