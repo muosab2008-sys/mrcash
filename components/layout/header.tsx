@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image"; // استيراد مكون الصورة من Next.js
 import { useAuth } from "@/contexts/auth-context";
 import { Settings, Menu, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,8 +25,8 @@ export function Header({ onMenuClick }: HeaderProps) {
     <header className="sticky top-0 z-50 w-full border-b border-white/[0.05] bg-[#050505]/80 backdrop-blur-xl">
       <div className="flex h-16 items-center justify-between px-4 sm:px-6">
         
-        {/* القسم الأيسر: زر المنيو + الشعار (للجوال فقط) */}
-        <div className="flex items-center gap-3">
+        {/* القسم الأيسر: زر المنيو للجوال فقط */}
+        <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="icon"
@@ -35,26 +36,34 @@ export function Header({ onMenuClick }: HeaderProps) {
             <Menu className="h-5 w-5" />
           </Button>
 
-          {/* الشعار المخصص للجوال فقط - لن يظهر في اللابتوب بسبب lg:hidden */}
-          <Link href="/" className="lg:hidden flex items-center gap-2">
-             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#00E676] font-black text-black">
-              M
-            </div>
-            <span className="text-lg font-black tracking-tighter text-white">
-              MR<span className="text-[#00E676]">CASH</span>
-            </span>
-          </Link>
+          {/* اللابتوب لم يتغير: الشعار لا يظهر هنا لأنه موجود في السايد بار الأيسر */}
         </div>
 
-        {/* القسم الأيمن: الرصيد والإعدادات (كما هي في اللابتوب والجوال) */}
+        {/* القسم الأيمن: الرصيد (بصورة coin.png) والإعدادات (للجوال واللابتوب) */}
         <div className="flex items-center gap-2 sm:gap-4">
           {user && userData ? (
             <>
-              {/* عرض النقاط */}
-              <div className="flex items-center gap-2 rounded-full bg-white/[0.05] px-3 py-1.5 border border-white/[0.1]">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#00E676] shadow-[0_0_8px_#00E676] animate-pulse" />
+              {/* عرض الرصيد - تصميم الكبسولة الأنيق */}
+              <div className="flex items-center gap-2 rounded-full bg-white/[0.03] px-3 py-1.5 border border-white/[0.08]">
+                
+                {/* استبدال الأيقونة بصورة coin.png (تظهر في الجوال واللابتوب) */}
+                {/* تأكد من وجود ملف coin.png في مجلد public */}
+                <Image 
+                  src="/coin.png" 
+                  alt="Coin" 
+                  width={18} // حجم الصورة في الجوال
+                  height={18} 
+                  priority // لضمان تحميل الصورة بسرعة
+                  className="object-contain animate-pulse sm:w-5 sm:h-5" // حجم الصورة في اللابتوب
+                />
+
                 <span className="font-bold text-xs sm:text-sm text-white">
                   {userData?.points?.toLocaleString() || "0"}
+                </span>
+                
+                {/* كلمة Points تظهر فقط في الشاشات المتوسطة فما فوق (md:inline) */}
+                <span className="hidden md:inline text-[10px] text-white/40 font-medium uppercase tracking-widest ml-1">
+                  Points
                 </span>
               </div>
 
@@ -96,7 +105,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             </>
           ) : (
             <Link href="/login">
-              <Button className="h-9 px-5 rounded-full bg-[#00E676] text-black font-black text-[10px] hover:bg-[#00c864]">
+              <Button className="h-9 px-5 rounded-full bg-[#00E676] text-black font-black text-[10px] hover:bg-[#00c864] transition-all">
                 SIGN IN
               </Button>
             </Link>
