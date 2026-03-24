@@ -115,31 +115,23 @@ if (points <= 0) points = 5; // حد أدنى بسيط
         userSnap = await userRef.get();
       }
     }
-
-   const userData = userSnap.data();
-    // 1. حساب النقاط القادمة من الشركة (بدون تدبيل)
+const userData = userSnap.data();
+    
+    // 1. حساب النقاط القادمة من الشركة (حل مشكلة التدبيل)
     const rawPayout = searchParams.get("payout") || searchParams.get("reward") || "0";
     const payoutValue = parseFloat(rawPayout);
-    let points = payoutValue >= 1 ? Math.round(payoutValue) : Math.round(payoutValue * POINTS_PER_DOLLAR);
-
-    // 2. نظام الليفل التصاعدي (الصعب)
-    // المعادلة: نعتمد على إجمالي ما كسبه المستخدم في حياته بالموقع
-    const totalEarnedSoFar = (userData?.totalEarned || 0) + points;
     
-    // ليفل 1: 0 - 10k
-    // ليفل 2: 10k - 30k
-    // ليفل 3: 30k - 60k
-    // ليفل 4: 60k - 100k
+    // التعديل: نأخذ القيمة كما هي لأن الشركة ترسل نقاطاً وليس دولارات
+    let points = Math.round(payoutValue); 
+    if (points <= 0) points = 5; // حد أدنى للأمان
+
+    // 2. حساب الليفل التصاعدي (يعتمد على إجمالي النقاط المكتسبة)
+    const totalEarnedSoFar = (userData?.totalEarned || 0) + points;
     let newLevel = 1;
-    if (totalEarnedSoFar >= 100000) {
-      newLevel = 4;
-    } else if (totalEarnedSoFar >= 60000) {
-      newLevel = 3;
-    } else if (totalEarnedSoFar >= 20000) {
-      newLevel = 2;
-    } else {
-      newLevel = 1;
-    }
+    if (totalEarnedSoFar >= 100000) newLevel = 4;
+    else if (totalEarnedSoFar >= 60000) newLevel = 3;
+    else if (totalEarnedSoFar >= 20000) newLevel = 2;
+    else newLevel = 1;
 
     // 3. تحديث قاعدة البيانات (مسح الشظايا وتحديث الليفل والنقاط)
     batch.update(userRef, {
