@@ -126,6 +126,35 @@ export default function EarnPage() {
 
   return (
     <div className="space-y-6">
+      {/* شريط آخر الأرباح (Recent Earnings Feed) */}
+      <div className="relative flex overflow-x-hidden border-y border-white/[0.05] bg-white/[0.02] py-2 backdrop-blur-sm">
+        <div className="flex animate-marquee whitespace-nowrap gap-8">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex items-center gap-2 px-4">
+              <div className="h-2 w-2 rounded-full bg-[#00D2FF] animate-pulse" />
+              <span className="text-[10px] font-medium text-white/70 uppercase tracking-widest">
+                User <span className="text-[#A65FFF]">#{(1000 + i)}</span> just earned 
+                <span className="mx-1 text-white font-black">{(i * 250).toLocaleString()}</span> 
+                PTS from <span className="text-[#E366FF]">Lootably</span>
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* تكرار الشريط لضمان استمرارية الحركة */}
+        <div className="absolute top-2 flex animate-marquee2 whitespace-nowrap gap-8">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex items-center gap-2 px-4">
+              <div className="h-2 w-2 rounded-full bg-[#00D2FF] animate-pulse" />
+              <span className="text-[10px] font-medium text-white/70 uppercase tracking-widest">
+                User <span className="text-[#A65FFF]">#{(1000 + i)}</span> just earned 
+                <span className="mx-1 text-white font-black">{(i * 250).toLocaleString()}</span> 
+                PTS from <span className="text-[#E366FF]">Lootably</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
       {/* 1. Stats Overview */}
       <div className="grid gap-4 sm:grid-cols-2">
         <Card className="border-border bg-card">
