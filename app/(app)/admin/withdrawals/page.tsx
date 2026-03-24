@@ -375,8 +375,8 @@ export default function AdminWithdrawalsPage() {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-lg">
-                            ${withdrawal.amount.toFixed(2)}
-                          </span>
+  ${(withdrawal.amount || 0).toFixed(2)}
+</span>
                           {getStatusBadge(withdrawal.status)}
                         </div>
                         <p className="text-sm font-medium">{withdrawal.username}</p>
