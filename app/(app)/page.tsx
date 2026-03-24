@@ -281,7 +281,7 @@ if (wall.id === "offery") {
                 <CardContent className="pt-2">
                   <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
                     <Zap className="h-4 w-4 text-[var(--brand-purple)]" />
-                    <span>+{wall.pointsPerFragment} fragments per task</span>
+                    <span>+{wall.pointsPerFragment} </span>
                   </div>
                   <Button
                     className="w-full brand-gradient text-primary-foreground font-bold"
