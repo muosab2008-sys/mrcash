@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import {
   collection,
   doc,
-  addDoc,
   onSnapshot,
   query,
   where,
@@ -16,372 +15,198 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import {
-  DollarSign,
-  Coins,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Loader2,
-  CreditCard,
-  Wallet,
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { 
+  Wallet, Clock, CheckCircle, XCircle, Loader2, 
+  Gift, Bitcoin, Gamepad2, CreditCard, Landmark, DollarSign, Coins 
 } from "lucide-react";
+import Image from "next/image";
 
-interface Withdrawal {
-  id: string;
-  amount: number;
-  pointsDeducted: number;
-  method: string;
-  paymentDetails: string;
-  status: "pending" | "completed" | "rejected";
-  createdAt: Date;
-  processedAt?: Date;
-}
-
-const paymentMethods = [
-  { id: "paypal", name: "PayPal", icon: Wallet, minAmount: 5 },
-  { id: "crypto", name: "Cryptocurrency", icon: CreditCard, minAmount: 10 },
+// --- بيانات طرق السحب بناءً على الصور ---
+const CASHOUT_METHODS = [
+  { id: "paypal", name: "PayPal", category: "Cashout Methods", icon: "/paypal.png", minPoints: 5000, glow: "blue" },
+  { id: "visa", name: "Visa Tremendous", category: "Cashout Methods", icon: "/visa.png", minPoints: 5000, glow: "white" },
+  { id: "amazon", name: "Amazon US", category: "Gift Cards", icon: "/amazon.png", minPoints: 2000, glow: "orange" },
+  { id: "google", name: "Google Play US", category: "Gift Cards", icon: "/google-play.png", minPoints: 5000, glow: "green" },
+  { id: "faucetpay", name: "FaucetPay", category: "Crypto", icon: "/faucetpay.png", minPoints: 1000, glow: "blue" },
+  { id: "binance", name: "Binance", category: "Crypto", icon: "/binance.png", minPoints: 10000, glow: "yellow" },
+  { id: "freefire", name: "Free Fire", category: "Skins", icon: "/freefire.png", minPoints: 1000, glow: "purple" },
+  { id: "pubg", name: "PUBG Mobile", category: "Skins", icon: "/pubg.png", minPoints: 1000, glow: "yellow" },
 ];
 
 export default function CashoutPage() {
   const { userData } = useAuth();
-  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
-  const [amount, setAmount] = useState("");
+  
+  // حالات الـ Modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<any>(null);
   const [paymentDetails, setPaymentDetails] = useState("");
-
-  // Points to USD conversion (1000 points = $1)
-  const pointsPerDollar = 1000;
-  const availableBalance = (userData?.points || 0) / pointsPerDollar;
 
   useEffect(() => {
     if (!userData?.uid) return;
-
-    const q = query(
-      collection(db, "withdrawals"),
-      where("userId", "==", userData.uid),
-      orderBy("createdAt", "desc")
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const data = snapshot.docs.map((doc) => {
-          const d = doc.data();
-          return {
-            id: doc.id,
-            amount: d.amount,
-            pointsDeducted: d.pointsDeducted,
-            method: d.method,
-            paymentDetails: d.paymentDetails,
-            status: d.status,
-            createdAt: (d.createdAt && typeof d.createdAt.toDate === 'function') ? d.createdAt.toDate() : new Date(),
-            processedAt: (d.processedAt && typeof d.processedAt.toDate === 'function') ? d.processedAt.toDate() : null,
-          };
-        }) as Withdrawal[];
-        setWithdrawals(data);
-        setLoading(false);
-      },
-      () => {
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
+    const q = query(collection(db, "withdrawals"), where("userId", "==", userData.uid), orderBy("createdAt", "desc"));
+    return onSnapshot(q, (snapshot) => {
+      setWithdrawals(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoading(false);
+    }, () => setLoading(false));
   }, [userData?.uid]);
 
-  const handleWithdraw = async () => {
-    if (!userData || !selectedMethod || !amount || !paymentDetails) {
-      toast.error("Please fill in all fields");
+  const handleOpenWithdraw = (method: any) => {
+    setSelectedMethod(method);
+    setIsModalOpen(true);
+  };
+
+  const submitWithdrawal = async () => {
+    if (!userData || !paymentDetails) {
+      toast.error("Please enter your details");
       return;
     }
-
-    const amountNum = parseFloat(amount);
-    const method = paymentMethods.find((m) => m.id === selectedMethod);
-
-    if (!method) return;
-
-    if (amountNum < method.minAmount) {
-      toast.error(`Minimum withdrawal for ${method.name} is $${method.minAmount}`);
-      return;
-    }
-
-    const pointsNeeded = amountNum * pointsPerDollar;
-    if (pointsNeeded > (userData.points || 0)) {
-      toast.error("Insufficient points");
+    if ((userData.points || 0) < selectedMethod.minPoints) {
+      toast.error(`Minimum withdrawal is ${selectedMethod.minPoints} points`);
       return;
     }
 
     setSubmitting(true);
-
     try {
       await runTransaction(db, async (transaction) => {
         const userRef = doc(db, "users", userData.uid);
-        
-        // Deduct points
-        transaction.update(userRef, {
-          points: (userData.points || 0) - pointsNeeded,
-        });
-
-        // Create withdrawal request
+        transaction.update(userRef, { points: (userData.points || 0) - selectedMethod.minPoints });
         const withdrawalRef = doc(collection(db, "withdrawals"));
         transaction.set(withdrawalRef, {
           userId: userData.uid,
           username: userData.username,
           email: userData.email,
-          amount: amountNum,
-          pointsDeducted: pointsNeeded,
-          method: method.name,
-          paymentDetails: paymentDetails,
+          method: selectedMethod.name,
+          pointsDeducted: selectedMethod.minPoints,
+          amountUSD: selectedMethod.minPoints / 1000,
+          paymentDetails,
           status: "pending",
           createdAt: serverTimestamp(),
         });
       });
-
-      toast.success("Withdrawal request submitted!");
-      setAmount("");
+      toast.success("Request sent successfully!");
+      setIsModalOpen(false);
       setPaymentDetails("");
-      setSelectedMethod(null);
     } catch (error: any) {
-      toast.error(error.message || "Failed to submit withdrawal");
+      toast.error(error.message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "completed":
-        return (
-          <Badge className="bg-emerald-500/10 text-emerald-500 border-0">
-            <CheckCircle className="mr-1 h-3 w-3" />
-            Completed
-          </Badge>
-        );
-      case "rejected":
-        return (
-          <Badge className="bg-destructive/10 text-destructive border-0">
-            <XCircle className="mr-1 h-3 w-3" />
-            Rejected
-          </Badge>
-        );
-      default:
-        return (
-          <Badge className="bg-amber-500/10 text-amber-500 border-0">
-            <Clock className="mr-1 h-3 w-3" />
-            Pending
-          </Badge>
-        );
-    }
-  };
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Cashout</h1>
-        <p className="text-muted-foreground">
-          Withdraw your earnings to PayPal or Cryptocurrency
-        </p>
-      </div>
-
-      {/* Balance */}
+    <div className="flex flex-col gap-8 pt-6 pb-20 px-4 min-h-screen bg-[#050505]">
+      
+      {/* 1. Header & Balance - تصميم مستوحى من الصور */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <Card className="border-border bg-card">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl brand-gradient">
-              <Coins className="h-6 w-6 text-primary-foreground" />
+        <Card className="bg-[#0D0D0D] border-white/5 relative overflow-hidden shadow-[0_15px_40px_-10px_rgba(0,0,0,0.5)]">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/[0.01] to-transparent pointer-events-none" />
+          <CardContent className="p-6 flex items-center gap-5 relative z-10">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.03)]">
+              <Coins className="text-white h-7 w-7" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Points Balance</p>
-              <p className="text-2xl font-bold text-[var(--brand-cyan)]">
-                {userData?.points?.toLocaleString() ?? "0"}
-              </p>
+              <p className="text-[10px] text-white/30 font-black uppercase tracking-[0.2em] mb-1">Available Points</p>
+              <p className="text-3xl font-black text-white tracking-tighter">{(userData?.points || 0).toLocaleString()} <span className="text-xs text-white/30 font-bold">PTS</span></p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border bg-card">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500">
-              <DollarSign className="h-6 w-6 text-primary-foreground" />
+        <Card className="bg-[#0D0D0D] border-[#A65FFF]/20 relative overflow-hidden shadow-[0_15px_40px_-10px_rgba(166,95,255,0.1)]">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#A65FFF]/[0.02] to-transparent pointer-events-none" />
+          <CardContent className="p-6 flex items-center gap-5 relative z-10">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#A65FFF]/10 border border-[#A65FFF]/20">
+              <DollarSign className="text-[#A65FFF] h-7 w-7" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Available to Withdraw</p>
-              <p className="text-2xl font-bold text-emerald-500">
-                ${availableBalance.toFixed(2)}
-              </p>
+              <p className="text-[10px] text-[#A65FFF]/40 font-black uppercase tracking-[0.2em] mb-1">Estimated Value</p>
+              <p className="text-3xl font-black text-[#A65FFF] tracking-tighter">${((userData?.points || 0) / 1000).toFixed(2)} <span className="text-xs text-[#A65FFF]/30 font-bold">USD</span></p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Withdraw Form */}
-      <Card className="border-[var(--brand-cyan)]/30 bg-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-[var(--brand-cyan)]" />
-            New Withdrawal
-          </CardTitle>
-          <CardDescription>
-            1,000 points = $1.00 USD
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Payment Methods */}
-          <div>
-            <p className="mb-2 text-sm font-medium">Select Payment Method</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {paymentMethods.map((method) => {
-                const Icon = method.icon;
-                const isSelected = selectedMethod === method.id;
-                return (
-                  <button
-                    key={method.id}
-                    onClick={() => setSelectedMethod(method.id)}
-                    className={`flex items-center gap-3 rounded-lg border p-4 transition-all ${
-                      isSelected
-                        ? "border-[var(--brand-cyan)] bg-[var(--brand-cyan)]/10"
-                        : "border-border hover:border-[var(--brand-cyan)]/50"
-                    }`}
-                  >
-                    <Icon
-                      className={`h-5 w-5 ${
-                        isSelected ? "text-[var(--brand-cyan)]" : "text-muted-foreground"
-                      }`}
-                    />
-                    <div className="text-left">
-                      <p className="font-medium">{method.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Min: ${method.minAmount}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+      {/* 2. الأقسام وطرق السحب - تصميم مضيء */}
+      {["Cashout Methods", "Gift Cards", "Crypto", "Skins"].map((cat) => (
+        <div key={cat} className="space-y-5">
+          <div className="flex items-center gap-3">
+             <div className="h-9 w-1 bg-gradient-to-b from-cyan-400 via-[#A65FFF] to-cyan-400 rounded-full" />
+             <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{cat}</h2>
+             <Badge className="bg-white/5 text-white/30 border-white/10 ml-2">{CASHOUT_METHODS.filter(m => m.category === cat).length} Options</Badge>
           </div>
 
-          {/* Amount */}
-          <div>
-            <p className="mb-2 text-sm font-medium">Amount (USD)</p>
-            <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                className="pl-10"
-                min={selectedMethod ? paymentMethods.find((m) => m.id === selectedMethod)?.minAmount : 5}
-                max={availableBalance}
-                step={0.01}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {CASHOUT_METHODS.filter(m => m.category === cat).map((method) => (
+              <Card 
+                key={method.id} 
+                onClick={() => handleOpenWithdraw(method)}
+                className={`bg-[#0D0D0D] border-white/5 hover:border-white/20 transition-all duration-300 cursor-pointer group relative overflow-hidden active:scale-95
+                  ${method.glow === 'blue' ? 'hover:shadow-[0_20px_50px_-15px_rgba(59,130,246,0.2)]' : ''}
+                  ${method.glow === 'yellow' ? 'hover:shadow-[0_20px_50px_-15px_rgba(234,179,8,0.2)]' : ''}
+                  ${method.glow === 'orange' ? 'hover:shadow-[0_20px_50px_-15px_rgba(249,115,22,0.2)]' : ''}
+                  ${method.glow === 'purple' ? 'hover:shadow-[0_20px_50px_-15px_rgba(166,95,255,0.2)]' : ''}
+                  ${method.glow === 'white' ? 'hover:shadow-[0_20px_50px_-15px_rgba(255,255,255,0.1)]' : ''}
+                `}
+              >
+                <CardContent className="p-8 flex flex-col items-center gap-5">
+                  <div className="h-16 w-full relative flex items-center justify-center transition-all duration-500">
+                    {/* تأكد من وجود ملفات الصور في مجلد public بأسماء صحيحة */}
+                    <img src={method.icon} alt={method.name} className="object-contain h-14 w-full" />
+                  </div>
+                  <p className="font-black text-[13px] text-white uppercase tracking-tight text-center">{method.name}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {/* 3. نافذة تأكيد السحب (Modal) - تصميم مركزي */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="bg-[#0A0A0A] border border-white/10 text-white rounded-[2.5rem] sm:max-w-md mx-4 shadow-[0_30px_70px_rgba(0,0,0,0.8)]">
+          <DialogHeader className="flex flex-col items-center gap-5">
+            <div className="w-24 h-24 bg-white/5 rounded-[2rem] p-5 border border-white/10 flex items-center justify-center relative overflow-hidden group">
+               <div className="absolute inset-0 bg-[#A65FFF]/10 blur-xl group-hover:blur-2xl transition-all" />
+              <img src={selectedMethod?.icon} alt="" className="object-contain relative z-10 h-full w-full" />
+            </div>
+            <DialogTitle className="text-3xl font-black uppercase tracking-tighter">Confirmation</DialogTitle>
+            <DialogDescription className="text-white/40 text-xs text-center font-bold px-4">
+              Deduction: <span className="text-[#E366FF]">{selectedMethod?.minPoints.toLocaleString()} PTS</span> (~${(selectedMethod?.minPoints / 1000).toFixed(2)} USD)
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-8 px-2 space-y-4">
+            <div className="space-y-3">
+              <label className="text-[11px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Wallet / Account Details</label>
+              <Input 
+                placeholder={selectedMethod?.id === 'paypal' ? 'PayPal Email Address' : 'Wallet ID / Username'}
+                value={paymentDetails}
+                onChange={(e) => setPaymentDetails(e.target.value)}
+                className="bg-black border border-white/5 h-16 rounded-2xl focus:ring-2 focus:ring-[#A65FFF]/50 transition-all text-sm font-bold text-white px-5"
               />
             </div>
-            {amount && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                = {(parseFloat(amount || "0") * pointsPerDollar).toLocaleString()} points
-              </p>
-            )}
           </div>
 
-          {/* Payment Details */}
-          <div>
-            <p className="mb-2 text-sm font-medium">
-              {selectedMethod === "paypal" ? "PayPal Email" : "Wallet Address"}
-            </p>
-            <Input
-              value={paymentDetails}
-              onChange={(e) => setPaymentDetails(e.target.value)}
-              placeholder={
-                selectedMethod === "paypal"
-                  ? "your@email.com"
-                  : "Enter your wallet address"
-              }
-            />
-          </div>
-
-          <Button
-            onClick={handleWithdraw}
-            disabled={submitting || !selectedMethod || !amount || !paymentDetails}
-            className="w-full brand-gradient text-primary-foreground"
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              "Request Withdrawal"
-            )}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Withdrawal History */}
-      <Card className="border-border bg-card">
-        <CardHeader>
-          <CardTitle>Withdrawal History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between rounded-lg bg-secondary p-4 animate-pulse"
-                >
-                  <div className="h-5 w-32 bg-muted rounded" />
-                  <div className="h-5 w-20 bg-muted rounded" />
-                </div>
-              ))}
-            </div>
-          ) : withdrawals.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <DollarSign className="mb-4 h-12 w-12 text-muted-foreground" />
-              <p className="text-lg font-medium">No withdrawals yet</p>
-              <p className="text-sm text-muted-foreground">
-                Your withdrawal history will appear here
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {withdrawals.map((withdrawal) => (
-                <div
-                  key={withdrawal.id}
-                  className="flex items-center justify-between rounded-lg bg-secondary p-4"
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-lg">
-                        ${withdrawal.amount.toFixed(2)}
-                      </span>
-                      {getStatusBadge(withdrawal.status)}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {withdrawal.method} - {
-  (withdrawal.createdAt instanceof Date) 
-  ? withdrawal.createdAt.toLocaleDateString() 
-  : "Pending..."
-}
-                    </p>
-                  </div>
-                  <div className="text-right text-sm text-muted-foreground">
-                    -{withdrawal.pointsDeducted?.toLocaleString() ?? "0"} pts
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          <DialogFooter className="flex flex-col gap-3 pb-4">
+            <Button 
+              className="w-full h-16 bg-gradient-to-r from-cyan-400 via-[#A65FFF] to-cyan-400 text-white font-black rounded-2xl shadow-[0_10px_25px_rgba(166,95,255,0.3)] hover:opacity-90 active:scale-95 transition-all text-xs border-none"
+              onClick={submitWithdrawal}
+              disabled={submitting}
+            >
+              {submitting ? <Loader2 className="animate-spin" /> : "REQUEST CASHOUT"}
+            </Button>
+            <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="text-white/20 text-[11px] font-bold uppercase hover:bg-transparent hover:text-white">Cancel</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
