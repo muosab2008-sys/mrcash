@@ -268,7 +268,4 @@ export default function EarnPage() {
               </Card>
             ))
           )}
-        </div>
-      </div>
-    </div>
-  );
+       
