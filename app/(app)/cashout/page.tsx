@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Wallet, CheckCircle, Zap, Clock, XCircle, History, Info, X } from "lucide-react";
+import { Loader2, CheckCircle, Zap, Clock, History, Info, X } from "lucide-react";
 
 // --- أيقونة العملة الخاصة بك ---
 const COIN_ICON = "/coin.png"; 
@@ -23,32 +23,80 @@ const CASHOUT_CATEGORIES = [
   {
     title: "Cashout Methods",
     methods: [
-      { id: "paypal", name: "PayPal", currency: "USD", icon: "https://earng.net/storage/images/oipeSzxn0qPxwAFms2XGG7K8cGO5TznxhlQ8TmcL.png", minPoints: 5000, amounts: [{ points: 15000, usd: 15 }, { points: 10000, usd: 10 }, { points: 5000, usd: 5 }] },
-      { id: "visa", name: "Visa Tremendous", currency: "USD", icon: "https://earng.net/storage/images/b7e5Ish9TrqPixjxgUXjGIZfAizgbxivJTLm9Nhq.png", minPoints: 5000, amounts: [{ points: 25000, usd: 25 }, { points: 10000, usd: 10 }, { points: 5000, usd: 5 }] },
+      { 
+        id: "paypal", 
+        name: "PayPal", 
+        icon: "https://earng.net/storage/images/oipeSzxn0qPxwAFms2XGG7K8cGO5TznxhlQ8TmcL.png", 
+        minPoints: 2000, 
+        inputLabel: "PayPal Email Address",
+        placeholder: "example@mail.com",
+        amounts: [{ points: 10000, usd: 10 }, { points: 5000, usd: 5 }, { points: 2000, usd: 2 }] 
+      },
+      { 
+        id: "visa", 
+        name: "Visa Tremendous", 
+        icon: "https://earng.net/storage/images/b7e5Ish9TrqPixjxgUXjGIZfAizgbxivJTLm9Nhq.png", 
+        minPoints: 1000, 
+        inputLabel: "Email Address",
+        placeholder: "Enter your email for the card",
+        amounts: [{ points: 5000, usd: 5 }, { points: 2000, usd: 2 }, { points: 1000, usd: 1 }] 
+      },
     ]
   },
   {
-    title: "Crypto",
+    title: "Crypto & Wallets",
     methods: [
-      { id: "faucetpay", name: "FaucetPay", currency: "Crypto", icon: "https://earng.net/storage/temp-images/niLsNzBAPnZvq2XFAijzOc5fEXOFN0Fh1QKaE5Wv.png", minPoints: 50, amounts: [{ points: 1000, usd: 1 }, { points: 500, usd: 0.5 }, { points: 50, usd: 0.05 }] },
-      { id: "binance", name: "Binance", currency: "USDT", icon: "https://earng.net/storage/images/ZweowA5mo9MrohnCYKI3VkCfJGZwbVLBbH24QUXU.png", minPoints: 50, amounts: [{ points: 5000, usd: 5 }, { points: 1000, usd: 1 }, { points: 50, usd: 0.05 }] },
-      { id: "litecoin", name: "Litecoin", currency: "LTC", icon: "https://earng.net/storage/images/c2YcgB4WR4QIpNjZWXULqMcthmyUQHKMg9o1Wnl6.png", minPoints: 50, amounts: [{ points: 10000, usd: 10 }, { points: 5000, usd: 5 }, { points: 50, usd: 0.05 }] },
-      { id: "cwallet", name: "cWallet", currency: "Crypto", icon: "https://earng.net/storage/images/CVMa2olhLqSdi0DhCsurT7qVZNzubx0Bv6yjaWE7.png", minPoints: 50, amounts: [{ points: 10000, usd: 10 }, { points: 5000, usd: 5 }, { points: 50, usd: 0.05 }] },
+      { 
+        id: "faucetpay", 
+        name: "FaucetPay", 
+        icon: "https://earng.net/storage/temp-images/niLsNzBAPnZvq2XFAijzOc5fEXOFN0Fh1QKaE5Wv.png", 
+        minPoints: 50, 
+        inputLabel: "FaucetPay Email Address",
+        placeholder: "Enter FaucetPay email",
+        amounts: [{ points: 1000, usd: 1 }, { points: 500, usd: 0.5 }, { points: 50, usd: 0.05 }] 
+      },
+      { 
+        id: "binance", 
+        name: "Binance", 
+        icon: "https://earng.net/storage/images/ZweowA5mo9MrohnCYKI3VkCfJGZwbVLBbH24QUXU.png", 
+        minPoints: 50, 
+        inputLabel: "Binance Pay ID / Email",
+        placeholder: "Enter Binance ID or Email",
+        amounts: [{ points: 1000, usd: 1 }, { points: 500, usd: 0.5 }, { points: 50, usd: 0.05 }] 
+      },
+      { 
+        id: "litecoin", 
+        name: "Litecoin", 
+        icon: "https://earng.net/storage/images/c2YcgB4WR4QIpNjZWXULqMcthmyUQHKMg9o1Wnl6.png", 
+        minPoints: 2000, 
+        inputLabel: "LTC Wallet Address",
+        placeholder: "Enter your LTC address",
+        amounts: [{ points: 10000, usd: 10 }, { points: 5000, usd: 5 }, { points: 2000, usd: 2 }] 
+      },
+      { 
+        id: "cwallet", 
+        name: "cWallet", 
+        icon: "https://earng.net/storage/images/CVMa2olhLqSdi0DhCsurT7qVZNzubx0Bv6yjaWE7.png", 
+        minPoints: 2000, 
+        inputLabel: "cWallet ID / Email",
+        placeholder: "Enter cWallet ID or Email",
+        amounts: [{ points: 10000, usd: 10 }, { points: 5000, usd: 5 }, { points: 2000, usd: 2 }] 
+      },
     ]
   },
   {
     title: "Gift Cards",
     methods: [
-      { id: "amazon", name: "Amazon", currency: "USD", icon: "https://earng.net/storage/images/HjLzhYmDg1Kul5979jLDii0BCfiQdE8Z2fzaLFWT.png", minPoints: 2000, amounts: [{ points: 10000, usd: 10 }, { points: 5000, usd: 5 }, { points: 2000, usd: 2 }] },
-      { id: "google", name: "Google Play US", currency: "USD", icon: "https://earng.net/storage/images/cR9c5tKppt6nWks7U1WS2Hp2S10zX6gPHMEuYPII.png", minPoints: 5000, amounts: [{ points: 15000, usd: 15 }, { points: 10000, usd: 10 }, { points: 5000, usd: 5 }] },
-      { id: "itunes", name: "iTunes Apple", currency: "USD", icon: "https://earng.net/storage/images/fEtLXen6YAH82wW1uS5osza3t1APXcKINWrCOixH.png", minPoints: 5000, amounts: [{ points: 15000, usd: 15 }, { points: 10000, usd: 10 }, { points: 5000, usd: 5 }] },
+      { id: "amazon", name: "Amazon", icon: "https://earng.net/storage/images/HjLzhYmDg1Kul5979jLDii0BCfiQdE8Z2fzaLFWT.png", minPoints: 1000, inputLabel: "Email Address", placeholder: "Email for delivery", amounts: [{ points: 5000, usd: 5 }, { points: 1000, usd: 1 }] },
+      { id: "google", name: "Google Play US", icon: "https://earng.net/storage/images/cR9c5tKppt6nWks7U1WS2Hp2S10zX6gPHMEuYPII.png", minPoints: 5000, inputLabel: "Email Address", placeholder: "Email for delivery", amounts: [{ points: 10000, usd: 10 }, { points: 5000, usd: 5 }] },
+      { id: "itunes", name: "iTunes Apple", icon: "https://earng.net/storage/images/fEtLXen6YAH82wW1uS5osza3t1APXcKINWrCOixH.png", minPoints: 5000, inputLabel: "Email Address", placeholder: "Email for delivery", amounts: [{ points: 10000, usd: 10 }, { points: 5000, usd: 5 }] },
     ]
   },
   {
     title: "Skins & Gaming",
     methods: [
-      { id: "pubg", name: "PUBG Mobile", currency: "UC", icon: "https://earng.net/storage/temp-images/33d2d2cjBBy67mkJkMPfREmBUtBkBy9drOEFBYPu.png", minPoints: 1000, amounts: [{ points: 5000, usd: 5 }, { points: 1000, usd: 1 }] },
-      { id: "freefire", name: "Free Fire", currency: "Diamonds", icon: "https://earng.net/storage/images/OfIJyyst0nKyLpnm1yR12w3DUuNbhTJBIy9A3nXG.png", minPoints: 1000, amounts: [{ points: 5000, usd: 5 }, { points: 1000, usd: 1 }] },
+      { id: "pubg", name: "PUBG Mobile", icon: "https://earng.net/storage/temp-images/33d2d2cjBBy67mkJkMPfREmBUtBkBy9drOEFBYPu.png", minPoints: 1000, inputLabel: "Player ID", placeholder: "Enter PUBG ID", amounts: [{ points: 5000, usd: 5 }, { points: 1000, usd: 1 }] },
+      { id: "freefire", name: "Free Fire", icon: "https://earng.net/storage/images/OfIJyyst0nKyLpnm1yR12w3DUuNbhTJBIy9A3nXG.png", minPoints: 1000, inputLabel: "Player ID", placeholder: "Enter Free Fire ID", amounts: [{ points: 5000, usd: 5 }, { points: 1000, usd: 1 }] },
     ]
   }
 ];
@@ -158,12 +206,15 @@ export default function CashoutPage() {
             <History className="w-5 h-5 text-[#A65FFF]" />
             <h2 className="text-xl font-black uppercase">Recent Withdrawals</h2>
         </div>
-        <div className="bg-[#0A0A0A] border border-white/5 rounded-[2rem] overflow-hidden">
+        <div className="bg-[#0A0A0A] border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl">
            {loadingHistory ? (
               <div className="p-20 flex justify-center"><Loader2 className="w-8 h-8 text-[#A65FFF] animate-spin" /></div>
            ) : (
               <div className="divide-y divide-white/[0.02]">
-                 {withdrawals.map((w) => (
+                 {withdrawals.length === 0 ? (
+                   <div className="p-12 text-center text-white/20 font-bold uppercase tracking-widest text-xs">No withdrawal history yet</div>
+                 ) : (
+                   withdrawals.map((w) => (
                     <div key={w.id} className="p-6 flex items-center justify-between hover:bg-white/[0.01] transition-colors">
                        <div className="flex items-center gap-4">
                           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${w.status === 'completed' ? 'text-emerald-500 border-emerald-500/10 bg-emerald-500/5' : 'text-amber-500 border-amber-500/10 bg-amber-500/5'}`}>
@@ -175,19 +226,20 @@ export default function CashoutPage() {
                           </div>
                        </div>
                        <div className="text-right">
-                          <div className="flex items-center gap-1.5 justify-end font-black text-white">
+                          <div className="flex items-center gap-1.5 justify-end font-black text-white text-sm">
                              -{(w.pointsDeducted ?? 0).toLocaleString()} <img src={COIN_ICON} className="w-4 h-4" alt="c" />
                           </div>
                           <Badge className={`rounded-full px-3 py-1 text-[9px] uppercase mt-2 font-black ${w.status === 'completed' ? 'bg-emerald-500 text-black' : 'bg-[#A65FFF] text-white'}`}>{w.status}</Badge>
                        </div>
                     </div>
-                 ))}
+                   ))
+                 )}
               </div>
            )}
         </div>
       </div>
 
-      {/* Modal Design (Like image_8) */}
+      {/* Withdrawal Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="bg-[#111111] border border-white/5 text-white rounded-[2rem] sm:max-w-[480px] p-0 overflow-hidden shadow-2xl">
           <div className="flex justify-end p-6 pb-2">
@@ -201,10 +253,13 @@ export default function CashoutPage() {
               </div>
               <div className="flex-1 space-y-3">
                 <div className="flex justify-between text-sm border-b border-white/[0.03] pb-2">
-                  <span className="text-white/40">Method</span><span className="font-black uppercase">{selectedMethod?.name}</span>
+                  <span className="text-white/40">Method</span><span className="font-black uppercase tracking-tighter">{selectedMethod?.name}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-white/40">Minimum</span><span className="font-black text-[#A65FFF]">{selectedMethod?.minPoints} <img src={COIN_ICON} className="inline w-3 h-3 mb-1" /></span>
+                  <span className="text-white/40">Minimum</span>
+                  <span className="font-black text-[#A65FFF] flex items-center gap-1">
+                    {selectedMethod?.minPoints.toLocaleString()} <img src={COIN_ICON} className="w-3 h-3" />
+                  </span>
                 </div>
               </div>
             </div>
@@ -228,9 +283,13 @@ export default function CashoutPage() {
             </div>
 
             <div className="space-y-3">
-              <span className="text-[10px] font-black uppercase text-white/20 tracking-[0.2em] ml-1">Payment Address</span>
-              <Input placeholder={`Enter your ${selectedMethod?.name} info`} value={paymentDetails} onChange={(e) => setPaymentDetails(e.target.value)}
-                className="bg-[#0A0A0A] border-white/5 h-14 rounded-2xl focus:border-[#A65FFF]/50 transition-all font-bold px-5" />
+              <span className="text-[10px] font-black uppercase text-white/20 tracking-[0.2em] ml-1">{selectedMethod?.inputLabel}</span>
+              <Input 
+                placeholder={selectedMethod?.placeholder} 
+                value={paymentDetails} 
+                onChange={(e) => setPaymentDetails(e.target.value)}
+                className="bg-[#0A0A0A] border-white/5 h-14 rounded-2xl focus:border-[#A65FFF]/50 transition-all font-bold px-5 placeholder:text-white/10" 
+              />
             </div>
 
             <div className="flex justify-between items-center pt-4 border-t border-white/[0.03]">
@@ -243,7 +302,7 @@ export default function CashoutPage() {
           </div>
 
           <div className="p-4 pt-0">
-            <Button className="w-full h-16 bg-[#A65FFF] hover:bg-[#914df0] text-white font-black rounded-2xl transition-all uppercase text-sm flex gap-2 shadow-2xl"
+            <Button className="w-full h-16 bg-[#A65FFF] hover:bg-[#914df0] text-white font-black rounded-2xl transition-all uppercase text-sm flex gap-2 shadow-2xl shadow-[#A65FFF]/20"
               onClick={submitWithdrawal} disabled={submitting || !selectedAmount || !paymentDetails}>
               {submitting ? <Loader2 className="animate-spin" /> : <><Zap className="w-4 h-4 fill-white" /> Withdraw Now</>}
             </Button>
