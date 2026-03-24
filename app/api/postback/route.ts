@@ -76,12 +76,12 @@ export async function GET(request: NextRequest) {
       searchParams.get("offer_id") || 
       `TX-${Date.now()}`;
 
-  const rawPayout = searchParams.get("payout") || searchParams.get("reward") || "0";
-    const payoutValue = parseFloat(rawPayout);
-    
-   // سنأخذ الرقم القادم من الشركة مباشرة بدون ضربه في أي شيء
-let points = Math.round(payoutValue); 
-if (points <= 0) points = 5; // حد أدنى بسيط
+ const rawPayout = searchParams.get("payout") || searchParams.get("reward") || "0";
+  const payoutValue = parseFloat(rawPayout);
+  
+  // نأخذ الرقم من الشركة مباشرة (مثلاً 5 نقاط تصل 5 نقاط)
+  let points = Math.round(payoutValue); 
+  if (points <= 0) points = 5;
     // حساب الليفل التصاعدي
     const totalEarnedSoFar = (userData?.totalEarned || 0) + points;
     let newLevel = 1;
