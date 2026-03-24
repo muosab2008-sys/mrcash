@@ -107,7 +107,8 @@ const defaultOfferwalls: Offerwall[] = [
   { id: "taskwall", name: "TaskWall", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "http://publishers.taskwall.io//manager/uploads/logo-2.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981" },
   { id: "wannads", name: "Wannads", description: "Complete high-paying surveys and exclusive offers with Wannads", logoUrl: "https://affi-plat.s3.us-east-2.amazonaws.com/platforms/wannads-ogotipo-naranja.png", avgPoints: 2500, isActive: true, url: "#", color: "#ff4757" },
   { id: "bagirawall", name: "BagiraWall", description: "Unlock exclusive high-payout offers and premium tasks with BagiraWall", logoUrl: "https://bagiracash.com/assets/images/networks/698b5555a836d.png", avgPoints: 2300, isActive: true, url: "#", color: "#f59e0b" },
-  { id: "flexwall", name: "Flex Wall", description: "Complete high-paying offers and premium tasks with Flex Wall", logoUrl: "https://media.licdn.com/dms/image/v2/D4D0BAQGjjGNPMg4b5A/company-logo_200_200/B4DZdj2GDwHAAM-/0/1749726817858/flex_wall_logo?e=2147483647&v=beta&t=FX9Rns8aGV87i0C6XdTSsPag5BpWgXrfFnK38vzM4ts", avgPoints: 2200, isActive: true, url: "#", color: "#6366f1" }
+  { id: "flexwall", name: "Flex Wall", description: "Complete high-paying offers and premium tasks with Flex Wall", logoUrl: "https://media.licdn.com/dms/image/v2/D4D0BAQGjjGNPMg4b5A/company-logo_200_200/B4DZdj2GDwHAAM-/0/1749726817858/flex_wall_logo?e=2147483647&v=beta&t=FX9Rns8aGV87i0C6XdTSsPag5BpWgXrfFnK38vzM4ts", avgPoints: 2200, isActive: true, url: "#", color: "#6366f1" },
+  { id: "cpx", name: "CPX Research", description: "Earn high rewards by participating in premium global surveys with CPX Research", logoUrl: "https://cashlyearn.com/storage/providers/Ba1959cqhHLfqj2QWML7tgDSx4LiBOIdLdO7ePRX.png", avgPoints: 3000, isActive: true, url: "#", color: "#2563eb" }
 ];
 export default function EarnPage() {
   const { userData } = useAuth();
@@ -144,7 +145,8 @@ export default function EarnPage() {
       taskwall: `https://wall.taskwall.io/?app_id=e723adebdbab293255deefe5fe401b43&userid=${uid}`,
       wannads: `https://earn.wannads.com/wall?apiKey=69c2b3a37bb68663049007&userId=${uid}`,
       bagirawall: `https://bagirawall.com/offerwall/20/${uid}`,
-      flexwall: `https://flexwall.net/iframe?app_id=412&user_id=${uid}`
+      flexwall: `https://flexwall.net/iframe?app_id=412&user_id=${uid}`,
+      cpx: `https://offers.cpx-research.com/index.php?app_id=32110&ext_user_id=${uid}`
     };
     return urls[wall.id] || wall.url;
   };
