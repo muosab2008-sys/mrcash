@@ -104,17 +104,7 @@ const defaultOfferwalls: Offerwall[] = [
   { id: "adtogame", name: "AdToGame", description: "Unlock exclusive high-payout opportunities", logoUrl: "https://earng.net/storage/providers/GtCTDFNK8p1W2yfdiBtF9khJjbw6zN9FztVJQdii.svg", avgPoints: 2200, isActive: true, url: "#", color: "#25D3C2" },
   { id: "pixylabs", name: "PixyLabs", description: "Complete high-paying offers and tasks from PixyLabs", logoUrl: "https://earng.net/storage/providers/79LyQwnqcRHoZsaEdiDmzoFQK5S2VOOIRUtwQ3LU.png", avgPoints: 2000, isActive: true, url: "#", color: "#6366f1" },
  { id: "pixylabs", name: "PixyLabs", description: "Complete high-paying offers and tasks from PixyLabs", logoUrl: "https://earng.net/storage/providers/79LyQwnqcRHoZsaEdiDmzoFQK5S2VOOIRUtwQ3LU.png", avgPoints: 2000, isActive: true, url: "#", color: "#6366f1" },
-  { 
-    id: "adlexy", 
-    name: "Adlexy", 
-    description: "Complete premium offers and earn instant rewards with Adlexy", 
-    logoUrl: "https://bagiracash.com/assets/images/networks/690680a83ff6d.webp", 
-    avgPoints: 1900, 
-    isActive: true, 
-    url: "#", 
-    color: "#3b82f6" 
-  }
-];
+{ id: "adlexy", name: "Adlexy", description: "Complete premium offers and earn instant rewards with Adlexy", logoUrl: "https://bagiracash.com/assets/images/networks/690680a83ff6d.webp", avgPoints: 1900, isActive: true, url: "#", color: "#3b82f6" }
 ];
 export default function EarnPage() {
   const { userData } = useAuth();
