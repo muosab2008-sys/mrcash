@@ -9,11 +9,11 @@ import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Trophy } from "lucide-react";
+import { ExternalLink, Trophy, Star, Zap, Target } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 
-// --- مكون الـ Live Feed الحقيقي المعدل (تقليل المسافات) ---
+// --- مكون الـ Live Feed الكامل مع المؤثرات ---
 function LiveFeed() {
   const [feedItems, setFeedItems] = useState<any[]>([]);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
@@ -28,7 +28,6 @@ function LiveFeed() {
   if (feedItems.length === 0) return null;
 
   return (
-    // تم تقليل py-8 إلى py-2 لتقليل الفراغ
     <div className="w-full flex justify-center py-2 bg-transparent select-none relative z-40">
       <div className="relative flex items-center h-12 w-full bg-[#0d0d0d]/80 backdrop-blur-md rounded-full border border-white/5 shadow-2xl overflow-visible">
         <div className="absolute left-0 z-[60] bg-[#0d0d0d] px-5 h-full flex items-center border-r border-white/5 rounded-l-full">
@@ -50,11 +49,11 @@ function LiveFeed() {
               return (
                 <div
                   key={itemId}
-                  className="relative inline-flex items-center gap-3 px-6 border-r border-white/5 cursor-pointer h-full"
+                  className="relative inline-flex items-center gap-3 px-6 border-r border-white/5 cursor-pointer h-full transition-colors hover:bg-white/[0.02]"
                   onMouseEnter={() => setActiveTooltip(itemId)}
                   onMouseLeave={() => setActiveTooltip(null)}
                 >
-                  <Avatar className="h-7 w-7 border border-white/10">
+                  <Avatar className="h-7 w-7 border border-white/10 ring-2 ring-cyan-500/20">
                     <AvatarImage src={item.photoURL} />
                     <AvatarFallback className="bg-white/5 text-[10px]">{item.username?.[0]}</AvatarFallback>
                   </Avatar>
@@ -62,23 +61,28 @@ function LiveFeed() {
                     <span className="font-bold text-white/90">{item.username}</span>
                     <div className="flex items-center gap-1 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
                       <span className="font-black bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                        {(item.points || 0).toLocaleString()}
+                        +{(item.points || 0).toLocaleString()}
                       </span>
                     </div>
                   </div>
 
-                  {/* Tooltip */}
-                  <div className={`absolute bottom-[120%] left-1/2 -translate-x-1/2 w-48 bg-[#0f0f0f] border border-white/10 rounded-xl p-3 shadow-2xl transition-all duration-300 z-[999] pointer-events-none ${activeTooltip === itemId ? "opacity-100 visible translate-y-0" : "opacity-0 invisible translate-y-2"}`}>
-                    <p className="text-[10px] font-bold text-cyan-400 truncate">{item.offerName || "Task Completed"}</p>
-                    <p className="text-[9px] text-white/40 uppercase">{item.source}</p>
-                    <div className="absolute top-[98%] left-1/2 -translate-x-1/2 w-3 h-3 bg-[#0f0f0f] border-b border-r border-white/10 rotate-45"></div>
+                  {/* Tooltip المتقدم */}
+                  <div className={`absolute bottom-[125%] left-1/2 -translate-x-1/2 w-52 bg-[#0a0a0a] border border-white/10 rounded-2xl p-3 shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300 z-[999] pointer-events-none ${activeTooltip === itemId ? "opacity-100 visible translate-y-0 scale-100" : "opacity-0 invisible translate-y-2 scale-95"}`}>
+                    <div className="flex flex-col gap-1">
+                      <p className="text-[10px] font-black text-cyan-400 uppercase tracking-tighter truncate">{item.offerName || "Task Completed"}</p>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-[8px] text-white/40 font-bold uppercase tracking-widest">{item.source}</span>
+                        <span className="text-[8px] text-green-400 font-bold">VERIFIED</span>
+                      </div>
+                    </div>
+                    <div className="absolute top-[98%] left-1/2 -translate-x-1/2 w-3 h-3 bg-[#0a0a0a] border-b border-r border-white/10 rotate-45"></div>
                   </div>
                 </div>
               );
             })}
           </div>
         </div>
-        <div className="absolute right-0 top-0 bottom-0 w-20 z-20 bg-gradient-to-l from-[#0d0d0d] to-transparent pointer-events-none rounded-r-full" />
+        <div className="absolute right-0 top-0 bottom-0 w-24 z-20 bg-gradient-to-l from-[#0d0d0d] via-[#0d0d0d]/80 to-transparent pointer-events-none rounded-r-full" />
       </div>
 
       <style jsx>{`
@@ -86,23 +90,15 @@ function LiveFeed() {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
         }
-        .animate-scroll {
-          animation: scroll 40s linear infinite;
-        }
+        .animate-scroll { animation: scroll 45s linear infinite; }
       `}</style>
     </div>
   );
 }
 
 interface Offerwall {
-  id: string;
-  name: string;
-  description: string;
-  logoUrl: string;
-  avgPoints: number;
-  isActive: boolean;
-  url: string;
-  color: string;
+  id: string; name: string; description: string; logoUrl: string;
+  avgPoints: number; isActive: boolean; url: string; color: string;
 }
 
 const defaultOfferwalls: Offerwall[] = [
@@ -146,86 +142,121 @@ export default function EarnPage() {
   };
 
   const pointsPerLevel = 10000;
-  const userTotalPoints = userData?.totalEarned || 0;
-  const currentLevel = Math.floor(userTotalPoints / pointsPerLevel) + 1;
-  const pointsInCurrentLevel = userTotalPoints % pointsPerLevel;
+  const currentLevel = Math.floor((userData?.totalEarned || 0) / pointsPerLevel) + 1;
+  const pointsInCurrentLevel = (userData?.totalEarned || 0) % pointsPerLevel;
   const levelProgress = (pointsInCurrentLevel / pointsPerLevel) * 100;
 
   return (
-    // تم تعديل المسافة العلوية من pt-24 إلى pt-12 لتقليل الفراغ تحت الهيدر
-    <div className="flex flex-col gap-4 pt-12 pb-12 px-4 min-h-screen overflow-y-auto">
+    <div className="flex flex-col gap-4 pt-1 pb-12 px-4 min-h-screen overflow-y-auto bg-[#050505]">
       
-      {/* 0. Live Feed (Real) */}
+      {/* 1. Live Feed - وضعت في الأعلى مع مسافة علوية بسيطة جداً */}
       <LiveFeed />
 
-      {/* 1. Stats Overview */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card className="border-border bg-card">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
-              <Image src="/coin.png" alt="Coin" width={28} height={28} className="animate-pulse object-contain" />
+      {/* 2. Stats Overview */}
+      <div className="grid gap-4 sm:grid-cols-2 mt-1">
+        <Card className="border-white/5 bg-[#0A0A0A] relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
+          <CardContent className="flex items-center gap-5 p-5 relative z-10">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)] transition-transform group-hover:scale-110 duration-300">
+              <Image src="/coin.png" alt="Coin" width={32} height={32} className="animate-pulse object-contain" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground font-medium">Points Balance</p>
-              <p className="text-2xl font-black text-white">{(userData?.points ?? 0).toLocaleString()}</p>
+              <p className="text-[10px] text-white/40 font-black uppercase tracking-[0.2em] mb-1">Available Points</p>
+              <p className="text-3xl font-black text-white tracking-tighter">{(userData?.points ?? 0).toLocaleString()}</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border bg-card">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#A65FFF]/10 border border-[#A65FFF]/20">
-              <Trophy className="h-6 w-6 text-[#A65FFF]" />
+        <Card className="border-white/5 bg-[#0A0A0A] relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#A65FFF]/[0.02] to-transparent pointer-events-none" />
+          <CardContent className="flex items-center gap-5 p-5 relative z-10">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#A65FFF]/10 border border-[#A65FFF]/20 transition-transform group-hover:scale-110 duration-300">
+              <Trophy className="h-7 w-7 text-[#A65FFF]" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground font-medium">Current Level</p>
-              <p className="text-2xl font-black text-[#A65FFF]">Level {currentLevel}</p>
+              <p className="text-[10px] text-white/40 font-black uppercase tracking-[0.2em] mb-1">Current Mastery</p>
+              <div className="flex items-center gap-2">
+                 <p className="text-3xl font-black text-[#A65FFF] tracking-tighter">Level {currentLevel}</p>
+                 <Badge className="bg-[#A65FFF]/20 text-[#A65FFF] border-none text-[8px] font-black h-5">PRO</Badge>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* 2. Level Progress */}
-      <Card className="border-border bg-[#0D0D0D] border-white/5">
-        <CardContent className="p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-[#A65FFF]" />
-              <span className="font-black text-sm text-white uppercase tracking-wider">Level {currentLevel} Progress</span>
+      {/* 3. Level Progress Card */}
+      <Card className="border-white/5 bg-[#0A0A0A] overflow-hidden">
+        <CardContent className="p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-white/5">
+                <Target className="h-4 w-4 text-cyan-400" />
+              </div>
+              <div>
+                <span className="font-black text-xs text-white uppercase tracking-widest block">Season Progress</span>
+                <span className="text-[10px] text-white/30 font-bold uppercase tracking-tighter">Next Level: {currentLevel + 1}</span>
+              </div>
             </div>
-            <span className="text-xs font-bold text-white/40 tracking-tighter">
-              {pointsInCurrentLevel.toLocaleString()} / {pointsPerLevel.toLocaleString()} PTS
-            </span>
+            <div className="text-right">
+              <span className="text-xs font-black text-white/90 block">
+                {pointsInCurrentLevel.toLocaleString()} <span className="text-white/30">/ {pointsPerLevel.toLocaleString()}</span>
+              </span>
+            </div>
           </div>
-          <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-            <div className="h-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] transition-all duration-500 shadow-[0_0_10px_rgba(166,95,255,0.3)]" style={{ width: `${levelProgress}%` }}></div>
+          <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-[2px]">
+            <div 
+              className="h-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] rounded-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(166,95,255,0.4)]" 
+              style={{ width: `${levelProgress}%` }}
+            />
           </div>
         </CardContent>
       </Card>
 
-      {/* 3. Offerwalls Grid */}
-      <div>
-        <h2 className="mb-4 text-xl font-black text-white tracking-tight">Earn Points</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* 4. Offerwalls Grid */}
+      <div className="mt-4">
+        <div className="flex items-center justify-between mb-6 px-1">
+           <div className="flex items-center gap-2">
+             <Zap className="h-5 w-5 text-yellow-400 fill-yellow-400" />
+             <h2 className="text-xl font-black text-white uppercase tracking-tighter">Premium Walls</h2>
+           </div>
+           <Badge variant="outline" className="border-white/10 text-white/40 font-bold text-[9px] px-3 py-1">6 PARTNERS ACTIVE</Badge>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {loading ? (
-             <p className="text-white/50">Loading Offerwalls...</p>
+             <div className="col-span-full flex flex-col items-center py-20 gap-4">
+                <div className="w-10 h-10 border-4 border-[#A65FFF]/20 border-t-[#A65FFF] rounded-full animate-spin" />
+                <p className="text-white/20 text-xs font-black uppercase tracking-widest">Syncing Offerwalls...</p>
+             </div>
           ) : (
             offerwalls.map((wall) => (
-              <Card key={wall.id} className="border-border bg-card transition-all hover:border-[#A65FFF]/30">
-                <CardHeader className="pb-2">
+              <Card key={wall.id} className="border-white/5 bg-[#0A0A0A] transition-all hover:border-[#A65FFF]/40 group hover:-translate-y-1 duration-300">
+                <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
-                    <img src={wall.logoUrl} alt={wall.name} className="h-12 w-12 rounded-xl object-contain bg-white/5 p-1" />
-                    <Badge variant="secondary" className="bg-[#A65FFF]/10 text-[#A65FFF] border border-[#A65FFF]/20 flex items-center gap-1 font-bold">
-                      <Image src="/coin.png" width={10} height={10} alt="coin" />
-                      ~{(wall.avgPoints ?? 0).toLocaleString()} pts
-                    </Badge>
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-[#A65FFF]/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <img src={wall.logoUrl} alt={wall.name} className="h-14 w-14 rounded-2xl object-contain bg-white/5 p-2 relative z-10 border border-white/5" />
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge className="bg-[#A65FFF]/10 text-[#A65FFF] border border-[#A65FFF]/20 flex items-center gap-1.5 font-black text-[10px] py-1 px-3">
+                        <Star className="h-3 w-3 fill-[#A65FFF]" />
+                        UP TO {wall.avgPoints.toLocaleString()}
+                      </Badge>
+                      <span className="text-[8px] text-white/20 font-bold uppercase mr-1">Points / Task</span>
+                    </div>
                   </div>
-                  <CardTitle className="text-lg mt-3 font-black text-white">{wall.name}</CardTitle>
-                  <CardDescription className="line-clamp-2 text-xs">{wall.description}</CardDescription>
+                  <CardTitle className="text-xl mt-4 font-black text-white group-hover:text-[#A65FFF] transition-colors">{wall.name}</CardTitle>
+                  <CardDescription className="line-clamp-2 text-[11px] leading-relaxed text-white/40 mt-1 font-medium italic">
+                    {wall.description}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-2">
-                  <Button className="w-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] text-white font-black text-xs hover:opacity-90 active:scale-95 border-none shadow-lg shadow-purple-500/10" onClick={() => window.open(getDynamicUrl(wall), "_blank")}>
-                    START EARNING <ExternalLink className="ml-2 h-3.5 w-3.5" />
+                  <Button 
+                    className="w-full h-11 bg-white/5 hover:bg-[#A65FFF] text-white font-black text-xs hover:shadow-[0_10px_20px_rgba(166,95,255,0.2)] transition-all active:scale-95 border border-white/10 hover:border-transparent group"
+                    onClick={() => window.open(getDynamicUrl(wall), "_blank")}
+                  >
+                    ENTER OFFERWALL 
+                    <ExternalLink className="ml-2 h-4 w-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                   </Button>
                 </CardContent>
               </Card>
