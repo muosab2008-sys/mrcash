@@ -4,7 +4,6 @@ import { useState, ReactNode } from "react";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { BottomNav } from "./bottom-nav";
-import { LiveFeed } from "@/components/live-feed";
 
 interface AppShellProps {
   children: ReactNode;
@@ -15,39 +14,36 @@ export function AppShell({ children }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    // أزلنا h-screen و overflow-hidden لجعل الصفحة تتمدد طبيعياً
-    <div className="flex min-h-screen bg-background text-white">
+    <div className="flex h-screen flex-col lg:flex-row bg-background text-white overflow-hidden">
       
-      {/* 1. السايد بار الجانبي */}
+      {/* Sidebar - Hidden on mobile, visible on desktop */}
       <Sidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
         isCollapsed={sidebarCollapsed}
       />
 
-      {/* 2. منطقة المحتوى الأيمن - جعلناها تأخذ الطول الكامل */}
-      <div className="flex flex-col flex-1 min-w-0">
+      {/* Main content area */}
+      <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden">
         
-        {/* الهيدر في الأعلى (الجرس والرصيد) */}
+        {/* Header - Sticky at top */}
         <Header 
           onMenuClick={() => setSidebarOpen(true)} 
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           isCollapsed={sidebarCollapsed}
         />
 
-        {/* شريط الـ Live Feed تحت الهيدر مباشرة */}
-      {/* <div className="w-full bg-[#050505] border-b border-white/5 py-1 z-40">
-    <LiveFeed />
-</div> */}
-
-        {/* 3. محتوى الصفحة الرئيسي - ينزل مع الصفحة بشكل طبيعي */}
-        <main className="flex-1 pb-20 lg:pb-10 bg-[#050505]">
-          <div className="container mx-auto p-4 lg:p-6">
-            {children}
+        {/* Main content - Scrollable */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden pb-20 lg:pb-0 bg-[#050505]">
+          <div className="w-full h-full">
+            <div className="mx-auto max-w-full px-3 py-4 sm:px-4 sm:py-6 md:px-6 lg:px-8">
+              {children}
+            </div>
           </div>
         </main>
       </div>
 
+      {/* Bottom navigation - Mobile only */}
       <BottomNav />
     </div>
   );

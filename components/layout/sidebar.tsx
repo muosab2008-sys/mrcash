@@ -65,31 +65,31 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 flex h-full flex-col border-r border-border bg-sidebar transition-all duration-300 lg:sticky lg:top-0 lg:z-0 lg:translate-x-0",
-          isOpen ? "translate-x-0" : "-translate-x-full",
-          isCollapsed ? "lg:w-16" : "w-64"
+          "fixed inset-y-0 left-0 z-50 flex h-full flex-col border-r border-border bg-sidebar transition-all duration-300 lg:sticky lg:top-0 lg:z-auto lg:translate-x-0",
+          isOpen ? "translate-x-0 w-64 sm:w-72" : "-translate-x-full",
+          isCollapsed ? "lg:w-16" : "lg:w-64"
         )}
       >
         {/* Mobile close button */}
-        <div className="flex items-center justify-between border-b border-border p-4 lg:hidden">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between border-b border-border p-3 sm:p-4 lg:hidden gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <Image
               src="/logo.png"
               alt="MrCash"
               width={32}
               height={32}
-              className="rounded-lg"
+              className="rounded-lg shrink-0"
             />
-            <span className="font-bold brand-gradient-text">MrCash</span>
+            <span className="font-bold brand-gradient-text truncate">MrCash</span>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 shrink-0" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Desktop logo */}
         <div className={cn(
-          "hidden items-center gap-2 border-b border-border p-4 lg:flex",
+          "hidden items-center gap-2 border-b border-border p-3 sm:p-4 lg:flex transition-all",
           isCollapsed && "justify-center"
         )}>
           <Image
@@ -97,33 +97,33 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
             alt="MrCash"
             width={isCollapsed ? 32 : 40}
             height={isCollapsed ? 32 : 40}
-            className="rounded-lg"
+            className="rounded-lg shrink-0"
           />
           {!isCollapsed && (
-            <span className="text-xl font-bold brand-gradient-text">MrCash</span>
+            <span className="text-lg sm:text-xl font-bold brand-gradient-text truncate">MrCash</span>
           )}
         </div>
 
         {/* User stats (mobile) */}
         {userData && (
-          <div className="border-b border-border p-4 lg:hidden">
-            <div className="flex items-center justify-between text-sm">
+          <div className="border-b border-border p-3 sm:p-4 lg:hidden">
+            <div className="flex items-center justify-between text-xs sm:text-sm gap-2">
               <span className="text-muted-foreground">Points</span>
-              <span className="font-bold text-[var(--brand-cyan)]">
-                {userData.points.toLocaleString()}
+              <span className="font-bold text-[var(--brand-cyan)] truncate">
+                {userData.points > 999999 ? `${(userData.points / 1000000).toFixed(1)}M` : userData.points.toLocaleString()}
               </span>
             </div>
-            <div className="mt-2 flex items-center justify-between text-sm">
+            <div className="mt-2 flex items-center justify-between text-xs sm:text-sm gap-2">
               <span className="text-muted-foreground">Fragments</span>
-              <span className="font-bold text-[var(--brand-purple)]">
-                {userData.fragments.toLocaleString()}
+              <span className="font-bold text-[var(--brand-purple)] truncate">
+                {userData.fragments > 999999 ? `${(userData.fragments / 1000000).toFixed(1)}M` : userData.fragments.toLocaleString()}
               </span>
             </div>
           </div>
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-4 no-scrollbar">
+        <nav className="flex-1 overflow-y-auto p-3 sm:p-4 no-scrollbar">
           <ul className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -134,7 +134,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
                   href={item.href}
                   onClick={onClose}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                    "flex items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap",
                     isActive
                       ? "brand-gradient text-primary-foreground"
                       : "text-muted-foreground hover:bg-secondary hover:text-foreground",
@@ -142,8 +142,8 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
                   )}
                 >
                   <Icon className="h-5 w-5 shrink-0" />
-                  {!isCollapsed && <span className="lg:block">{item.label}</span>}
-                  <span className="lg:hidden">{item.label}</span>
+                  {!isCollapsed && <span className="lg:block truncate">{item.label}</span>}
+                  <span className="lg:hidden truncate">{item.label}</span>
                 </Link>
               );
 
@@ -174,7 +174,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
                         href="/admin"
                         onClick={onClose}
                         className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                          "flex items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-colors",
                           pathname.startsWith("/admin")
                             ? "brand-gradient text-primary-foreground"
                             : "text-muted-foreground hover:bg-secondary hover:text-foreground",
@@ -195,13 +195,13 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
                     href="/admin"
                     onClick={onClose}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                      "flex items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-colors",
                       pathname.startsWith("/admin")
                         ? "brand-gradient text-primary-foreground"
                         : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                     )}
                   >
-                    <Shield className="h-5 w-5" />
+                    <Shield className="h-5 w-5 shrink-0" />
                     Admin
                   </Link>
                 )}
@@ -212,11 +212,11 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
 
         {/* Level progress */}
         {userData && !isCollapsed && (
-          <div className="border-t border-border p-4">
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Level {userData.level}</span>
-              <span className="text-muted-foreground">
-                {pointsInCurrentLevel.toLocaleString()} / {pointsNeededForLevel.toLocaleString()}
+          <div className="border-t border-border p-3 sm:p-4">
+            <div className="mb-2 flex items-center justify-between text-xs sm:text-sm gap-2">
+              <span className="text-muted-foreground shrink-0">Level {userData.level}</span>
+              <span className="text-muted-foreground text-right truncate">
+                {(pointsInCurrentLevel > 999999 ? `${(pointsInCurrentLevel / 1000000).toFixed(1)}M` : pointsInCurrentLevel.toLocaleString())} / {(pointsNeededForLevel > 999999 ? `${(pointsNeededForLevel / 1000000).toFixed(1)}M` : pointsNeededForLevel.toLocaleString())}
               </span>
             </div>
             <Progress value={levelProgress} className="h-2" />

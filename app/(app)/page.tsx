@@ -141,75 +141,75 @@ export default function EarnPage() {
   const levelProgress = (pointsInCurrentLevel / pointsPerLevel) * 100;
 
   return (
-    <div className="flex flex-col gap-4 pt-1 pb-12 px-4 min-h-screen overflow-y-auto">
+    <div className="flex flex-col gap-3 sm:gap-4 w-full">
       
       <LiveFeed />
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
         <Card className="border-border bg-card">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
-              <Image src="/coin.png" alt="Coin" width={28} height={28} className="animate-pulse object-contain" />
+          <CardContent className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4">
+            <div className="flex h-10 sm:h-12 w-10 sm:w-12 items-center justify-center rounded-lg sm:rounded-xl bg-white/5 border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)] shrink-0">
+              <Image src="/coin.png" alt="Coin" width={24} height={24} className="animate-pulse object-contain sm:w-7 sm:h-7" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground font-medium">Points Balance</p>
-              <p className="text-2xl font-black text-white">{(userData?.points ?? 0).toLocaleString()}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Points Balance</p>
+              <p className="text-xl sm:text-2xl font-black text-white truncate">{(userData?.points ?? 0) > 999999 ? `${((userData?.points ?? 0) / 1000000).toFixed(1)}M` : (userData?.points ?? 0).toLocaleString()}</p>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-border bg-card">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#A65FFF]/10 border border-[#A65FFF]/20">
-              <Trophy className="h-6 w-6 text-[#A65FFF]" />
+          <CardContent className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4">
+            <div className="flex h-10 sm:h-12 w-10 sm:w-12 items-center justify-center rounded-lg sm:rounded-xl bg-[#A65FFF]/10 border border-[#A65FFF]/20 shrink-0">
+              <Trophy className="h-5 sm:h-6 w-5 sm:w-6 text-[#A65FFF]" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground font-medium">Current Level</p>
-              <p className="text-2xl font-black text-[#A65FFF]">Level {currentLevel}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Current Level</p>
+              <p className="text-xl sm:text-2xl font-black text-[#A65FFF]">Level {currentLevel}</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-border bg-[#0D0D0D] border-white/5">
-        <CardContent className="p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-[#A65FFF]" />
-              <span className="font-black text-sm text-white uppercase tracking-wider">Level {currentLevel} Progress</span>
+        <CardContent className="p-3 sm:p-4">
+          <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Trophy className="h-4 sm:h-5 w-4 sm:w-5 text-[#A65FFF] shrink-0" />
+              <span className="font-black text-xs sm:text-sm text-white uppercase tracking-wider truncate">Level {currentLevel} Progress</span>
             </div>
-            <span className="text-xs font-bold text-white/40 tracking-tighter">
-              {pointsInCurrentLevel.toLocaleString()} / {pointsPerLevel.toLocaleString()} PTS
+            <span className="text-[10px] sm:text-xs font-bold text-white/40 tracking-tighter whitespace-nowrap">
+              {(pointsInCurrentLevel > 999999 ? `${(pointsInCurrentLevel / 1000000).toFixed(1)}M` : pointsInCurrentLevel.toLocaleString())} / {(pointsPerLevel > 999999 ? `${(pointsPerLevel / 1000000).toFixed(1)}M` : pointsPerLevel.toLocaleString())}
             </span>
           </div>
-          <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+          <div className="h-2 sm:h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
             <div className="h-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] transition-all duration-500 shadow-[0_0_10px_rgba(166,95,255,0.3)]" style={{ width: `${levelProgress}%` }}></div>
           </div>
         </CardContent>
       </Card>
 
       <div>
-        <h2 className="mb-4 text-xl font-black text-white tracking-tight">Earn Points</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-black text-white tracking-tight">Earn Points</h2>
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {loading ? (
-             <p className="text-white/50">Loading Offerwalls...</p>
+             <p className="col-span-full text-xs sm:text-sm text-white/50 text-center py-8">Loading Offerwalls...</p>
           ) : (
             offerwalls.map((wall) => (
               <Card key={wall.id} className="border-border bg-card transition-all hover:border-[#A65FFF]/30">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <img src={wall.logoUrl} alt={wall.name} className="h-12 w-12 rounded-xl object-contain bg-white/5 p-1" />
-                    <Badge variant="secondary" className="bg-[#A65FFF]/10 text-[#A65FFF] border border-[#A65FFF]/20 flex items-center gap-1 font-bold">
-                      <Image src="/coin.png" width={10} height={10} alt="coin" />
-                      ~{(wall.avgPoints ?? 0).toLocaleString()} pts
+                <CardHeader className="pb-2 p-3 sm:p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <img src={wall.logoUrl} alt={wall.name} className="h-10 sm:h-12 w-10 sm:w-12 rounded-lg sm:rounded-xl object-contain bg-white/5 p-1 shrink-0" />
+                    <Badge variant="secondary" className="bg-[#A65FFF]/10 text-[#A65FFF] border border-[#A65FFF]/20 flex items-center gap-1 font-bold text-[9px] sm:text-xs px-2 py-1 shrink-0">
+                      <Image src="/coin.png" width={10} height={10} alt="coin" className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span className="truncate">~{(wall.avgPoints ?? 0) > 999999 ? `${((wall.avgPoints ?? 0) / 1000000).toFixed(1)}M` : (wall.avgPoints ?? 0).toLocaleString()}</span>
                     </Badge>
                   </div>
-                  <CardTitle className="text-lg mt-3 font-black text-white">{wall.name}</CardTitle>
-                  <CardDescription className="line-clamp-2 text-xs">{wall.description}</CardDescription>
+                  <CardTitle className="text-sm sm:text-base lg:text-lg mt-2 sm:mt-3 font-black text-white line-clamp-1">{wall.name}</CardTitle>
+                  <CardDescription className="line-clamp-2 text-[10px] sm:text-xs">{wall.description}</CardDescription>
                 </CardHeader>
-                <CardContent className="pt-2">
-                  <Button className="w-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] text-white font-black text-xs hover:opacity-90 active:scale-95 border-none shadow-lg shadow-purple-500/10" onClick={() => window.open(getDynamicUrl(wall), "_blank")}>
-                    START EARNING <ExternalLink className="ml-2 h-3.5 w-3.5" />
+                <CardContent className="pt-1 sm:pt-2 px-3 sm:px-4 pb-3 sm:pb-4">
+                  <Button className="w-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] text-white font-black text-[10px] sm:text-xs hover:opacity-90 active:scale-95 border-none shadow-lg shadow-purple-500/10 h-8 sm:h-10" onClick={() => window.open(getDynamicUrl(wall), "_blank")}>
+                    START <ExternalLink className="ml-1 h-3 w-3 sm:h-3.5 sm:w-3.5" />
                   </Button>
                 </CardContent>
               </Card>
