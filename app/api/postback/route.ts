@@ -115,7 +115,6 @@ export async function GET(request: NextRequest) {
         userSnap = await userRef.get();
       }
     }
-const userData = userSnap.data();
     
     // 1. حساب النقاط القادمة من الشركة (حل مشكلة التدبيل)
     const rawPayout = searchParams.get("payout") || searchParams.get("reward") || "0";
