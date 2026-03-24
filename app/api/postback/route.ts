@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       "0"
     );
     if (!userIdentifier) {
-      return NextResponse.json({ success: false, error: "Missing User ID" }, { status: 400 });
+     return new NextResponse("ok", { status: 200 });
     }
 
     // البحث عن المستخدم أو إنشاؤه
