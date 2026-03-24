@@ -299,7 +299,7 @@ export default function AdminWithdrawalsPage() {
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
            <span className="font-bold text-lg">
-  ${(withdrawal.amount || 0).toFixed(2)}
+  ${(pendingTotal || 0).toFixed(2)}
 </span>
             <p className="text-sm text-muted-foreground">Pending Amount</p>
           </CardContent>
