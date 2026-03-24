@@ -142,7 +142,7 @@ const userData = userSnap.data();
     });
     // فحص التكرار
     const dupCheck = await adminDb.collection("transactions").where("transactionId", "==", transactionId).get();
-    if (!dupCheck.empty) return NextResponse.json({ success: true, message: "Already Processed" });
+   if (!dupCheck.empty) return new NextResponse("ok", { status: 200 });
 
     const batch = adminDb.batch();
 
@@ -184,7 +184,7 @@ batch.set(adminDb.collection("live_feed").doc(), {
 });
 
     await batch.commit();
-    return NextResponse.json({ success: true, message: "Points added successfully", wall: wallName });
+    return new NextResponse("ok", { status: 200 });
 
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
