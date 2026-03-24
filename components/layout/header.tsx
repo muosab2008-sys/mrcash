@@ -125,7 +125,7 @@ export function Header({ onMenuClick }: HeaderProps) {
           ) : (
             <Link href="/login">
               {/* زر تسجيل الدخول باللون البنفسجي للزمان */}
-              <Button className="h-9 px-5 rounded-full bg-[var(--brand-purple)] text-white font-black text-[10px] hover:bg-[var(--brand-purple)]/90 transition-all active:scale-95">
+             <Button className="h-9 px-5 rounded-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] text-white font-black text-[10px] hover:opacity-90 transition-all active:scale-95 shadow-[0_0_15px_rgba(166,95,255,0.3)] border-none">
                 SIGN IN
               </Button>
             </Link>
