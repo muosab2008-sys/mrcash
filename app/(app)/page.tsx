@@ -141,10 +141,10 @@ export default function EarnPage() {
     if (wall.id === "revtoo") {
       return `https://revtoo.com/offerwall/xol9xws01wsarkpuv7miwdair6ikvu/${userData.uid}`;
     }
-    if (wall.id === "offery") {
-  // الـ API Key الخاص بك من لوحة التحكم
-  const API_KEY = "uccnjpr7cd6llvbomgr04no1hofoobb1";
-  return `https://offery.io/offerwall/${API_KEY}/${userData.uid}`;
+if (wall.id === "offery") {
+      // الـ API Key الجديد الخاص بك
+      const API_KEY = "uccnjpr7cd6llvbomgr04no1hofoob"; 
+      return `https://offery.io/offerwall/${API_KEY}/${userData.uid}`;
 }
     if (wall.id === "adtogame") {
   // 7683 هو معرف الأفلييت الخاص بك 
