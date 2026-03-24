@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ExternalLink, Coins, Trophy, Zap, Star } from "lucide-react";
+import { ExternalLink, Coins, Trophy,} from "lucide-react";
 
 interface Offerwall {
   id: string;
