@@ -36,9 +36,9 @@ export function AppShell({ children }: AppShellProps) {
         />
 
         {/* شريط الـ Live Feed تحت الهيدر مباشرة */}
-        <div className="w-full bg-[#050505] border-b border-white/5 py-1 z-40">
-           <LiveFeed />
-        </div>
+      {/* <div className="w-full bg-[#050505] border-b border-white/5 py-1 z-40">
+    <LiveFeed />
+</div> */}
 
         {/* 3. محتوى الصفحة الرئيسي - ينزل مع الصفحة بشكل طبيعي */}
         <main className="flex-1 pb-20 lg:pb-10 bg-[#050505]">
