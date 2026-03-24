@@ -176,17 +176,6 @@ if (wall.id === "offery") {
 
         <Card className="border-border bg-card">
           <CardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--brand-purple)]">
-              <Zap className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <div>
-            
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border bg-card">
-          <CardContent className="flex items-center gap-4 p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500">
               <Trophy className="h-6 w-6 text-primary-foreground" />
             </div>
