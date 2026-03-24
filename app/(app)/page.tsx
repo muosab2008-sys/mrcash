@@ -180,10 +180,7 @@ if (wall.id === "offery") {
               <Zap className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Fragments</p>
-              <p className="text-2xl font-bold text-[var(--brand-purple)]">
-                {(userData?.fragments ?? 0).toLocaleString()}
-              </p>
+            
             </div>
           </CardContent>
         </Card>
