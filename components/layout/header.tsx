@@ -41,7 +41,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             
             {/* 1. الأيقونة الملونة (الأزرق والبنفسجي) من ملفك public */}
             <Image 
-              src="/Untitled (2).png" // تأكد من أن هذا الاسم صحيح في مجلد public
+              src="/logo.png" // تأكد من أن هذا الاسم صحيح في مجلد public
               alt="MrCash Logo Icon"
               width={26} // حجم الصورة في الجوال
               height={26}
