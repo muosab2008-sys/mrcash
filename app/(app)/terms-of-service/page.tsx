@@ -1,126 +1,175 @@
-'use client'; // ضروري لاستخدام الـuseState ونظام التبديل
+'use client';
 
-import React, { useState } from 'react';
+import Link from 'next/link';
 
-export default function LegalCenter() {
-  // تفعيل نظام التبديل بين صفحة الـ Terms وصفحة الـ Privacy
-  const [activeTab, setActiveTab] = useState<'terms' | 'privacy'>('terms');
-
-  const lastUpdated = "March 24, 2026"; // تاريخ اليوم
-
-  // مصفوفة السياسات كاملة (الـ 15 بنداً كما هي)
-  const termsSections = [
-    { t: "1. Acceptance of Terms", c: "These Terms of Service ("Terms") govern your access to and use of the website Mr. Cash ("Website", "Platform", "Service"). By accessing or using the Website, creating an account, or participating in any offers or reward programs, you agree to be bound by these Terms and our Privacy Policy. If you do not agree with these Terms, you must not access or use the Website." },
-    { t: "2. Eligibility", c: "To use Mr. Cash you must: Be at least 16 years old. Have the legal ability to agree to these Terms. Use only one account per person and per household. Creating multiple accounts, fake accounts, or accounts using another person’s identity is strictly prohibited and may result in account suspension and loss of rewards." },
-    { t: "3. Changes to the Terms", c: "Mr. Cash reserves the right to modify or update these Terms at any time. Any updates will take effect immediately once published on the Website. Your continued use of the Website after changes are posted means you accept the revised Terms." },
-    { t: "4. Access to the Website", c: "Mr. Cash grants you a limited, non-exclusive, and revocable right to access and use the Website for personal use only. You agree to provide accurate registration information, maintain the security of your account, and follow all applicable laws when using the platform. We may suspend or terminate access to the Website at any time if these Terms are violated." },
-    { t: "5. Rewards Program", c: "Mr. Cash provides users with opportunities to earn points, coins, credits, or rewards ("Rewards") by completing activities such as: Playing games, Completing surveys, Trying apps, Watching advertisements, Completing offers from partner offerwalls, and Participating in promotions. These activities are collectively referred to as Offers." },
-    { t: "6. Rewards Have No Monetary Value", c: "Rewards earned on Mr. Cash: Have no direct cash value, cannot be transferred between users, and cannot be sold or exchanged outside the platform. Rewards only gain value when redeemed through the payout methods available on the Website." },
-    { t: "7. Offer Completion and Tracking", c: "Rewards will only be credited when an offer is completed correctly and successfully tracked by the partner provider. Mr. Cash is not responsible for untracked or rejected offers when decisions are made by the third-party partner." },
-    { t: "8. Redeeming Rewards", c: "Users may redeem rewards once they reach the minimum withdrawal threshold displayed on the platform. Before the first withdrawal, users may be required to complete identity verification (KYC) or other security checks. Mr. Cash reserves the right to: Delay reward payouts for security checks, Review suspicious activity, and Hold rewards for up to 90 days if required. All reward redemptions are final once processed." },
-    { t: "9. Identity Verification", c: "To prevent fraud and comply with legal obligations, Mr. Cash may request identity verification before allowing withdrawals. Failure to complete verification may result in withdrawal restrictions." },
-    { t: "10. Inactive Accounts", c: "Accounts that remain inactive for 12 months may be closed. If an account is closed due to inactivity, remaining rewards may expire." },
-    { t: "11. FRAUD (IMPORTANT)", c: "Users are strictly prohibited from: Creating multiple accounts, Using VPNs or proxies, Using bots or automation tools, Faking offer completion, or Manipulating surveys or games. Violation of these rules leads to Account suspension and forfeiture of all points." },
-    { t: "12. Third-Party Services", c: "Mr. Cash works with external providers (Offerwalls, Survey companies, Payment providers). We do not control these third-party services and are not responsible for their policies, tracking systems, or decisions regarding rewards. Users should review the terms of these third-party services when participating in their offers." },
-    { t: "13. Limitation of Liability", c: "Mr. Cash provides the Website and services 'as is' without guarantees. We aren't liable for any indirect damages, lost rewards, or service interruptions." },
-    { t: "14. Account Termination", c: "Mr. Cash reserves the right to suspend or terminate any account if these Terms are violated or fraudulent activity is detected." },
-    { t: "15. Contact Information", c: "For support, questions, or legal requests, please contact us at: support@mrcash.vercel.app." }
-  ];
-
+export default function TermsOfService() {
   return (
-    <div className="min-h-screen bg-[#030617] text-slate-300 p-4 md:p-10 font-sans leading-relaxed selection:bg-purple-600 selection:text-white">
-      <div className="max-w-6xl mx-auto">
-        
-        {/* Header Section (تصميم زجاجي خفيف) */}
-        <header className="mb-10 text-center p-8 bg-slate-900/40 backdrop-blur-xl rounded-[2rem] border border-white/5 relative overflow-hidden">
-          <h1 className="text-4xl md:text-5xl font-black mb-2 tracking-tighter text-white">
-            <span className="text-purple-500">Legal</span> Center | Mr. Cash
-          </h1>
-          <p className="text-slate-500 font-mono text-sm tracking-widest uppercase">
-            Official Guidelines & Data Protection
-          </p>
-        </header>
+    <div className="relative min-h-screen bg-black overflow-hidden">
+      {/* Animated Gradient Glows - Cyan to Blue to Magenta */}
+      <div className="absolute top-20 left-1/4 w-96 h-96 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full blur-3xl opacity-20 animate-pulse"></div>
+      <div className="absolute bottom-20 right-1/4 w-80 h-80 bg-gradient-to-r from-blue-500 to-magenta-600 rounded-full blur-3xl opacity-15 animate-pulse" style={{animationDelay: '2s'}}></div>
 
-        {/* --- نظام التبديل (Tabs) في الأعلى تماماً كما في الصورة --- */}
-        <div className="flex justify-center mb-10">
-          <div className="flex items-center gap-1.5 p-1.5 bg-[#0f172a] rounded-full border border-white/5 shadow-inner">
-            <button 
-              onClick={() => setActiveTab('terms')}
-              className={`px-8 py-3 rounded-full font-bold text-sm transition-all duration-300 flex items-center gap-2 ${activeTab === 'terms' ? 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>
-              Terms of Service
-            </button>
-            <button 
-              onClick={() => setActiveTab('privacy')}
-              className={`px-8 py-3 rounded-full font-bold text-sm transition-all duration-300 flex items-center gap-2 ${activeTab === 'privacy' ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>
-              Privacy Policy
-            </button>
+      <main className="relative z-10 pt-12 pb-20 px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-5xl font-bold text-white mb-4 bg-gradient-to-r from-cyan-400 via-blue-500 to-magenta-500 bg-clip-text text-transparent">
+            Legal Policies
+          </h1>
+          <p className="text-lg text-gray-400">Read about our terms and how we protect your information</p>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex justify-center gap-4 mb-12">
+          <div className="px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 via-blue-500 to-magenta-500 text-white font-semibold shadow-lg shadow-cyan-500/50">
+            Terms of Service
+          </div>
+          <Link
+            href="/privacy-policy"
+            className="px-8 py-3 rounded-full border-2 border-cyan-500/30 text-cyan-300 font-semibold hover:border-cyan-500 hover:text-white hover:bg-cyan-500/10 transition-all duration-300"
+          >
+            Privacy Policy
+          </Link>
+        </div>
+
+        {/* Content Card */}
+        <div className="max-w-4xl mx-auto backdrop-blur-md bg-white/5 border border-cyan-500/20 rounded-2xl p-8 sm:p-12 shadow-2xl hover:border-cyan-500/40 transition-all duration-300">
+          <h2 className="text-4xl font-bold text-white mb-2">Mr. Cash – Terms of Service</h2>
+          <p className="text-gray-400 mb-8">Effective Date: 03/24/2026</p>
+
+          {/* Section 1 */}
+          <div className="mb-10">
+            <h3 className="flex items-center gap-3 text-2xl font-bold text-white mb-4">
+              <span className="w-1 h-8 bg-gradient-to-b from-cyan-400 via-blue-500 to-magenta-500 rounded-full"></span>
+              1. Acceptance of Terms
+            </h3>
+            <p className="text-gray-300 leading-relaxed mb-4">
+              These Terms of Service (&quot;Terms&quot;) govern your access to and use of the website Mr. Cash.com (&quot;Website&quot;, &quot;Platform&quot;, &quot;Service&quot;). By accessing or using the Website, creating an account, or participating in any offers or reward programs, you agree to be bound by these Terms and our Privacy Policy.
+            </p>
+            <p className="text-gray-300 leading-relaxed">
+              If you do not agree with these Terms, you must not access or use the Website.
+            </p>
+          </div>
+
+          {/* Section 2 */}
+          <div className="mb-10">
+            <h3 className="flex items-center gap-3 text-2xl font-bold text-white mb-4">
+              <span className="w-1 h-8 bg-gradient-to-b from-cyan-400 via-blue-500 to-magenta-500 rounded-full"></span>
+              2. Use License
+            </h3>
+            <p className="text-gray-300 leading-relaxed">
+              Mr. Cash grants you a limited, non-exclusive, non-transferable license to access and use the Website for personal, non-commercial purposes in accordance with these Terms. You agree not to reproduce, duplicate, copy, sell, resell, or exploit any portion of the Website without express written permission from Mr. Cash.
+            </p>
+          </div>
+
+          {/* Section 3 */}
+          <div className="mb-10">
+            <h3 className="flex items-center gap-3 text-2xl font-bold text-white mb-4">
+              <span className="w-1 h-8 bg-gradient-to-b from-cyan-400 via-blue-500 to-magenta-500 rounded-full"></span>
+              3. User Accounts
+            </h3>
+            <p className="text-gray-300 leading-relaxed mb-4">
+              If you create an account on Mr. Cash, you are responsible for maintaining the confidentiality of your account information, including your password. You agree to accept responsibility for all activities that occur under your account. You must notify Mr. Cash immediately of any unauthorized use of your account or any other breach of security.
+            </p>
+            <p className="text-gray-300 leading-relaxed">
+              Mr. Cash reserves the right to refuse service, terminate accounts, or remove or edit content at any time for any reason.
+            </p>
+          </div>
+
+          {/* Section 4 */}
+          <div className="mb-10">
+            <h3 className="flex items-center gap-3 text-2xl font-bold text-white mb-4">
+              <span className="w-1 h-8 bg-gradient-to-b from-cyan-400 via-blue-500 to-magenta-500 rounded-full"></span>
+              4. Prohibited Conduct
+            </h3>
+            <p className="text-gray-300 leading-relaxed mb-4">You agree not to use Mr. Cash for any unlawful purposes or in any way that could damage or impair the service. Prohibited behavior includes:</p>
+            <ul className="space-y-2 text-gray-300">
+              <li className="flex items-start gap-3"><span className="text-cyan-400 font-bold mt-1">•</span> Harassing or causing distress or inconvenience to any person</li>
+              <li className="flex items-start gap-3"><span className="text-cyan-400 font-bold mt-1">•</span> Obscene or abusive language or behavior</li>
+              <li className="flex items-start gap-3"><span className="text-cyan-400 font-bold mt-1">•</span> Disrupting the normal flow of dialogue within our website</li>
+              <li className="flex items-start gap-3"><span className="text-cyan-400 font-bold mt-1">•</span> Attempting to gain unauthorized access to our systems</li>
+            </ul>
+          </div>
+
+          {/* Section 5 */}
+          <div className="mb-10">
+            <h3 className="flex items-center gap-3 text-2xl font-bold text-white mb-4">
+              <span className="w-1 h-8 bg-gradient-to-b from-cyan-400 via-blue-500 to-magenta-500 rounded-full"></span>
+              5. Third-Party Links
+            </h3>
+            <p className="text-gray-300 leading-relaxed">
+              The Mr. Cash website may contain links to third-party websites. Mr. Cash is not responsible for the content, accuracy, or practices of these external sites. Your use of third-party websites is governed by their respective terms and privacy policies. We encourage you to review the policies of any third-party site before providing your personal information.
+            </p>
+          </div>
+
+          {/* Section 6 */}
+          <div className="mb-10">
+            <h3 className="flex items-center gap-3 text-2xl font-bold text-white mb-4">
+              <span className="w-1 h-8 bg-gradient-to-b from-cyan-400 via-blue-500 to-magenta-500 rounded-full"></span>
+              6. Limitation of Liability
+            </h3>
+            <p className="text-gray-300 leading-relaxed mb-4">
+              Mr. Cash provides the Website on an &quot;as-is&quot; basis without warranties of any kind, either expressed or implied. We do not warrant that the Website will be uninterrupted, error-free, or free from harmful components.
+            </p>
+            <p className="text-gray-300 leading-relaxed">
+              In no event shall Mr. Cash be liable for any damages (including, without limitation, lost profits, lost data, or business interruption) arising out of or in connection with your use of the Website.
+            </p>
+          </div>
+
+          {/* Section 7 */}
+          <div className="mb-10">
+            <h3 className="flex items-center gap-3 text-2xl font-bold text-white mb-4">
+              <span className="w-1 h-8 bg-gradient-to-b from-cyan-400 via-blue-500 to-magenta-500 rounded-full"></span>
+              7. Indemnification
+            </h3>
+            <p className="text-gray-300 leading-relaxed">
+              You agree to indemnify, defend, and hold harmless Mr. Cash and its officers, directors, employees, and agents from any and all claims, damages, losses, or expenses (including legal fees) arising from your use of the Website or your violation of these Terms.
+            </p>
+          </div>
+
+          {/* Section 8 */}
+          <div className="mb-10">
+            <h3 className="flex items-center gap-3 text-2xl font-bold text-white mb-4">
+              <span className="w-1 h-8 bg-gradient-to-b from-cyan-400 via-blue-500 to-magenta-500 rounded-full"></span>
+              8. Modifications to Terms
+            </h3>
+            <p className="text-gray-300 leading-relaxed">
+              Mr. Cash reserves the right to modify these Terms at any time. Changes will be effective immediately upon posting to the Website. Your continued use of the Website following the posting of revised Terms means that you accept and agree to the changes.
+            </p>
+          </div>
+
+          {/* Section 9 */}
+          <div className="mb-10">
+            <h3 className="flex items-center gap-3 text-2xl font-bold text-white mb-4">
+              <span className="w-1 h-8 bg-gradient-to-b from-cyan-400 via-blue-500 to-magenta-500 rounded-full"></span>
+              9. Governing Law
+            </h3>
+            <p className="text-gray-300 leading-relaxed">
+              These Terms are governed by and construed in accordance with the laws of the jurisdiction in which Mr. Cash operates, and you irrevocably submit to the exclusive jurisdiction of the courts in that location.
+            </p>
+          </div>
+
+          {/* Section 10 */}
+          <div className="mb-10">
+            <h3 className="flex items-center gap-3 text-2xl font-bold text-white mb-4">
+              <span className="w-1 h-8 bg-gradient-to-b from-cyan-400 via-blue-500 to-magenta-500 rounded-full"></span>
+              10. Contact Us
+            </h3>
+            <p className="text-gray-300 leading-relaxed">
+              If you have any questions about these Terms of Service, please contact Mr. Cash at support@mrcash.com. We appreciate your understanding and commitment to our platform.
+            </p>
           </div>
         </div>
 
-        {/* --- محتوى البطاقة (Glassmorphism Card) --- */}
-        <main className="bg-slate-900/60 backdrop-blur-2xl border border-white/10 p-8 md:p-12 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
-          
-          {/* تأثير توهج بنفسجي خلفي */}
-          <div className="absolute top-0 right-0 w-80 h-80 bg-purple-900/10 rounded-full blur-[100px] pointer-events-none"></div>
-
-          {activeTab === 'terms' ? (
-            // محتوى صفحة TERMS الكامل (15 بند بالكامل)
-            <div className="space-y-12 animate-fadeIn">
-              <header className="mb-10 border-b border-white/5 pb-8">
-                <h2 className="text-3xl font-extrabold text-white tracking-tight">Terms of Service</h2>
-                <p className="text-purple-400 text-sm mt-1 uppercase font-mono">Last Updated: {lastUpdated}</p>
-              </header>
-
-              <div className="space-y-10">
-                {termsSections.map((s, i) => (
-                  <section key={i} className={i === 10 ? "bg-red-950/20 p-6 rounded-2xl border border-red-900/30" : ""}>
-                    <h3 className={`text-xl font-bold mb-3 flex items-center gap-3 ${i === 10 ? "text-red-400" : "text-white"}`}>
-                      <span className={`w-1 h-6 rounded-full ${i === 10 ? "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)]" : "bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.6)]"}`}></span>
-                      {s.t}
-                    </h3>
-                    <p className={`text-sm md:text-base leading-relaxed ${i === 10 ? "text-gray-300" : "text-slate-400"}`}>{s.c}</p>
-                  </section>
-                ))}
-              </div>
-            </div>
-          ) : (
-            // محتوى صفحة PRIVACY (اختصار احترافي)
-            <div className="space-y-12 animate-fadeIn">
-              <header className="mb-10 border-b border-white/5 pb-8">
-                <h2 className="text-3xl font-extrabold text-white tracking-tight">Privacy Policy</h2>
-                <p className="text-cyan-400 text-sm mt-1 uppercase font-mono">Last Updated: {lastUpdated}</p>
-              </header>
-
-              <div className="space-y-10 text-slate-400 text-sm md:text-base leading-relaxed">
-                <section>
-                  <h3 className="text-xl font-bold mb-3 flex items-center gap-3 text-white underline decoration-cyan-500">
-                    What Data We Collect
-                  </h3>
-                  <p>We collect essential data to process your rewards: Username, Email address, IP address, and technical details of completed offers. We do not collect personal financial data.</p>
-                </section>
-                <section>
-                  <h3 className="text-xl font-bold mb-3 flex items-center gap-3 text-white underline decoration-cyan-500">
-                    Third-Party Partners
-                  </h3>
-                  <p>To verify offer completion, we share your anonymized User ID with partners like TimeWall, CPX Research, and Wannads. They have their own privacy policies.</p>
-                </section>
-                <section>
-                  <h3 className="text-xl font-bold mb-3 flex items-center gap-3 text-white underline decoration-cyan-500">
-                    Your Rights
-                  </h3>
-                  <p>You have the right to request access, correction, or deletion of your data. Contact our legal team via support@mrcash.com for assistance.</p>
-                </section>
-              </div>
-            </div>
-          )}
-
-        </main>
-
-        <footer className="mt-16 text-center text-[10px] text-slate-700 font-mono tracking-widest">
-          © {new Date().getFullYear()} Mr. Cash. Officially Verified Platform
-        </footer>
-
-      </div>
+        {/* Navigation Link at Bottom */}
+        <div className="flex justify-center mt-12">
+          <Link
+            href="/privacy-policy"
+            className="px-12 py-3 rounded-full bg-gradient-to-r from-cyan-500 via-blue-500 to-magenta-500 text-white font-semibold hover:shadow-lg hover:shadow-cyan-500/50 transition-all duration-300"
+          >
+            View Privacy Policy →
+          </Link>
+        </div>
+      </main>
     </div>
   );
 }
