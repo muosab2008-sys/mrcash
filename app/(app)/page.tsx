@@ -272,29 +272,3 @@ export default function EarnPage() {
       </div>
     </div>
   );
-}<footer className="w-full py-10 mt-20 border-t border-white/5 bg-[#030617]/50 backdrop-blur-xl">
-  <div className="max-w-7xl mx-auto px-6 flex flex-col items-center text-center">
-    
-    {/* نص الحقوق مع السنة واسم الموقع */}
-    <p className="text-slate-500 text-[11px] font-mono tracking-[0.3em] uppercase mb-6">
-      © 2023 - 2026 <span className="text-purple-500 font-black">MR. CASH</span>. ALL RIGHTS RESERVED.
-    </p>
-    
-    {/* روابط التنقل السريع */}
-    <div className="flex flex-wrap justify-center gap-8 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-      <a href="/terms-of-service" className="hover:text-purple-400 transition-all duration-300 flex items-center gap-2">
-        <span className="w-1 h-1 bg-purple-500 rounded-full"></span> Terms of Service
-      </a>
-      <a href="/privacy-policy" className="hover:text-purple-400 transition-all duration-300 flex items-center gap-2">
-        <span className="w-1 h-1 bg-purple-500 rounded-full"></span> Privacy Policy
-      </a>
-      <a href="/" className="hover:text-purple-400 transition-all duration-300 flex items-center gap-2">
-        <span className="w-1 h-1 bg-purple-500 rounded-full"></span> Home
-      </a>
-    </div>
-
-    {/* لمسة جمالية أخيرة */}
-    <div className="mt-8 w-16 h-[1px] bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
-  </div>
-</footer>
-
