@@ -52,15 +52,15 @@ export async function GET(request: NextRequest) {
     const adminDb = getAdminDb();
     const { searchParams } = new URL(request.url);
 
-    // استخراج اسم الشركة ديناميكياً من الرابط
+    // --- استخراج المتغيرات (نفس كودك القديم تماماً) ---
     const wallParam = searchParams.get("wall") || "Offerwall";
     const wallName = wallParam.charAt(0).toUpperCase() + wallParam.slice(1);
 
-   const userIdentifier = 
+    const userIdentifier = 
       searchParams.get("user_id") || 
       searchParams.get("ml_sub1") || 
-      searchParams.get("subId") ||     // خاص بـ BagiraWall
-      searchParams.get("subid") ||     // خاص بـ Growdeck
+      searchParams.get("subId") ||      
+      searchParams.get("subid") ||      
       searchParams.get("uid")   || 
       searchParams.get("email") || 
       "";
@@ -72,28 +72,13 @@ export async function GET(request: NextRequest) {
 
     const transactionId = 
       searchParams.get("transaction_id") || 
-      searchParams.get("transId") ||    // خاص بـ BagiraWall
+      searchParams.get("transId") ||    
       searchParams.get("offer_id") || 
       `TX-${Date.now()}`;
-const userData = userSnap.data();
- const rawPayout = searchParams.get("payout") || searchParams.get("reward") || "0";
-  const payoutValue = parseFloat(rawPayout);
-  
-  // نأخذ الرقم من الشركة مباشرة (مثلاً 5 نقاط تصل 5 نقاط)
-  let points = Math.round(payoutValue); 
-  if (points <= 0) points = 5;
-    // حساب الليفل التصاعدي
-    const totalEarnedSoFar = (userData?.totalEarned || 0) + points;
-    let newLevel = 1;
-    if (totalEarnedSoFar >= 100000) newLevel = 4;
-    else if (totalEarnedSoFar >= 60000) newLevel = 3;
-    else if (totalEarnedSoFar >= 20000) newLevel = 2;
-    else newLevel = 1;
-    if (!userIdentifier) {
-     return new NextResponse("ok", { status: 200 });
-    }
 
-    // البحث عن المستخدم أو إنشاؤه
+    if (!userIdentifier) return new NextResponse("ok", { status: 200 });
+
+    // --- جلب بيانات المستخدم (يجب أن تكون قبل الحسابات) ---
     let userRef = adminDb.collection("users").doc(userIdentifier);
     let userSnap = await userRef.get();
 
@@ -103,6 +88,7 @@ const userData = userSnap.data();
         userRef = emailQuery.docs[0].ref;
         userSnap = emailQuery.docs[0];
       } else {
+        // إنشاء مستخدم جديد إذا لم يوجد (كما في كودك)
         const newUserRef = await adminDb.collection("users").add({
           email: userIdentifier.includes("@") ? userIdentifier : `${userIdentifier}@mrcash.com`,
           username: userIdentifier.split("@")[0],
@@ -115,16 +101,19 @@ const userData = userSnap.data();
         userSnap = await userRef.get();
       }
     }
-    
-    // 1. حساب النقاط القادمة من الشركة (حل مشكلة التدبيل)
+
+    // الآن نستخرج الـ userData بعد التأكد من وجود السناب شوت
+    const userData = userSnap.data();
+
+    // --- الحسابات (الآن ستعمل لأن userData معرفة) ---
     const rawPayout = searchParams.get("payout") || searchParams.get("reward") || "0";
     const payoutValue = parseFloat(rawPayout);
     
-    // التعديل: نأخذ القيمة كما هي لأن الشركة ترسل نقاطاً وليس دولارات
+    // حساب النقاط (بدون تدبيل كما طلبت)
     let points = Math.round(payoutValue); 
-    if (points <= 0) points = 5; // حد أدنى للأمان
+    if (points <= 0) points = 5;
 
-    // 2. حساب الليفل التصاعدي (يعتمد على إجمالي النقاط المكتسبة)
+    // حساب الليفل
     const totalEarnedSoFar = (userData?.totalEarned || 0) + points;
     let newLevel = 1;
     if (totalEarnedSoFar >= 100000) newLevel = 4;
@@ -132,17 +121,11 @@ const userData = userSnap.data();
     else if (totalEarnedSoFar >= 20000) newLevel = 2;
     else newLevel = 1;
 
-    // 3. تحديث قاعدة البيانات (مسح الشظايا وتحديث الليفل والنقاط)
-    batch.update(userRef, {
-      points: FieldValue.increment(points),
-      totalEarned: FieldValue.increment(points),
-      level: newLevel, // تحديث الليفل بناءً على المجموع الجديد
-      // ملاحظة: لم نضف حقل fragments هنا، سيتم تجاهله ولن يرسل شظايا
-    });
-    // فحص التكرار
+    // --- فحص التكرار ---
     const dupCheck = await adminDb.collection("transactions").where("transactionId", "==", transactionId).get();
-   if (!dupCheck.empty) return new NextResponse("ok", { status: 200 });
+    if (!dupCheck.empty) return new NextResponse("ok", { status: 200 });
 
+    // --- تنفيذ الـ Batch (الآن الـ batch معرف قبل الاستخدام) ---
     const batch = adminDb.batch();
 
     // 1. تسجيل المعاملة
@@ -154,14 +137,14 @@ const userData = userSnap.data();
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // 2. تحديث النقاط والليفل
+    // 2. تحديث النقاط والليفل (بدون شظايا)
     batch.update(userRef, {
       points: FieldValue.increment(points),
       totalEarned: FieldValue.increment(points),
-      level: newLevel, // تحديث الليفل بناءً على النقاط
+      level: newLevel,
     });
 
-    // 3. إضافة الإشعار (English Only)
+    // 3. إضافة الإشعار
     batch.set(adminDb.collection("notifications").doc(), {
       userId: userSnap.id,
       title: "New Points Added! 💰",
@@ -171,22 +154,23 @@ const userData = userSnap.data();
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // 4. تحديث الـ Live Feed (التعديل المطلوب للبيانات الحقيقية)
-batch.set(adminDb.collection("live_feed").doc(), {
-  userId: userSnap.id,           // أضفنا الـ ID الحقيقي لفتح البروفايل
-  username: userData?.username || "User",
-  photoURL: userData?.photoURL || "", // أضفنا سحب الصورة الشخصية
-  points: points,
-  source: wallName,
-  offerName: offerName || "Task", // أضفنا اسم العرض الحقيقي
-  createdAt: FieldValue.serverTimestamp(),
-});
+    // 4. تحديث الـ Live Feed
+    batch.set(adminDb.collection("live_feed").doc(), {
+      userId: userSnap.id,
+      username: userData?.username || "User",
+      photoURL: userData?.photoURL || "",
+      points: points,
+      source: wallName,
+      offerName: offerName || "Task",
+      createdAt: FieldValue.serverTimestamp(),
+    });
 
     await batch.commit();
     return new NextResponse("ok", { status: 200 });
 
   } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    console.error("Error:", err.message);
+    return new NextResponse("ok", { status: 200 });
   }
 }
 
