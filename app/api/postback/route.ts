@@ -76,13 +76,20 @@ export async function GET(request: NextRequest) {
       searchParams.get("offer_id") || 
       `TX-${Date.now()}`;
 
-    const payout = parseFloat(
-      searchParams.get("payout") || 
-      searchParams.get("payout_decimal") || 
-      searchParams.get("reward") ||     // خاص بـ BagiraWall
-      searchParams.get("amount") || 
-      "0"
-    );
+  const rawPayout = searchParams.get("payout") || searchParams.get("reward") || "0";
+    const payoutValue = parseFloat(rawPayout);
+    
+    // حل التدبيل: إذا الرقم 1 أو أكثر يبقى كما هو، إذا أقل يضرب في 1000
+    let points = payoutValue >= 1 ? Math.round(payoutValue) : Math.round(payoutValue * POINTS_PER_DOLLAR);
+    if (points <= 0) points = 10;
+
+    // حساب الليفل التصاعدي
+    const totalEarnedSoFar = (userData?.totalEarned || 0) + points;
+    let newLevel = 1;
+    if (totalEarnedSoFar >= 100000) newLevel = 4;
+    else if (totalEarnedSoFar >= 60000) newLevel = 3;
+    else if (totalEarnedSoFar >= 20000) newLevel = 2;
+    else newLevel = 1;
     if (!userIdentifier) {
      return new NextResponse("ok", { status: 200 });
     }
