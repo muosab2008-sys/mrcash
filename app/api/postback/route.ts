@@ -137,10 +137,11 @@ export async function GET(request: NextRequest) {
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // 2. تحديث النقاط
+    // 2. تحديث النقاط والليفل
     batch.update(userRef, {
       points: FieldValue.increment(points),
       totalEarned: FieldValue.increment(points),
+      level: newLevel, // تحديث الليفل بناءً على النقاط
     });
 
     // 3. إضافة الإشعار (English Only)
