@@ -135,7 +135,7 @@ export default function EarnPage() {
       revtoo: `https://revtoo.com/offerwall/xol9xws01wsarkpuv7miwdair6ikvu/${uid}`,
       offery: `https://offery.io/offerwall/uccnjpr7cd6llvbomgr04no1hofoob/${uid}`,
       adtogame: `https://adtowall.com/7683/${uid}`,
-      pixylabs: `https://offerwall.pixylabs.co/230?uid=${uid}`
+      pixylabs: `https://offerwall.pixylabs.co/230?uid=${uid}`,
       adlexy: `https://adlexy.com/offerwall/7czsknu4bdnqutvkilmntorwwr0s2s/${uid}`
     };
     return urls[wall.id] || wall.url;
