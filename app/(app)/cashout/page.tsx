@@ -73,16 +73,19 @@ const CASHOUT_CATEGORIES = [
         placeholder: "Enter your LTC address",
         amounts: [{ points: 10000, usd: 10 }, { points: 5000, usd: 5 }, { points: 2000, usd: 2 }] 
       },
-      { 
-        id: "cwallet", 
-        name: "cWallet", 
-        icon: "https://earng.net/storage/images/CVMa2olhLqSdi0DhCsurT7qVZNzubx0Bv6yjaWE7.png", 
-        minPoints: 2000, 
-        inputLabel: "cWallet ID / Email",
-        placeholder: "Enter cWallet ID or Email",
-        amounts: [{ points: 10000, usd: 10 }, { points: 5000, usd: 5 }, { points: 2000, usd: 2 }] 
-      },
-    ]
+     { 
+  id: "cwallet", 
+  name: "cWallet", 
+  icon: "https://earng.net/storage/images/CVMa2olhLqSdi0DhCsurT7qVZNzubx0Bv6yjaWE7.png", 
+  minPoints: 50, 
+  inputLabel: "cWallet ID / Email",
+  placeholder: "Enter cWallet ID or Email",
+  amounts: [
+    { points: 1000, usd: 1 }, 
+    { points: 500, usd: 0.5 }, 
+    { points: 50, usd: 0.05 }
+  ] 
+},
   },
   {
     title: "Gift Cards",
