@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image"; // استيراد مكون الصورة
+import Image from "next/image";
 import { useAuth } from "@/contexts/auth-context";
-import { Settings, Menu, LogIn } from "lucide-react";
+import { Settings, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -38,20 +38,16 @@ export function Header({ onMenuClick }: HeaderProps) {
 
           {/* الشعار الكامل: يظهر فقط في الجوال ويختفي في اللابتوب (lg:hidden) */}
           <Link href="/" className="lg:hidden flex items-center gap-2">
-            
-            {/* 1. الأيقونة الملونة (الأزرق والبنفسجي) من ملفك public */}
             <Image 
-              src="/logo.png" // تأكد من أن هذا الاسم صحيح في مجلد public
+              src="/logo.png" 
               alt="MrCash Logo Icon"
-              width={26} // حجم الصورة في الجوال
+              width={26} 
               height={26}
               priority
               className="object-contain"
             />
             
-            {/* 2. اسم الموقع "MrCash" بتدرج ألوان متطابق (من الأزرق للبنفسجي) */}
             <span className="text-xl font-bold tracking-tighter">
-              {/* تدرج اللون باستخدام Tailwind CSS */}
               <span className="bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] bg-clip-text text-transparent">
                 MrCash
               </span>
@@ -59,28 +55,25 @@ export function Header({ onMenuClick }: HeaderProps) {
           </Link>
         </div>
 
-        {/* القسم الأيمن: الرصيد (بصورة) والإعدادات (للجوال واللابتوب) */}
+        {/* القسم الأيمن: الرصيد والإعدادات */}
         <div className="flex items-center gap-2 sm:gap-4">
           {user && userData ? (
             <>
               {/* عرض الرصيد - تصميم الكبسولة الأنيق */}
               <div className="flex items-center gap-2 rounded-full bg-white/[0.03] px-3 py-1.5 border border-white/[0.08]">
-                
-                {/* استخدام صورة coin.png للرصيد في كل مكان (تأكد من وجود الملف في public) */}
                 <Image 
                   src="/coin.png" 
                   alt="Coin" 
-                  width={18} // حجم الصورة في الجوال
+                  width={18} 
                   height={18} 
                   priority 
-                  className="object-contain animate-pulse sm:w-5 sm:h-5" // حجم الصورة في اللابتوب
+                  className="object-contain animate-pulse sm:w-5 sm:h-5" 
                 />
 
                 <span className="font-bold text-xs sm:text-sm text-white">
                   {userData?.points?.toLocaleString() || "0"}
                 </span>
                 
-                {/* كلمة Points تظهر فقط في الشاشات المتوسطة فما فوق (md:inline) */}
                 <span className="hidden md:inline text-[10px] text-white/40 font-medium uppercase tracking-widest ml-1">
                   Points
                 </span>
@@ -124,8 +117,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             </>
           ) : (
             <Link href="/login">
-              {/* زر تسجيل الدخول باللون البنفسجي للزمان */}
-             <Button className="h-9 px-5 rounded-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] text-white font-black text-[10px] hover:opacity-90 transition-all active:scale-95 shadow-[0_0_15px_rgba(166,95,255,0.3)] border-none">
+              <Button className="h-9 px-5 rounded-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] text-white font-black text-[10px] hover:opacity-90 transition-all active:scale-95 shadow-[0_0_15px_rgba(166,95,255,0.3)] border-none">
                 SIGN IN
               </Button>
             </Link>
