@@ -43,23 +43,17 @@ export function Header({ onMenuClick }: HeaderProps) {
                   <div className="w-2 h-2 rounded-full bg-[var(--brand-cyan)] animate-pulse" />
                   <span className="text-xs text-muted-foreground">Points</span>
                   <span className="font-bold text-sm text-foreground">
-                    {userData.points.toLocaleString()}
+                    {userData?.points?.toLocaleString() || "0"}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 rounded-full bg-secondary/80 px-4 py-2 border border-border/50">
-                  <div className="w-2 h-2 rounded-full bg-[var(--brand-purple)]" />
-                  <span className="text-xs text-muted-foreground">Fragments</span>
-                  <span className="font-bold text-sm text-foreground">
-                    {userData.fragments.toLocaleString()}
-                  </span>
-                </div>
+                {/* تم مسح قسم الشظايا من هنا بطلبك */}
               </div>
 
               {/* Mobile points */}
               <div className="flex sm:hidden items-center gap-1.5 rounded-full bg-secondary/80 px-3 py-1.5 border border-border/50">
                 <div className="w-1.5 h-1.5 rounded-full bg-[var(--brand-cyan)]" />
                 <span className="font-bold text-xs text-foreground">
-                  {userData.points.toLocaleString()}
+                  {userData?.points?.toLocaleString() || "0"}
                 </span>
               </div>
 
@@ -73,16 +67,16 @@ export function Header({ onMenuClick }: HeaderProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52 rounded-xl">
                   <div className="px-3 py-2">
-                    <p className="text-sm font-semibold">{userData.username}</p>
+                    <p className="text-sm font-semibold">{userData?.username}</p>
                     <p className="text-xs text-muted-foreground">
-                      Level {userData.level} • ID: {userData.uid.slice(0, 8)}
+                      Level {userData?.level} • ID: {userData?.uid?.slice(0, 8)}
                     </p>
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild className="cursor-pointer">
                     <Link href="/profile">Profile Settings</Link>
                   </DropdownMenuItem>
-                  {userData.isAdmin && (
+                  {userData?.isAdmin && (
                     <DropdownMenuItem asChild className="cursor-pointer">
                       <Link href="/admin">Admin Dashboard</Link>
                     </DropdownMenuItem>
