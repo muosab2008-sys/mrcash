@@ -79,10 +79,9 @@ export async function GET(request: NextRequest) {
   const rawPayout = searchParams.get("payout") || searchParams.get("reward") || "0";
     const payoutValue = parseFloat(rawPayout);
     
-    // حل التدبيل: إذا الرقم 1 أو أكثر يبقى كما هو، إذا أقل يضرب في 1000
-    let points = payoutValue >= 1 ? Math.round(payoutValue) : Math.round(payoutValue * POINTS_PER_DOLLAR);
-    if (points <= 0) points = 10;
-
+   // سنأخذ الرقم القادم من الشركة مباشرة بدون ضربه في أي شيء
+let points = Math.round(payoutValue); 
+if (points <= 0) points = 5; // حد أدنى بسيط
     // حساب الليفل التصاعدي
     const totalEarnedSoFar = (userData?.totalEarned || 0) + points;
     let newLevel = 1;
