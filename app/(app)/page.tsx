@@ -32,7 +32,6 @@ const defaultOfferwalls: Offerwall[] = [
     description: "Play games and complete tasks to earn high rewards",
     logoUrl: "https://earng.net/storage/providers/zeG92gZZxlLyVw6nTwvBWeFN4eV6l1Lqy90xQzHZ.webp",
     avgPoints: 1200,
-    pointsPerFragment: 15,
     isActive: true,
     url: "#", // سيتم استبداله برابط المستخدم تلقائياً
     color: "#9333ea",
@@ -43,7 +42,6 @@ const defaultOfferwalls: Offerwall[] = [
     description: "Discover new apps and complete quick offers",
     logoUrl: "https://cashlyearn.com/storage/providers/oEfGzXHjrQMaKUZCf1uiT5tv4xvDSwVqsXsZccSl.webp",
     avgPoints: 850,
-    pointsPerFragment: 12,
     isActive: true,
     url: "#", // سيتم استبداله برابط المستخدم تلقائياً
     color: "#2563eb",
@@ -55,7 +53,6 @@ const defaultOfferwalls: Offerwall[] = [
     // شعار GemiAd الرسمي (من الأصول الخاصة بهم)
     logoUrl: "https://earng.net/storage/providers/5t91vghsZuzh5mBa1uDlmfpjjMH05idKJtU8VjcB.png", 
     avgPoints: 1500,
-    pointsPerFragment: 18,
     isActive: true,
     url: "#",
     color: "#ff5722", // برتقالي مميز
@@ -67,7 +64,6 @@ const defaultOfferwalls: Offerwall[] = [
     // شعار Revtoo (يمكنك استخدام شعارهم الرسمي)
     logoUrl: "https://revtoo.com/assets/offerwall/images/revtoo-dark.svg", 
     avgPoints: 1800,
-    pointsPerFragment: 20,
     isActive: true,
     url: "#",
     color: "#0ea5e9", // لون سماوي (Sky Blue) احترافي جداً
@@ -78,7 +74,6 @@ const defaultOfferwalls: Offerwall[] = [
   description: "Maximize your earnings with high-reward premium offers and instant, verified surveys",
   logoUrl: "https://earng.net/storage/providers/x5v40jKJIoMPSNXMmiyTkK0eWIGXHPXSsAT2QRYb.png", 
   avgPoints: 1600,
-  pointsPerFragment: 19,
   isActive: true,
   url: "#",
   color: "#ffc107", // توهج أصفر ذهبي
@@ -89,7 +84,6 @@ const defaultOfferwalls: Offerwall[] = [
   description: "Unlock exclusive high-payout opportunities and earn points instantly through top-tier surveys",
   logoUrl: "https://earng.net/storage/providers/GtCTDFNK8p1W2yfdiBtF9khJjbw6zN9FztVJQdii.svg", // الشعار الرسمي من الدليل [cite: 23]
   avgPoints: 2200,
-  pointsPerFragment: 25,
   isActive: true,
   url: "#",
   color: "#25D3C2", // اللون الرسمي: light mint [cite: 27]
