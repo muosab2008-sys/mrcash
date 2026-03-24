@@ -13,7 +13,7 @@ import { ExternalLink, Trophy } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 
-// --- مكون الـ Live Feed الحقيقي ---
+// --- مكون الـ Live Feed الحقيقي المعدل (تقليل المسافات) ---
 function LiveFeed() {
   const [feedItems, setFeedItems] = useState<any[]>([]);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
@@ -28,7 +28,8 @@ function LiveFeed() {
   if (feedItems.length === 0) return null;
 
   return (
-    <div className="w-full flex justify-center py-4 bg-transparent select-none relative z-40">
+    // تم تقليل py-8 إلى py-2 لتقليل الفراغ
+    <div className="w-full flex justify-center py-2 bg-transparent select-none relative z-40">
       <div className="relative flex items-center h-12 w-full bg-[#0d0d0d]/80 backdrop-blur-md rounded-full border border-white/5 shadow-2xl overflow-visible">
         <div className="absolute left-0 z-[60] bg-[#0d0d0d] px-5 h-full flex items-center border-r border-white/5 rounded-l-full">
           <div className="flex items-center gap-2">
@@ -70,6 +71,7 @@ function LiveFeed() {
                   <div className={`absolute bottom-[120%] left-1/2 -translate-x-1/2 w-48 bg-[#0f0f0f] border border-white/10 rounded-xl p-3 shadow-2xl transition-all duration-300 z-[999] pointer-events-none ${activeTooltip === itemId ? "opacity-100 visible translate-y-0" : "opacity-0 invisible translate-y-2"}`}>
                     <p className="text-[10px] font-bold text-cyan-400 truncate">{item.offerName || "Task Completed"}</p>
                     <p className="text-[9px] text-white/40 uppercase">{item.source}</p>
+                    <div className="absolute top-[98%] left-1/2 -translate-x-1/2 w-3 h-3 bg-[#0f0f0f] border-b border-r border-white/10 rotate-45"></div>
                   </div>
                 </div>
               );
@@ -150,9 +152,10 @@ export default function EarnPage() {
   const levelProgress = (pointsInCurrentLevel / pointsPerLevel) * 100;
 
   return (
-    <div className="flex flex-col gap-6 pt-24 pb-12 px-4 min-h-screen overflow-y-auto">
+    // تم تعديل المسافة العلوية من pt-24 إلى pt-12 لتقليل الفراغ تحت الهيدر
+    <div className="flex flex-col gap-4 pt-12 pb-12 px-4 min-h-screen overflow-y-auto">
       
-      {/* 0. Live Feed (The Real One) */}
+      {/* 0. Live Feed (Real) */}
       <LiveFeed />
 
       {/* 1. Stats Overview */}
