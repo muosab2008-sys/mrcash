@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Trophy } from "lucide-react";
+import { ExternalLink, Trophy, X, ArrowLeft, Maximize2 } from "lucide-react"; // أضفت أيقونات للإطار
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 
@@ -109,6 +109,9 @@ export default function EarnPage() {
   const [offerwalls, setOfferwalls] = useState<Offerwall[]>(defaultOfferwalls);
   const [loading, setLoading] = useState(true);
 
+  // --- إضافة الحالة للإطار بدون حذف أي شيء ---
+  const [activeOffer, setActiveOffer] = useState<{url: string, title: string} | null>(null);
+
   useEffect(() => {
     const q = query(collection(db, "offerwalls"), orderBy("avgPoints", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -140,6 +143,31 @@ export default function EarnPage() {
   const pointsInCurrentLevel = (userData?.totalEarned || 0) % pointsPerLevel;
   const levelProgress = (pointsInCurrentLevel / pointsPerLevel) * 100;
 
+  // --- عرض الإطار إذا تم اختياره ---
+  if (activeOffer) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-black flex flex-col">
+        <div className="flex items-center justify-between p-3 bg-[#0d0d0d] border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => setActiveOffer(null)} className="text-white">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <span className="font-bold text-white text-sm">{activeOffer.title}</span>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="icon" onClick={() => window.open(activeOffer.url, '_blank')} className="text-white/50">
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => setActiveOffer(null)} className="text-white/50">
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+        <iframe src={activeOffer.url} className="w-full flex-1 border-0" title={activeOffer.title} allow="autoplay; fullscreen" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3 sm:gap-4 w-full">
       
@@ -153,7 +181,10 @@ export default function EarnPage() {
             </div>
             <div className="min-w-0">
               <p className="text-xs sm:text-sm text-muted-foreground font-medium">Points Balance</p>
-              <p className="text-xl sm:text-2xl font-black text-white truncate">{(userData?.points ?? 0) > 999999 ? `${((userData?.points ?? 0) / 1000000).toFixed(1)}M` : (userData?.points ?? 0).toLocaleString()}</p>
+              {/* تعديل الرصيد لضمان الظهور */}
+              <p className="text-xl sm:text-2xl font-black text-white truncate">
+                {Number(userData?.points ?? 0).toLocaleString()}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -179,7 +210,7 @@ export default function EarnPage() {
               <span className="font-black text-xs sm:text-sm text-white uppercase tracking-wider truncate">Level {currentLevel} Progress</span>
             </div>
             <span className="text-[10px] sm:text-xs font-bold text-white/40 tracking-tighter whitespace-nowrap">
-              {(pointsInCurrentLevel > 999999 ? `${(pointsInCurrentLevel / 1000000).toFixed(1)}M` : pointsInCurrentLevel.toLocaleString())} / {(pointsPerLevel > 999999 ? `${(pointsPerLevel / 1000000).toFixed(1)}M` : pointsPerLevel.toLocaleString())}
+              {Number(pointsInCurrentLevel).toLocaleString()} / {Number(pointsPerLevel).toLocaleString()}
             </span>
           </div>
           <div className="h-2 sm:h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
@@ -201,14 +232,21 @@ export default function EarnPage() {
                     <img src={wall.logoUrl} alt={wall.name} className="h-10 sm:h-12 w-10 sm:w-12 rounded-lg sm:rounded-xl object-contain bg-white/5 p-1 shrink-0" />
                     <Badge variant="secondary" className="bg-[#A65FFF]/10 text-[#A65FFF] border border-[#A65FFF]/20 flex items-center gap-1 font-bold text-[9px] sm:text-xs px-2 py-1 shrink-0">
                       <Image src="/coin.png" width={10} height={10} alt="coin" className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span className="truncate">~{(wall.avgPoints ?? 0) > 999999 ? `${((wall.avgPoints ?? 0) / 1000000).toFixed(1)}M` : (wall.avgPoints ?? 0).toLocaleString()}</span>
+                      <span className="truncate">~{Number(wall.avgPoints ?? 0).toLocaleString()}</span>
                     </Badge>
                   </div>
                   <CardTitle className="text-sm sm:text-base lg:text-lg mt-2 sm:mt-3 font-black text-white line-clamp-1">{wall.name}</CardTitle>
                   <CardDescription className="line-clamp-2 text-[10px] sm:text-xs">{wall.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-1 sm:pt-2 px-3 sm:px-4 pb-3 sm:pb-4">
-                  <Button className="w-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] text-white font-black text-[10px] sm:text-xs hover:opacity-90 active:scale-95 border-none shadow-lg shadow-purple-500/10 h-8 sm:h-10" onClick={() => window.open(getDynamicUrl(wall), "_blank")}>
+                  {/* تغيير هنا فقط لفتح الإطار داخلياً */}
+                  <Button 
+                    className="w-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] text-white font-black text-[10px] sm:text-xs hover:opacity-90 active:scale-95 border-none shadow-lg shadow-purple-500/10 h-8 sm:h-10" 
+                    onClick={() => {
+                      const url = getDynamicUrl(wall);
+                      if (url !== "#") setActiveOffer({ url, title: wall.name });
+                    }}
+                  >
                     START <ExternalLink className="ml-1 h-3 w-3 sm:h-3.5 sm:w-3.5" />
                   </Button>
                 </CardContent>
