@@ -229,9 +229,12 @@ export default function EarnPage() {
                     START EARNING
                     <ExternalLink className="ml-2 h-3.5 w-3.5" />
                   </Button>
-                </CardContent>
+                <</CardContent>
               </Card>
             ))
           )}
         </div>
       </div>
+    </div>
+  );
+}
