@@ -2,6 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
+import Image from "next/image";
 import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -67,11 +68,17 @@ export default function CashoutPage() {
           {/* Main Hero Content */}
           <div className="lg:col-span-2">
             <div className="flex items-start gap-4 sm:gap-6">
-              <div className="flex h-12 sm:h-16 w-12 sm:w-16 items-center justify-center rounded-full sm:rounded-2xl bg-[#A65FFF] shrink-0">
-                <DollarSign className="h-6 sm:h-8 w-6 sm:w-8 text-white" />
+              <div className="flex h-12 sm:h-16 w-12 sm:w-16 items-center justify-center rounded-full sm:rounded-2xl bg-gradient-to-br from-[#00D2FF] to-[#0099CC] shrink-0">
+                <Image 
+                  src="/logo.png" 
+                  alt="MrCash" 
+                  width={40} 
+                  height={40}
+                  className="h-6 sm:h-8 w-6 sm:w-8 object-contain"
+                />
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white mb-1 sm:mb-2">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black bg-gradient-to-r from-[#00D2FF] via-[#00AAFF] to-[#0099CC] bg-clip-text text-transparent mb-1 sm:mb-2">
                   Choose Payment Method
                 </h1>
                 <p className="text-xs sm:text-sm lg:text-base text-white/70">
@@ -83,15 +90,15 @@ export default function CashoutPage() {
             {/* Features */}
             <div className="mt-4 sm:mt-6 grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-3">
               <div className="flex items-center gap-2 sm:gap-3">
-                <Zap className="h-4 sm:h-5 w-4 sm:w-5 text-[#A65FFF] shrink-0" />
+                <Zap className="h-4 sm:h-5 w-4 sm:w-5 text-[#00D2FF] shrink-0" />
                 <span className="text-xs sm:text-sm text-white/80">Instant Processing</span>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
-                <Lock className="h-4 sm:h-5 w-4 sm:w-5 text-[#A65FFF] shrink-0" />
+                <Lock className="h-4 sm:h-5 w-4 sm:w-5 text-[#00D2FF] shrink-0" />
                 <span className="text-xs sm:text-sm text-white/80">Secure Payments</span>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
-                <Clock className="h-4 sm:h-5 w-4 sm:w-5 text-[#A65FFF] shrink-0" />
+                <Clock className="h-4 sm:h-5 w-4 sm:w-5 text-[#00D2FF] shrink-0" />
                 <span className="text-xs sm:text-sm text-white/80">24/7 Available</span>
               </div>
             </div>
@@ -99,20 +106,20 @@ export default function CashoutPage() {
 
           {/* Balance Card */}
           <div className="lg:col-span-1">
-            <Card className="border-[#A65FFF]/40 bg-[#A65FFF]/10 backdrop-blur-sm">
+            <Card className="border-[#00D2FF]/40 bg-gradient-to-br from-[#00D2FF]/10 to-[#0099CC]/10 backdrop-blur-sm">
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                  <span className="text-xs sm:text-sm font-medium text-green-500">Available Balance</span>
+                  <div className="h-2 w-2 rounded-full bg-[#00D2FF]"></div>
+                  <span className="text-xs sm:text-sm font-medium text-[#00D2FF]">Available Balance</span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="secondary" className="bg-white/10 text-white border-0 text-xs sm:text-sm">
+                  <Badge variant="secondary" className="bg-[#00D2FF]/20 text-[#00D2FF] border-[#00D2FF]/30 border text-xs sm:text-sm">
                     <Coins className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                     Verified
                   </Badge>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl sm:text-3xl font-black text-white">
+                  <span className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-[#00D2FF] to-[#0099CC] bg-clip-text text-transparent">
                     {availableBalance.toFixed(2)}
                   </span>
                   <span className="text-xs sm:text-sm text-white/70 ml-1">POINTS</span>
@@ -128,15 +135,15 @@ export default function CashoutPage() {
       <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex h-8 sm:h-10 w-8 sm:w-10 items-center justify-center rounded-full bg-orange-500/20">
-              <Smartphone className="h-4 sm:h-5 w-4 sm:w-5 text-orange-500" />
+            <div className="flex h-8 sm:h-10 w-8 sm:w-10 items-center justify-center rounded-full bg-[#00D2FF]/20">
+              <Smartphone className="h-4 sm:h-5 w-4 sm:w-5 text-[#00D2FF]" />
             </div>
             <div>
               <h2 className="text-lg sm:text-xl font-black text-white">Crypto</h2>
               <p className="text-xs text-white/50">{cryptoOptions.length} options available</p>
             </div>
           </div>
-          <Badge variant="secondary" className="bg-white/10 text-white border-0 text-xs sm:text-sm h-fit">
+          <Badge variant="secondary" className="bg-[#00D2FF]/20 text-[#00D2FF] border-[#00D2FF]/30 border text-xs sm:text-sm h-fit">
             {cryptoOptions.length}
           </Badge>
         </div>
@@ -146,16 +153,11 @@ export default function CashoutPage() {
             <button
               key={option.id}
               onClick={() => handleCardClick(option.name)}
-              className={`group relative h-32 sm:h-40 rounded-lg sm:rounded-xl border-2 border-gradient-to-br bg-black/40 backdrop-blur-sm transition-all hover:scale-105 hover:shadow-lg hover:shadow-[#A65FFF]/20 overflow-hidden cursor-pointer`}
-              style={{
-                borderImage: `linear-gradient(135deg, var(--crypto-color-${option.id}), transparent) 1`,
-                borderImageSlice: 1,
-              }}
+              className={`group relative h-32 sm:h-40 rounded-lg sm:rounded-xl border-2 bg-black/40 backdrop-blur-sm transition-all hover:scale-105 hover:shadow-lg hover:shadow-[#00D2FF]/30 overflow-hidden cursor-pointer border-[#00D2FF]/30 hover:border-[#00D2FF]/60`}
             >
               {/* Gradient border using background */}
               <div
-                className={`absolute inset-0 rounded-lg sm:rounded-xl bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity ${option.borderColor}`}
-                style={{ opacity: 0.1 }}
+                className={`absolute inset-0 rounded-lg sm:rounded-xl bg-gradient-to-br opacity-0 group-hover:opacity-20 transition-opacity ${option.borderColor}`}
               ></div>
 
               <div className="absolute inset-0.5 sm:inset-1 rounded-md sm:rounded-lg bg-black/80 flex items-center justify-center flex-col gap-2 sm:gap-3">
@@ -172,15 +174,15 @@ export default function CashoutPage() {
       <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex h-8 sm:h-10 w-8 sm:w-10 items-center justify-center rounded-full bg-[#A65FFF]/20">
-              <CreditCard className="h-4 sm:h-5 w-4 sm:w-5 text-[#A65FFF]" />
+            <div className="flex h-8 sm:h-10 w-8 sm:w-10 items-center justify-center rounded-full bg-[#00D2FF]/20">
+              <CreditCard className="h-4 sm:h-5 w-4 sm:w-5 text-[#00D2FF]" />
             </div>
             <div>
               <h2 className="text-lg sm:text-xl font-black text-white">Cashout Methods</h2>
               <p className="text-xs text-white/50">{cashoutMethods.length} options available</p>
             </div>
           </div>
-          <Badge variant="secondary" className="bg-white/10 text-white border-0 text-xs sm:text-sm h-fit">
+          <Badge variant="secondary" className="bg-[#00D2FF]/20 text-[#00D2FF] border-[#00D2FF]/30 border text-xs sm:text-sm h-fit">
             {cashoutMethods.length}
           </Badge>
         </div>
@@ -190,12 +192,11 @@ export default function CashoutPage() {
             <button
               key={option.id}
               onClick={() => handleCardClick(option.name)}
-              className={`group relative h-32 sm:h-40 rounded-lg sm:rounded-xl border-2 border-gradient-to-br bg-black/40 backdrop-blur-sm transition-all hover:scale-105 hover:shadow-lg hover:shadow-[#A65FFF]/20 overflow-hidden cursor-pointer`}
+              className={`group relative h-32 sm:h-40 rounded-lg sm:rounded-xl border-2 bg-black/40 backdrop-blur-sm transition-all hover:scale-105 hover:shadow-lg hover:shadow-[#00D2FF]/30 overflow-hidden cursor-pointer border-[#00D2FF]/30 hover:border-[#00D2FF]/60`}
             >
               {/* Gradient border using background */}
               <div
-                className={`absolute inset-0 rounded-lg sm:rounded-xl bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity ${option.borderColor}`}
-                style={{ opacity: 0.1 }}
+                className={`absolute inset-0 rounded-lg sm:rounded-xl bg-gradient-to-br opacity-0 group-hover:opacity-20 transition-opacity ${option.borderColor}`}
               ></div>
 
               <div className="absolute inset-0.5 sm:inset-1 rounded-md sm:rounded-lg bg-black/80 flex items-center justify-center flex-col gap-2 sm:gap-3">
@@ -220,7 +221,7 @@ export default function CashoutPage() {
               <p className="text-xs text-white/50">{giftCards.length} options available</p>
             </div>
           </div>
-          <Badge variant="secondary" className="bg-white/10 text-white border-0 text-xs sm:text-sm h-fit">
+          <Badge variant="secondary" className="bg-[#00D2FF]/20 text-[#00D2FF] border-[#00D2FF]/30 border text-xs sm:text-sm h-fit">
             {giftCards.length}
           </Badge>
         </div>
@@ -230,12 +231,11 @@ export default function CashoutPage() {
             <button
               key={option.id}
               onClick={() => handleCardClick(option.name)}
-              className={`group relative h-32 sm:h-40 rounded-lg sm:rounded-xl border-2 border-gradient-to-br bg-black/40 backdrop-blur-sm transition-all hover:scale-105 hover:shadow-lg hover:shadow-[#A65FFF]/20 overflow-hidden cursor-pointer`}
+              className={`group relative h-32 sm:h-40 rounded-lg sm:rounded-xl border-2 bg-black/40 backdrop-blur-sm transition-all hover:scale-105 hover:shadow-lg hover:shadow-[#00D2FF]/30 overflow-hidden cursor-pointer border-[#00D2FF]/30 hover:border-[#00D2FF]/60`}
             >
               {/* Gradient border using background */}
               <div
-                className={`absolute inset-0 rounded-lg sm:rounded-xl bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity ${option.borderColor}`}
-                style={{ opacity: 0.1 }}
+                className={`absolute inset-0 rounded-lg sm:rounded-xl bg-gradient-to-br opacity-0 group-hover:opacity-20 transition-opacity ${option.borderColor}`}
               ></div>
 
               <div className="absolute inset-0.5 sm:inset-1 rounded-md sm:rounded-lg bg-black/80 flex items-center justify-center flex-col gap-2 sm:gap-3">
