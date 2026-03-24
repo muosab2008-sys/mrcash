@@ -220,7 +220,7 @@ export default function CashoutPage() {
                        </div>
                        <div className="flex items-center justify-between md:justify-end gap-6">
                           <div className="text-right">
-                             <p className="font-black text-sm text-white tracking-tighter">-{w.pointsDeducted.toLocaleString()} <span className="text-[10px] text-white/30">PTS</span></p>
+                             <p className="font-black text-sm text-white tracking-tighter">-{(w.pointsDeducted ?? 0).toLocaleString()} <span className="text-[10px] text-white/30">PTS</span></p>
                              <p className="text-[10px] font-bold text-emerald-500 uppercase mt-0.5">+${(w.pointsDeducted / 1000).toFixed(2)}</p>
                           </div>
                           <Badge className={`rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-widest border-none ${
