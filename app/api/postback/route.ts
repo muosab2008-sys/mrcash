@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
       searchParams.get("transId") ||    // خاص بـ BagiraWall
       searchParams.get("offer_id") || 
       `TX-${Date.now()}`;
-
+const userData = userSnap.data();
  const rawPayout = searchParams.get("payout") || searchParams.get("reward") || "0";
   const payoutValue = parseFloat(rawPayout);
   
