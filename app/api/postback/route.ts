@@ -110,8 +110,17 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const userData = userSnap.data();
-    const points = Math.round(payout * POINTS_PER_DOLLAR) || 100;
+   const userData = userSnap.data();
+    const rawPayout = searchParams.get("payout") || searchParams.get("reward") || "0";
+    const payoutValue = parseFloat(rawPayout);
+
+    // حل مشكلة التدبيل: إذا الرقم كبير فهو نقاط جاهزة، إذا صغير فهو دولار
+    let points = payoutValue >= 1 ? Math.round(payoutValue) : Math.round(payoutValue * POINTS_PER_DOLLAR);
+    if (points <= 0) points = 10; 
+
+    // حساب الليفل الجديد (كل 5000 نقطة ليفل)
+    const currentTotal = (userData?.totalEarned || 0) + points;
+    const newLevel = Math.floor(currentTotal / 5000) + 1;
 
     // فحص التكرار
     const dupCheck = await adminDb.collection("transactions").where("transactionId", "==", transactionId).get();
