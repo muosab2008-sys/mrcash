@@ -21,81 +21,83 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { user, userData, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
-      <div className="flex h-16 items-center justify-between px-4">
+    <header className="sticky top-0 z-50 w-full border-b border-white/[0.05] bg-[#050505]/80 backdrop-blur-xl">
+      <div className="flex h-16 items-center justify-between px-4 sm:px-6">
+        
+        {/* القسم الأيسر: زر المنيو + الشعار (للجوال فقط) */}
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden hover:bg-secondary"
+            className="lg:hidden hover:bg-white/5 text-white"
             onClick={onMenuClick}
           >
             <Menu className="h-5 w-5" />
           </Button>
+
+          {/* الشعار المخصص للجوال فقط - لن يظهر في اللابتوب بسبب lg:hidden */}
+          <Link href="/" className="lg:hidden flex items-center gap-2">
+             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#00E676] font-black text-black">
+              M
+            </div>
+            <span className="text-lg font-black tracking-tighter text-white">
+              MR<span className="text-[#00E676]">CASH</span>
+            </span>
+          </Link>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* القسم الأيمن: الرصيد والإعدادات (كما هي في اللابتوب والجوال) */}
+        <div className="flex items-center gap-2 sm:gap-4">
           {user && userData ? (
             <>
-              {/* Points display - desktop */}
-              <div className="hidden items-center gap-3 sm:flex">
-                <div className="flex items-center gap-2 rounded-full bg-secondary/80 px-4 py-2 border border-border/50">
-                  <div className="w-2 h-2 rounded-full bg-[var(--brand-cyan)] animate-pulse" />
-                  <span className="text-xs text-muted-foreground">Points</span>
-                  <span className="font-bold text-sm text-foreground">
-                    {userData?.points?.toLocaleString() || "0"}
-                  </span>
-                </div>
-                {/* تم مسح قسم الشظايا من هنا بطلبك */}
-              </div>
-
-              {/* Mobile points */}
-              <div className="flex sm:hidden items-center gap-1.5 rounded-full bg-secondary/80 px-3 py-1.5 border border-border/50">
-                <div className="w-1.5 h-1.5 rounded-full bg-[var(--brand-cyan)]" />
-                <span className="font-bold text-xs text-foreground">
+              {/* عرض النقاط */}
+              <div className="flex items-center gap-2 rounded-full bg-white/[0.05] px-3 py-1.5 border border-white/[0.1]">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#00E676] shadow-[0_0_8px_#00E676] animate-pulse" />
+                <span className="font-bold text-xs sm:text-sm text-white">
                   {userData?.points?.toLocaleString() || "0"}
                 </span>
               </div>
 
-              <NotificationPanel />
+              <div className="flex items-center gap-1">
+                <NotificationPanel />
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="hover:bg-secondary">
-                    <Settings className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52 rounded-xl">
-                  <div className="px-3 py-2">
-                    <p className="text-sm font-semibold">{userData?.username}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Level {userData?.level} • ID: {userData?.uid?.slice(0, 8)}
-                    </p>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/profile">Profile Settings</Link>
-                  </DropdownMenuItem>
-                  {userData?.isAdmin && (
-                    <DropdownMenuItem asChild className="cursor-pointer">
-                      <Link href="/admin">Admin Dashboard</Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="hover:bg-white/5 text-white/50">
+                      <Settings className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 rounded-2xl bg-[#0A0A0A] border-white/10 text-white shadow-2xl">
+                    <div className="px-4 py-3">
+                      <p className="text-sm font-bold text-white/90">{userData?.username}</p>
+                      <p className="text-[11px] text-white/40">
+                        Level {userData?.level || 1} • ID: {userData?.uid?.slice(0, 8)}
+                      </p>
+                    </div>
+                    <DropdownMenuSeparator className="bg-white/5" />
+                    <DropdownMenuItem asChild className="cursor-pointer py-2.5 focus:bg-white/5 focus:text-[#00E676]">
+                      <Link href="/profile">Profile Settings</Link>
                     </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={logout} 
-                    className="text-red-500 focus:text-red-500 cursor-pointer"
-                  >
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    {userData?.isAdmin && (
+                      <DropdownMenuItem asChild className="cursor-pointer py-2.5 focus:bg-white/5 focus:text-[#00E676]">
+                        <Link href="/admin">Admin Dashboard</Link>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator className="bg-white/5" />
+                    <DropdownMenuItem 
+                      onClick={logout} 
+                      className="text-red-500 py-2.5 focus:text-red-400 focus:bg-red-500/5 cursor-pointer"
+                    >
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </>
           ) : (
             <Link href="/login">
-              <Button className="gap-2 rounded-xl bg-gradient-to-r from-[var(--brand-cyan)] to-[var(--brand-purple)] hover:opacity-90 transition-opacity">
-                <LogIn className="h-4 w-4" />
-                <span className="hidden sm:inline">Sign In</span>
+              <Button className="h-9 px-5 rounded-full bg-[#00E676] text-black font-black text-[10px] hover:bg-[#00c864]">
+                SIGN IN
               </Button>
             </Link>
           )}
