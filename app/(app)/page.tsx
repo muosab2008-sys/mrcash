@@ -9,9 +9,8 @@ import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { ExternalLink, Trophy, Zap } from "lucide-react";
-import Image from "next/image"; // تأكد من وجود هذا السطر
+import { ExternalLink, Trophy } from "lucide-react";
+import Image from "next/image";
 
 interface Offerwall {
   id: string;
@@ -19,7 +18,6 @@ interface Offerwall {
   description: string;
   logoUrl: string;
   avgPoints: number;
-  pointsPerFragment: number;
   isActive: boolean;
   url: string;
   color: string;
@@ -47,10 +45,10 @@ const defaultOfferwalls: Offerwall[] = [
     color: "#2563eb",
   },
   {
-   id: "gemiad",
+    id: "gemiad",
     name: "GemiAd",
     description: "Access the highest paying tasks and complete instant surveys for rapid rewards",
-    logoUrl: "https://earng.net/storage/providers/5t91vghsZuzh5mBa1uDlmfpjjMH05idKJtU8VjcB.png", 
+    logoUrl: "https://earng.net/storage/providers/5t91vghsZuzh5mBa1uDlmfpjjMH05idKJtU8VjcB.png",
     avgPoints: 1500,
     isActive: true,
     url: "#",
@@ -60,32 +58,32 @@ const defaultOfferwalls: Offerwall[] = [
     id: "revtoo",
     name: "Revtoo",
     description: "Maximize your earnings with high-reward premium offers and instant, verified surveys",
-    logoUrl: "https://revtoo.com/assets/offerwall/images/revtoo-dark.svg", 
+    logoUrl: "https://revtoo.com/assets/offerwall/images/revtoo-dark.svg",
     avgPoints: 1800,
     isActive: true,
     url: "#",
     color: "#0ea5e9",
   },
   {
-  id: "offery",
-  name: "Offery",
-  description: "Maximize your earnings with high-reward premium offers and instant, verified surveys",
-  logoUrl: "https://earng.net/storage/providers/x5v40jKJIoMPSNXMmiyTkK0eWIGXHPXSsAT2QRYb.png", 
-  avgPoints: 1600,
-  isActive: true,
-  url: "#",
-  color: "#ffc107",
-},
+    id: "offery",
+    name: "Offery",
+    description: "Maximize your earnings with high-reward premium offers and instant, verified surveys",
+    logoUrl: "https://earng.net/storage/providers/x5v40jKJIoMPSNXMmiyTkK0eWIGXHPXSsAT2QRYb.png",
+    avgPoints: 1600,
+    isActive: true,
+    url: "#",
+    color: "#ffc107",
+  },
   {
-  id: "adtogame",
-  name: "AdToGame",
-  description: "Unlock exclusive high-payout opportunities and earn points instantly through top-tier surveys",
-  logoUrl: "https://earng.net/storage/providers/GtCTDFNK8p1W2yfdiBtF9khJjbw6zN9FztVJQdii.svg",
-  avgPoints: 2200,
-  isActive: true,
-  url: "#",
-  color: "#25D3C2",
-}
+    id: "adtogame",
+    name: "AdToGame",
+    description: "Unlock exclusive high-payout opportunities and earn points instantly through top-tier surveys",
+    logoUrl: "https://earng.net/storage/providers/GtCTDFNK8p1W2yfdiBtF9khJjbw6zN9FztVJQdii.svg",
+    avgPoints: 2200,
+    isActive: true,
+    url: "#",
+    color: "#25D3C2",
+  }
 ];
 
 export default function EarnPage() {
@@ -96,42 +94,43 @@ export default function EarnPage() {
   useEffect(() => {
     const q = query(collection(db, "offerwalls"), orderBy("avgPoints", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const walls = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Offerwall[];
-          setOfferwalls(walls.filter((w) => w.isActive));
-        }
-        setLoading(false);
-      }, () => setLoading(false));
+      if (!snapshot.empty) {
+        const walls = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Offerwall[];
+        setOfferwalls(walls.filter((w) => w.isActive));
+      }
+      setLoading(false);
+    }, () => setLoading(false));
     return () => unsubscribe();
   }, []);
 
   const getDynamicUrl = (wall: Offerwall) => {
     if (!userData?.uid) return "#";
-    if (wall.id === "playtime") return `https://web.playtimeads.com/index.php?app_id=6d186de0e9e5e8d7&user_id=${userData.uid}`;
-    if (wall.id === "pubscale") return `https://wow.pubscale.com?app_id=99429038&user_id=${userData.uid}`;
-    if (wall.id === "gemiad") return `https://gemiwall.com/69c1622e82a1cd59c17a2e21/${userData.uid}`;
-    if (wall.id === "revtoo") return `https://revtoo.com/offerwall/xol9xws01wsarkpuv7miwdair6ikvu/${userData.uid}`;
-    if (wall.id === "offery") return `https://offery.io/offerwall/uccnjpr7cd6llvbomgr04no1hofoob/${userData.uid}`;
-    if (wall.id === "adtogame") return `https://adtowall.com/7683/${userData.uid}`;
+    const uid = userData.uid;
+    if (wall.id === "playtime") return `https://web.playtimeads.com/index.php?app_id=6d186de0e9e5e8d7&user_id=${uid}`;
+    if (wall.id === "pubscale") return `https://wow.pubscale.com?app_id=99429038&user_id=${uid}`;
+    if (wall.id === "gemiad") return `https://gemiwall.com/69c1622e82a1cd59c17a2e21/${uid}`;
+    if (wall.id === "revtoo") return `https://revtoo.com/offerwall/xol9xws01wsarkpuv7miwdair6ikvu/${uid}`;
+    if (wall.id === "offery") return `https://offery.io/offerwall/uccnjpr7cd6llvbomgr04no1hofoob/${uid}`;
+    if (wall.id === "adtogame") return `https://adtowall.com/7683/${uid}`;
     return wall.url;
   };
 
-  const currentLevelThreshold = (userData?.level || 1) * 10000;
-  const previousLevelThreshold = ((userData?.level || 1) - 1) * 10000;
-  const pointsInCurrentLevel = (userData?.totalEarned || 0) - previousLevelThreshold;
-  const pointsNeededForLevel = currentLevelThreshold - previousLevelThreshold;
-  const levelProgress = Math.min((pointsInCurrentLevel / pointsNeededForLevel) * 100, 100);
+  // تحسين منطق الليفل: كل 10 آلاف نقطة ليفل جديد
+  const pointsPerLevel = 10000;
+  const userTotalPoints = userData?.totalEarned || 0;
+  const currentLevel = Math.floor(userTotalPoints / pointsPerLevel) + 1;
+  const pointsInCurrentLevel = userTotalPoints % pointsPerLevel;
+  const levelProgress = (pointsInCurrentLevel / pointsPerLevel) * 100;
 
   const sortedOfferwalls = [...offerwalls].sort((a, b) => b.avgPoints - a.avgPoints);
 
   return (
     <div className="space-y-6">
-      {/* 1. Stats Overview - تم تعديله ليصبح عمودين فقط وحذفنا Zap و Total Earned */}
+      {/* 1. Stats Overview */}
       <div className="grid gap-4 sm:grid-cols-2">
         <Card className="border-border bg-card">
           <CardContent className="flex items-center gap-4 p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
-              {/* استبدال الأيقونة بصورة coin.png */}
               <Image src="/coin.png" alt="Coin" width={28} height={28} className="animate-pulse object-contain" />
             </div>
             <div>
@@ -145,36 +144,34 @@ export default function EarnPage() {
 
         <Card className="border-border bg-card">
           <CardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20">
-              <Trophy className="h-6 w-6 text-amber-500" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#A65FFF]/10 border border-[#A65FFF]/20">
+              <Trophy className="h-6 w-6 text-[#A65FFF]" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground font-medium">Current Level</p>
-              <p className="text-2xl font-black text-amber-500">
-                Level {userData?.level || 1}
+              <p className="text-2xl font-black text-[#A65FFF]">
+                Level {currentLevel}
               </p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-     {/* 2. Level Progress - تم توحيد الألوان مع الهوية الجديدة */}
+      {/* 2. Level Progress */}
       <Card className="border-border bg-[#0D0D0D] border-white/5">
         <CardContent className="p-4">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {/* استبدلنا amber-500 باللون البنفسجي الخاص بالموقع */}
               <Trophy className="h-5 w-5 text-[#A65FFF]" />
               <span className="font-black text-sm text-white uppercase tracking-wider">
-                Level {userData?.level || 1} Progress
+                Level {currentLevel} Progress
               </span>
             </div>
             <span className="text-xs font-bold text-white/40 tracking-tighter">
-              {(pointsInCurrentLevel ?? 0).toLocaleString()} / {(pointsNeededForLevel ?? 0).toLocaleString()} PTS
+              {pointsInCurrentLevel.toLocaleString()} / {pointsPerLevel.toLocaleString()} PTS
             </span>
           </div>
           
-          {/* شريط تقدم مخصص بتدرج ألوان الموقع بدلاً من اللون السادة */}
           <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
             <div 
               className="h-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] transition-all duration-500 shadow-[0_0_10px_rgba(166,95,255,0.3)]" 
@@ -183,7 +180,7 @@ export default function EarnPage() {
           </div>
           
           <p className="mt-3 text-[11px] text-white/30 font-medium">
-            Earn {Math.max(0, pointsNeededForLevel - pointsInCurrentLevel).toLocaleString()} more points to reach Level {(userData?.level || 1) + 1}
+            Earn {(pointsPerLevel - pointsInCurrentLevel).toLocaleString()} more points to reach Level {currentLevel + 1}
           </p>
         </CardContent>
       </Card>
@@ -212,7 +209,6 @@ export default function EarnPage() {
                         alt={wall.name} 
                         className="h-12 w-12 rounded-xl object-contain bg-white/5 p-1"
                     />
-                    {/* Badge النقاط - متناسق مع اللون البنفسجي */}
                     <Badge variant="secondary" className="bg-[#A65FFF]/10 text-[#A65FFF] border border-[#A65FFF]/20 flex items-center gap-1 font-bold">
                       <Image src="/coin.png" width={10} height={10} alt="coin" />
                       ~{(wall.avgPoints ?? 0).toLocaleString()} pts
@@ -229,7 +225,7 @@ export default function EarnPage() {
                     START EARNING
                     <ExternalLink className="ml-2 h-3.5 w-3.5" />
                   </Button>
-                <</CardContent>
+                </CardContent>
               </Card>
             ))
           )}
