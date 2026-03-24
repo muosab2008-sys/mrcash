@@ -90,7 +90,7 @@ export default function TermsPage() {
             <h3 className="text-xl font-bold text-white mb-3">15. Contact Information</h3>
             <p>For support, questions, or legal requests, please contact us at: <br/> 
             <span className="text-green-400 font-mono">support@mrcash.com</span> <br/>
-            Website: <span className="text-green-400 font-mono text-xs">https://mrcash-sys.github.io/mrcash/</span></p>
+            Website: <span className="text-green-400 font-mono text-xs">https://mrcash.vercel.app/</span></p>
             <p className="mt-4 text-xs italic">Mr. Cash is an online earning platform where users can turn their free time into real money by completing digital tasks such as trying apps, playing games, and answering surveys.</p>
           </section>
 
