@@ -111,17 +111,37 @@ export async function GET(request: NextRequest) {
     }
 
    const userData = userSnap.data();
+    // 1. حساب النقاط القادمة من الشركة (بدون تدبيل)
     const rawPayout = searchParams.get("payout") || searchParams.get("reward") || "0";
     const payoutValue = parseFloat(rawPayout);
-
-    // حل مشكلة التدبيل: إذا الرقم كبير فهو نقاط جاهزة، إذا صغير فهو دولار
     let points = payoutValue >= 1 ? Math.round(payoutValue) : Math.round(payoutValue * POINTS_PER_DOLLAR);
-    if (points <= 0) points = 10; 
 
-    // حساب الليفل الجديد (كل 5000 نقطة ليفل)
-    const currentTotal = (userData?.totalEarned || 0) + points;
-    const newLevel = Math.floor(currentTotal / 5000) + 1;
+    // 2. نظام الليفل التصاعدي (الصعب)
+    // المعادلة: نعتمد على إجمالي ما كسبه المستخدم في حياته بالموقع
+    const totalEarnedSoFar = (userData?.totalEarned || 0) + points;
+    
+    // ليفل 1: 0 - 10k
+    // ليفل 2: 10k - 30k
+    // ليفل 3: 30k - 60k
+    // ليفل 4: 60k - 100k
+    let newLevel = 1;
+    if (totalEarnedSoFar >= 100000) {
+      newLevel = 4;
+    } else if (totalEarnedSoFar >= 60000) {
+      newLevel = 3;
+    } else if (totalEarnedSoFar >= 20000) {
+      newLevel = 2;
+    } else {
+      newLevel = 1;
+    }
 
+    // 3. تحديث قاعدة البيانات (مسح الشظايا وتحديث الليفل والنقاط)
+    batch.update(userRef, {
+      points: FieldValue.increment(points),
+      totalEarned: FieldValue.increment(points),
+      level: newLevel, // تحديث الليفل بناءً على المجموع الجديد
+      // ملاحظة: لم نضف حقل fragments هنا، سيتم تجاهله ولن يرسل شظايا
+    });
     // فحص التكرار
     const dupCheck = await adminDb.collection("transactions").where("transactionId", "==", transactionId).get();
     if (!dupCheck.empty) return NextResponse.json({ success: true, message: "Already Processed" });
