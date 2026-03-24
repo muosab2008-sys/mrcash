@@ -82,6 +82,17 @@ const defaultOfferwalls: Offerwall[] = [
   isActive: true,
   url: "#",
   color: "#ffc107", // توهج أصفر ذهبي
+},
+  {
+  id: "adtogame",
+  name: "AdToGame",
+  description: "Unlock exclusive high-payout opportunities and earn points instantly through top-tier surveys",
+  logoUrl: "https://earng.net/storage/providers/GtCTDFNK8p1W2yfdiBtF9khJjbw6zN9FztVJQdii.svg", // الشعار الرسمي من الدليل [cite: 23]
+  avgPoints: 2200,
+  pointsPerFragment: 25,
+  isActive: true,
+  url: "#",
+  color: "#25D3C2", // اللون الرسمي: light mint [cite: 27]
 }
 ];
 
@@ -134,6 +145,10 @@ export default function EarnPage() {
   // الـ API Key الخاص بك من لوحة التحكم
   const API_KEY = "uccnjpr7cd6llvbomgr04no1hofoobb1";
   return `https://offery.io/offerwall/${API_KEY}/${userData.uid}`;
+}
+    if (wall.id === "adtogame") {
+  // 7683 هو معرف الأفلييت الخاص بك 
+  return `https://adtowall.com/7683/${userData.uid}`;
 }
 
     return wall.url;
