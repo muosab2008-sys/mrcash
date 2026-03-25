@@ -36,28 +36,27 @@ export function Header({ onMenuClick }: HeaderProps) {
             <Menu className="h-5 w-5" />
           </Button>
 
-          {/* Logo & Name - Updated for image_3.png style */}
-          <Link href="/" className="flex items-center gap-2 min-w-0 group">
-            {/* أيقونة اللوجو الصغيرة - حافظنا عليها */}
-            <Image 
-              src="/logo.png" 
-              alt="MrCash Logo Icon"
-              width={24} 
-              height={24}
-              priority
-              className="object-contain w-6 h-6 sm:w-7 h-7 shrink-0 transition-transform group-hover:scale-110"
-            />
-            
-            {/* --- شعار مستر كاش الملون (نفس صورة image_3.png) --- */}
-            <span className="text-xl sm:text-2xl font-black tracking-tighter inline-block relative font-sans">
-              <span className="bg-gradient-to-r from-[#00D2FF] to-[#A65FFF] bg-clip-text text-transparent">
-                MrCash
-              </span>
-              {/* تأثير ظل خفيف ليبرز الألوان كما في الصورة */}
-              <span className="absolute inset-0 bg-gradient-to-r from-[#00D2FF] to-[#A65FFF] blur-sm opacity-20 -z-10 group-hover:blur-md group-hover:opacity-30 transition-all"></span>
-            </span>
-          </Link>
-        </div>
+          {/* Logo & Name - يظهر الآن في جميع الشاشات */}
+<Link href="/" className="flex items-center gap-2 min-w-0 group ml-2 lg:ml-0">
+  {/* أيقونة اللوجو */}
+  <Image 
+    src="/logo.png" 
+    alt="MrCash Logo Icon"
+    width={24} 
+    height={24}
+    priority
+    className="object-contain w-6 h-6 sm:w-7 h-7 shrink-0 transition-transform group-hover:scale-110"
+  />
+  
+  {/* نص MrCash الملون - يظهر دائماً */}
+  <span className="text-xl sm:text-2xl font-black tracking-tighter inline-block relative">
+    <span className="bg-gradient-to-r from-[#00D2FF] to-[#A65FFF] bg-clip-text text-transparent">
+      MrCash
+    </span>
+    {/* تأثير التوهج اللوني الخفيف */}
+    <span className="absolute inset-0 bg-gradient-to-r from-[#00D2FF] to-[#A65FFF] blur-md opacity-20 -z-10 group-hover:opacity-40 transition-all"></span>
+  </span>
+</Link>
 
         {/* Right section: Balance, Notifications, and Settings */}
         <div className="flex items-center gap-2 sm:gap-4">
