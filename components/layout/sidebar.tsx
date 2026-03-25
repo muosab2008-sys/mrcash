@@ -125,51 +125,52 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-3 sm:p-4 no-scrollbar">
-          <ul className="space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-              
-              const linkContent = (
-                <Link
-                  href={item.href}
-                  onClick={onClose}
-                  className={cn(
-                    "flex items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap",
-                    isActive
-                      ? "brand-gradient text-primary-foreground shadow-lg shadow-purple-500/20"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                    isCollapsed && "lg:justify-center lg:px-2"
-                  )}
-                >
-                  <Icon className="h-5 w-5 shrink-0" />
-{/* عرض النص دائماً في الجوال، وإخفاؤه في الديسكتاب فقط إذا كان السايدبار مصغراً */}
-{!isCollapsed || isOpen ? (
-  <span className="truncate">{item.label}</span>
-) : (
-  <span className="lg:hidden truncate">{item.label}</span>
-)}
+<nav className="flex-1 overflow-y-auto p-3 sm:p-4 no-scrollbar">
+  <ul className="space-y-1">
+    {navItems.map((item) => {
+      const Icon = item.icon;
+      const isActive = pathname === item.href;
+      
+      const linkContent = (
+        <Link
+          href={item.href}
+          onClick={onClose}
+          className={cn(
+            "flex items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap",
+            isActive
+              ? "brand-gradient text-primary-foreground shadow-lg shadow-purple-500/20"
+              : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+            isCollapsed && "lg:justify-center lg:px-2"
+          )}
+        >
+          <Icon className="h-5 w-5 shrink-0" />
+          {/* هذا الجزء هو الذي أصلحناه لمنع التكرار والخطأ */}
+          {(!isCollapsed || isOpen) && (
+            <span className="truncate">{item.label}</span>
+          )}
+        </Link>
+      );
 
-              return (
-                <li key={item.href}>
-                  {isCollapsed ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild className="hidden lg:block">
-                        {linkContent}
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="hidden lg:block">
-                        {item.label}
-                      </TooltipContent>
-                      <div className="lg:hidden">{linkContent}</div>
-                    </Tooltip>
-                  ) : (
-                    linkContent
-                  )}
-                </li>
-              );
-            })}
-            
+      return (
+        <li key={item.href}>
+          {isCollapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild className="hidden lg:block">
+                {linkContent}
+              </TooltipTrigger>
+              <TooltipContent side="right" className="hidden lg:block">
+                {item.label}
+              </TooltipContent>
+              <div className="lg:hidden">{linkContent}</div>
+            </Tooltip>
+          ) : (
+            linkContent
+          )}
+        </li>
+      );
+    })}
+  </ul>
+</nav>
             {userData?.isAdmin && (
               <li>
                 {isCollapsed ? (
