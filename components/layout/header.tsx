@@ -76,7 +76,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                 </span>
                 
                 <span className="text-[9px] sm:text-[10px] text-slate-500 font-black uppercase tracking-widest ml-0.5 shrink-0">
-                  PTS
+          
                 </span>
               </div>
 
