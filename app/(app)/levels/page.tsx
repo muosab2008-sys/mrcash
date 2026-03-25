@@ -72,9 +72,10 @@ export default function LevelsPage() {
       return;
     }
 
-    // Check if level is actually completed
-    if (currentLevel <= level) {
-      toast.error("You haven't reached this level yet");
+    // التأكد أن نقاط المستخدم الإجمالية أكبر من أو تساوي النقاط المطلوبة للمستوى المراد المطالبة به
+    const levelThreshold = level * 10000;
+    if (totalEarned < levelThreshold) {
+      toast.error("لم تصل لنقاط هذا المستوى بعد!");
       return;
     }
 
