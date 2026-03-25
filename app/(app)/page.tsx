@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Trophy, X, ArrowLeft, Maximize2, Send, ShieldCheck, Globe, DollarSign } from "lucide-react"; 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
+import Link from "next/link";
 
 // --- Live Feed ---
 function LiveFeed() {
