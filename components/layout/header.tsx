@@ -25,8 +25,8 @@ export function Header({ onMenuClick }: HeaderProps) {
     <header className="sticky top-0 z-50 w-full border-b border-white/[0.05] bg-[#050505]/80 backdrop-blur-xl">
       <div className="flex h-14 sm:h-16 items-center justify-between px-3 sm:px-6">
         
-        {/* القسم الأيسر: زر القائمة + الشعار (يظهر للجميع) */}
-        <div className="flex items-center gap-3 min-w-0">
+        {/* القسم الأيسر: زر المنيو والشعار (للجوال فقط) */}
+        <div className="flex items-center gap-2 min-w-0">
           <Button
             variant="ghost"
             size="icon"
@@ -36,19 +36,19 @@ export function Header({ onMenuClick }: HeaderProps) {
             <Menu className="h-5 w-5" />
           </Button>
 
-          {/* الشعار والاسم - يظهر في الجوال والكمبيوتر */}
-          <Link href="/" className="flex items-center gap-2.5 min-w-0 group">
+          {/* الشعار والاسم: يختفي في الشاشات الكبيرة (lg:hidden) ويظهر في الجوال */}
+          <Link href="/" className="lg:hidden flex items-center gap-2 min-w-0 group">
             <Image 
               src="/logo.png" 
               alt="MrCash Logo"
-              width={28} 
-              height={28}
+              width={26} 
+              height={26}
               priority
-              className="object-contain w-7 h-7 sm:w-8 sm:h-8 shrink-0 transition-transform group-hover:scale-105"
+              className="object-contain w-6 h-6 sm:w-7 sm:h-7 shrink-0 transition-transform group-hover:scale-105"
             />
             
-            {/* نص MrCash الملون بدون توهج */}
-            <span className="text-xl sm:text-2xl font-black tracking-tighter inline-block italic font-sans">
+            {/* النص الملون بنفس ستايل الصورة وبدون توهج */}
+            <span className="text-xl font-black tracking-tighter inline-block italic font-sans">
               <span className="bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] bg-clip-text text-transparent">
                 MrCash
               </span>
@@ -56,17 +56,17 @@ export function Header({ onMenuClick }: HeaderProps) {
           </Link>
         </div>
 
-        {/* القسم الأيمن: الرصيد والإشعارات والإعدادات */}
+        {/* القسم الأيمن: الرصيد والإعدادات (يظهر للجميع) */}
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           {user && userData ? (
             <>
-              {/* عرض الرصيد - يظهر في كل الشاشات */}
-              <div className="flex items-center gap-2 rounded-full bg-white/[0.05] px-3 py-1.5 sm:px-4 sm:py-2 border border-white/[0.1]">
+              {/* عرض الرصيد - كبسولة احترافية تظهر في كل الشاشات */}
+              <div className="flex items-center gap-2 rounded-full bg-white/[0.04] px-2.5 py-1.5 sm:px-4 sm:py-2 border border-white/[0.08] shadow-sm">
                 <Image 
                   src="/coin.png" 
                   alt="Coin" 
-                  width={20} 
-                  height={20} 
+                  width={18} 
+                  height={18} 
                   priority 
                   className="object-contain animate-pulse w-4 h-4 sm:w-5 sm:h-5 shrink-0" 
                 />
@@ -89,11 +89,11 @@ export function Header({ onMenuClick }: HeaderProps) {
                       <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 rounded-2xl bg-[#0A0A0A] border-white/10 text-white shadow-2xl p-2">
+                  <DropdownMenuContent align="end" className="w-52 rounded-2xl bg-[#0A0A0A] border-white/10 text-white shadow-2xl p-2 mt-1">
                     <div className="px-3 py-3 bg-white/[0.02] rounded-xl mb-1">
                       <p className="text-sm font-black text-white truncate">{userData?.username}</p>
-                      <p className="text-[10px] text-slate-500 font-bold">
-                        Level {Math.floor((userData?.totalEarned || 0) / 10000) + 1} • ID: {userData?.uid?.slice(0, 6)}
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">
+                        LVL {Math.floor((userData?.totalEarned || 0) / 10000) + 1} • ID: {userData?.uid?.slice(0, 6)}
                       </p>
                     </div>
                     <DropdownMenuSeparator className="bg-white/5" />
@@ -118,7 +118,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             </>
           ) : (
             <Link href="/login">
-              <Button className="h-9 px-5 rounded-full bg-gradient-to-r from-[#00D2FF] to-[#A65FFF] text-white font-black text-[10px] border-none active:scale-95 transition-all">
+              <Button className="h-8 sm:h-9 px-4 sm:px-6 rounded-full bg-gradient-to-r from-[#00D2FF] to-[#A65FFF] text-white font-black text-[10px] border-none active:scale-95 transition-all shadow-lg shadow-purple-500/10">
                 SIGN IN
               </Button>
             </Link>
