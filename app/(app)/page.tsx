@@ -217,14 +217,13 @@ export default function EarnPage() {
         </div>
       </div>
 
-     {/* --- Footer المصلح والكامل العرض --- */}
+    {/* --- Footer المصلح والكامل العرض --- */}
       <footer className="mt-12 border-t border-white/5 bg-[#080808]/80 pt-12 pb-10 w-full px-4 sm:px-10">
         <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           
           <div className="space-y-5">
             <div className="flex items-center gap-3">
               <Image src="/logo.png" alt="Logo" width={32} height={32} />
-              {/* تعديل الاسم ليكون مائلاً ونفس استايل الهيدر */}
               <span className="text-2xl font-black bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] bg-clip-text text-transparent italic tracking-tighter">
                 MrCash
               </span>
@@ -243,12 +242,12 @@ export default function EarnPage() {
           <div className="space-y-5">
             <h4 className="text-[11px] font-black text-white/20 uppercase tracking-[0.2em]">Legal</h4>
             <nav className="flex flex-col gap-3">
-              {/* تم إصلاح الروابط هنا لتستخدم مكون Link وتوجه للمسار الصحيح */}
-              <Link href="/privacy" className="text-[11px] text-slate-500 hover:text-white transition-colors">
+              {/* تم تعديل الروابط لتطابق روابط موقعك الفعلية */}
+              <Link href="/privacy-policy" className="text-[11px] text-slate-500 hover:text-white transition-colors">
                 Privacy Policy
               </Link>
-              <Link href="/terms" className="text-[11px] text-slate-500 hover:text-white transition-colors">
-                Terms of Use
+              <Link href="/terms-of-service" className="text-[11px] text-slate-500 hover:text-white transition-colors">
+                Terms of Service
               </Link>
             </nav>
           </div>
