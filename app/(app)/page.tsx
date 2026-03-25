@@ -9,11 +9,11 @@ import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Trophy, X, ArrowLeft, Maximize2, Send, ShieldCheck, Globe } from "lucide-react"; 
+import { ExternalLink, Trophy, X, ArrowLeft, Maximize2, Send, ShieldCheck, Globe, DollarSign } from "lucide-react"; 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 
-// --- مكون الـ Live Feed (كما هو في كودك) ---
+// --- Live Feed ---
 function LiveFeed() {
   const [feedItems, setFeedItems] = useState<any[]>([]);
   useEffect(() => {
@@ -142,10 +142,11 @@ export default function EarnPage() {
   }
 
   return (
-    <div className="flex flex-col gap-3 sm:gap-4 w-full">
+    // التعديل: جعلنا الحاوية w-full لإلغاء الفراغات
+    <div className="flex flex-col gap-4 w-full"> 
       <LiveFeed />
 
-      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 px-4 sm:px-0">
         <Card className="border-border bg-card">
           <CardContent className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4">
             <div className="flex h-10 sm:h-12 w-10 sm:w-12 items-center justify-center rounded-lg sm:rounded-xl bg-white/5 border border-white/10 shrink-0">
@@ -157,6 +158,7 @@ export default function EarnPage() {
             </div>
           </CardContent>
         </Card>
+
         <Card className="border-border bg-card">
           <CardContent className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4">
             <div className="flex h-10 sm:h-12 w-10 sm:w-12 items-center justify-center rounded-lg sm:rounded-xl bg-[#A65FFF]/10 border border-[#A65FFF]/20 shrink-0">
@@ -170,41 +172,43 @@ export default function EarnPage() {
         </Card>
       </div>
 
-      <Card className="border-border bg-[#0D0D0D] border-white/5">
-        <CardContent className="p-3 sm:p-4">
-          <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0 text-white font-black text-xs sm:text-sm uppercase tracking-wider">
-              <Trophy className="h-4 sm:h-5 w-4 sm:w-5 text-[#A65FFF] shrink-0" />
-              <span className="truncate">Level {currentLevel} Progress</span>
+      <div className="px-4 sm:px-0">
+        <Card className="border-border bg-[#0D0D0D] border-white/5 w-full">
+            <CardContent className="p-3 sm:p-4">
+            <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0 text-white font-black text-xs sm:text-sm uppercase tracking-wider">
+                <Trophy className="h-4 sm:h-5 w-4 sm:w-5 text-[#A65FFF] shrink-0" />
+                <span className="truncate">Level {currentLevel} Progress</span>
+                </div>
+                <span className="text-[10px] sm:text-xs font-bold text-white/40">{Number(pointsInCurrentLevel).toLocaleString()} / {Number(pointsPerLevel).toLocaleString()}</span>
             </div>
-            <span className="text-[10px] sm:text-xs font-bold text-white/40 tracking-tighter">{Number(pointsInCurrentLevel).toLocaleString()} / {Number(pointsPerLevel).toLocaleString()}</span>
-          </div>
-          <div className="h-2 sm:h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-            <div className="h-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] transition-all duration-500 shadow-[0_0_10px_rgba(166,95,255,0.3)]" style={{ width: `${levelProgress}%` }}></div>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="h-2 sm:h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                <div className="h-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] transition-all duration-500 shadow-[0_0_10px_rgba(166,95,255,0.3)]" style={{ width: `${levelProgress}%` }}></div>
+            </div>
+            </CardContent>
+        </Card>
+      </div>
 
-      <div>
+      <div className="px-4 sm:px-0">
         <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-black text-white tracking-tight">Earn Points</h2>
-        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {loading ? ( <p className="col-span-full text-xs sm:text-sm text-white/50 text-center py-8">Loading Offerwalls...</p> ) : (
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {loading ? ( <p className="col-span-full text-xs sm:text-sm text-white/50 text-center py-8">Loading...</p> ) : (
             offerwalls.map((wall) => (
               <Card key={wall.id} className="border-border bg-card transition-all hover:border-[#A65FFF]/30">
                 <CardHeader className="pb-2 p-3 sm:p-4">
                   <div className="flex items-start justify-between gap-2">
                     <img src={wall.logoUrl} alt={wall.name} className="h-10 sm:h-12 w-10 sm:w-12 rounded-lg sm:rounded-xl object-contain bg-white/5 p-1 shrink-0" />
-                    <Badge variant="secondary" className="bg-[#A65FFF]/10 text-[#A65FFF] border border-[#A65FFF]/20 flex items-center gap-1 font-bold text-[9px] sm:text-xs px-2 py-1 shrink-0">
-                      <Image src="/coin.png" width={10} height={10} alt="coin" className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span className="truncate">~{Number(wall.avgPoints ?? 0).toLocaleString()}</span>
+                    <Badge variant="secondary" className="bg-[#A65FFF]/10 text-[#A65FFF] border border-[#A65FFF]/20 font-bold text-[9px] sm:text-xs px-2 py-1">
+                      <Image src="/coin.png" width={10} height={10} alt="coin" className="w-3 h-3 sm:w-4 sm:h-4 mr-1 inline" />
+                      ~{Number(wall.avgPoints ?? 0).toLocaleString()}
                     </Badge>
                   </div>
-                  <CardTitle className="text-sm sm:text-base lg:text-lg mt-2 sm:mt-3 font-black text-white line-clamp-1">{wall.name}</CardTitle>
+                  <CardTitle className="text-sm sm:text-base mt-2 font-black text-white line-clamp-1">{wall.name}</CardTitle>
                   <CardDescription className="line-clamp-2 text-[10px] sm:text-xs">{wall.description}</CardDescription>
                 </CardHeader>
-                <CardContent className="pt-1 sm:pt-2 px-3 sm:px-4 pb-3 sm:pb-4">
-                  <Button className="w-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] text-white font-black text-[10px] sm:text-xs hover:opacity-90 h-8 sm:h-10" onClick={() => { const url = getDynamicUrl(wall); if (url !== "#") setActiveOffer({ url, title: wall.name }); }}>
-                    START <ExternalLink className="ml-1 h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+                  <Button className="w-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] text-white font-black text-[10px] sm:text-xs h-8 sm:h-10" onClick={() => { const url = getDynamicUrl(wall); if (url !== "#") setActiveOffer({ url, title: wall.name }); }}>
+                    START <ExternalLink className="ml-1 h-3 w-3" />
                   </Button>
                 </CardContent>
               </Card>
@@ -213,62 +217,50 @@ export default function EarnPage() {
         </div>
       </div>
 
-      {/* --- Footer المحدث بناءً على طلبك --- */}
-      <footer className="mt-auto border-t border-white/5 bg-[#080808]/50 pt-10 pb-6 w-full">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-4 text-left">
+      {/* --- Footer المصلح والكامل العرض --- */}
+      <footer className="mt-12 border-t border-white/5 bg-[#080808]/80 pt-12 pb-10 w-full px-4 sm:px-10">
+        <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           
-          {/* 1. Identity (الشعار حر كما طلبت) */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Image src="/logo.png" alt="Logo" width={28} height={28} />
-              <span className="text-xl font-black bg-gradient-to-r from-[#00D2FF] to-[#A65FFF] bg-clip-text text-transparent">MrCash</span>
+          <div className="space-y-5">
+            <div className="flex items-center gap-3">
+              <Image src="/logo.png" alt="Logo" width={32} height={32} />
+              <span className="text-2xl font-black bg-gradient-to-r from-[#00D2FF] to-[#E366FF] bg-clip-text text-transparent">MrCash</span>
             </div>
-            <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-              The most trusted platform to turn your time into real rewards by completing tasks and surveys.
-            </p>
+            <p className="text-[12px] text-slate-500 leading-relaxed font-medium">The premier destination for turning tasks into real digital rewards securely and instantly.</p>
           </div>
 
-          {/* 2. Compliance (English) */}
-          <div className="space-y-4">
-            <h4 className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Security</h4>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium italic"><ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Secure Payments</div>
-              <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium italic"><Globe className="w-3.5 h-3.5 text-cyan-500" /> Global Offers</div>
+          <div className="space-y-5">
+            <h4 className="text-[11px] font-black text-white/20 uppercase tracking-[0.2em]">Trust</h4>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-[11px] text-slate-400"><ShieldCheck className="w-4 h-4 text-emerald-500" /> Secure Encryption</div>
+              <div className="flex items-center gap-2 text-[11px] text-slate-400"><Globe className="w-4 h-4 text-cyan-500" /> Global Payouts</div>
             </div>
           </div>
 
-          {/* 3. Links (English) */}
-          <div className="space-y-4">
-            <h4 className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Navigation</h4>
-            <nav className="flex flex-col gap-2">
-              <a href="#" className="text-[10px] text-slate-500 hover:text-white transition-colors font-semibold">Privacy Policy</a>
-              <a href="#" className="text-[10px] text-slate-500 hover:text-white transition-colors font-semibold">Terms of Use</a>
+          <div className="space-y-5">
+            <h4 className="text-[11px] font-black text-white/20 uppercase tracking-[0.2em]">Legal</h4>
+            <nav className="flex flex-col gap-3">
+              <a href="#" className="text-[11px] text-slate-500 hover:text-white transition-colors">Privacy Policy</a>
+              <a href="#" className="text-[11px] text-slate-500 hover:text-white transition-colors">Terms of Use</a>
             </nav>
           </div>
 
-          {/* 4. Realistic Telegram Button (Black Style) */}
-          <div className="space-y-4">
-            <h4 className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Community</h4>
-            <a 
-              href="https://t.me/+HaIWYiOHx-FkNzY0" 
-              target="_blank" 
-              className="flex items-center gap-3 p-3 rounded-xl bg-black border border-white/10 hover:border-cyan-500/30 transition-all group"
-            >
-              <div className="w-8 h-8 rounded bg-[#111] flex items-center justify-center border border-white/5 group-hover:bg-[#0088cc]">
-                <Send className="w-4 h-4 text-white" />
+          <div className="space-y-5">
+            <h4 className="text-[11px] font-black text-white/20 uppercase tracking-[0.2em]">Community</h4>
+            <a href="https://t.me/+HaIWYiOHx-FkNzY0" target="_blank" className="flex items-center gap-4 p-4 rounded-2xl bg-black border border-white/5 hover:border-cyan-500/30 transition-all group">
+              <div className="w-10 h-10 rounded-xl bg-[#111] flex items-center justify-center border border-white/5 group-hover:bg-[#0088cc]">
+                <Send className="w-5 h-5 text-white" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] font-black text-white uppercase">Telegram</span>
-                <span className="text-[9px] text-slate-600 font-bold tracking-tighter">Official Channel</span>
+                <span className="text-[12px] font-black text-white uppercase">Telegram</span>
+                <span className="text-[9px] text-slate-600 font-bold">Official Channel</span>
               </div>
             </a>
           </div>
         </div>
 
-        <div className="mt-10 pt-6 border-t border-white/5 text-center px-4">
-          <p className="text-[9px] font-mono text-slate-700 uppercase tracking-[0.4em]">
-            © 2026 MR.CASH • SECURE REWARDS SYSTEM
-          </p>
+        <div className="mt-12 pt-8 border-t border-white/5 text-center">
+          <p className="text-[10px] font-mono text-slate-700 tracking-[0.5em]">© 2026 MR.CASH • ALL RIGHTS RESERVED</p>
         </div>
       </footer>
     </div>
