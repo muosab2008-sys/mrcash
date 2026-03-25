@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Trophy, Gift, Star, Lock, Check, Coins, Loader2 } from "lucide-react";
+import { Trophy, Gift, Star, Lock, Check, Coins, Loader2, ShieldCheck, Globe } from "lucide-react";
+import Link from "next/link";
 
 const levels = Array.from({ length: 20 }, (_, i) => ({
   level: i + 1,
@@ -25,15 +26,12 @@ export default function LevelsPage() {
   const [claiming, setClaiming] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const currentLevel = userData?.level || 1;
+  // --- التعديل: الحسبة الصحيحة والمزامنة مع السايدبار ---
+  const pointsPerLevel = 10000;
   const totalEarned = userData?.totalEarned || 0;
-
-  // Calculate current level progress
-  const currentLevelThreshold = currentLevel * 10000;
-  const previousLevelThreshold = (currentLevel - 1) * 10000;
-  const pointsInCurrentLevel = totalEarned - previousLevelThreshold;
-  const pointsNeededForLevel = currentLevelThreshold - previousLevelThreshold;
-  const levelProgress = Math.min((pointsInCurrentLevel / pointsNeededForLevel) * 100, 100);
+  const currentLevel = Math.floor(totalEarned / pointsPerLevel) + 1;
+  const pointsInCurrentLevel = totalEarned % pointsPerLevel;
+  const levelProgress = (pointsInCurrentLevel / pointsPerLevel) * 100;
 
   // Load claimed levels from Firestore
   useEffect(() => {
@@ -63,13 +61,11 @@ export default function LevelsPage() {
   const claimLevelBonus = async (level: number) => {
     if (!user?.uid || !userData) return;
     
-    // Check if already claimed
     if (claimedLevels.includes(level)) {
       toast.error("You have already claimed this level bonus");
       return;
     }
 
-    // Check if level is actually completed
     if (currentLevel <= level) {
       toast.error("You haven't reached this level yet");
       return;
@@ -77,13 +73,11 @@ export default function LevelsPage() {
 
     setClaiming(level);
     try {
-      // Update user points
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, {
-        points: increment(1000), // $1 = 1000 points
+        points: increment(1000),
       });
 
-      // Record claimed level
       const claimedRef = doc(db, "users", user.uid, "rewards", "levels");
       const claimedSnap = await getDoc(claimedRef);
       
@@ -98,7 +92,7 @@ export default function LevelsPage() {
       }
 
       setClaimedLevels([...claimedLevels, level]);
-      toast.success(`Level ${level} bonus claimed! +$1.00 (1,000 points)`);
+      toast.success(`Level ${level} bonus claimed! +1,000 points`);
     } catch (error: any) {
       toast.error(error.message || "Failed to claim bonus");
     } finally {
@@ -106,7 +100,6 @@ export default function LevelsPage() {
     }
   };
 
-  // Calculate unclaimed bonuses
   const unclaimedBonuses = levels.filter(
     (l) => currentLevel > l.level && !claimedLevels.includes(l.level)
   );
@@ -114,18 +107,16 @@ export default function LevelsPage() {
   const claimAllBonuses = async () => {
     if (unclaimedBonuses.length === 0) return;
     
-    setClaiming(-1); // Use -1 to indicate claiming all
+    setClaiming(-1); 
     try {
       const totalBonus = unclaimedBonuses.length * 1000;
       const levelsToClaim = unclaimedBonuses.map((l) => l.level);
 
-      // Update user points
       const userRef = doc(db, "users", user!.uid);
       await updateDoc(userRef, {
         points: increment(totalBonus),
       });
 
-      // Record all claimed levels
       const claimedRef = doc(db, "users", user!.uid, "rewards", "levels");
       const newClaimedLevels = [...claimedLevels, ...levelsToClaim];
       
@@ -137,7 +128,7 @@ export default function LevelsPage() {
       }
 
       setClaimedLevels(newClaimedLevels);
-      toast.success(`Claimed ${unclaimedBonuses.length} bonuses! +$${unclaimedBonuses.length}.00`);
+      toast.success(`Claimed ${unclaimedBonuses.length} bonuses!`);
     } catch (error: any) {
       toast.error(error.message || "Failed to claim bonuses");
     } finally {
@@ -148,15 +139,29 @@ export default function LevelsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Level Progression</h1>
-        <p className="text-muted-foreground">
-          Level up to earn bonus rewards! Each level grants you a $1.00 bonus.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Level Progression</h1>
+          <p className="text-muted-foreground">
+            Level up to earn bonus rewards! Each level grants you a $1.00 bonus.
+          </p>
+        </div>
+        
+        {/* --- الشريط المضاف لسياسة الخصوصية والشروط --- */}
+        <div className="flex items-center gap-2 bg-secondary/20 p-2 rounded-xl border border-white/5">
+          <Link href="/privacy-policy" className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold text-slate-400 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/5">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            PRIVACY
+          </Link>
+          <Link href="/terms-of-service" className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold text-slate-400 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/5">
+            <Globe className="w-3.5 h-3.5 text-cyan-500" />
+            TERMS
+          </Link>
+        </div>
       </div>
 
       {/* Current Level Card */}
-      <Card className="border-[var(--brand-cyan)]/30 bg-gradient-to-br from-card to-[var(--brand-cyan)]/5">
+      <Card className="border-[var(--brand-cyan)]/30 bg-gradient-to-br from-card to-[var(--brand-cyan)]/5 shadow-lg shadow-cyan-500/5">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -164,29 +169,35 @@ export default function LevelsPage() {
                 <Trophy className="h-7 w-7 text-primary-foreground" />
               </div>
               <div>
-                <CardTitle className="text-3xl brand-gradient-text">Level {currentLevel}</CardTitle>
-                <CardDescription>Your current level</CardDescription>
+                <CardTitle className="text-3xl brand-gradient-text font-black italic">Level {currentLevel}</CardTitle>
+                <CardDescription>Your current level status</CardDescription>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-sm text-muted-foreground">Total Earned</p>
-              <p className="text-xl font-bold text-[var(--brand-cyan)]">
-                {totalEarned.toLocaleString()} pts
+              <p className="text-sm text-muted-foreground uppercase font-bold tracking-tighter">Total Earned</p>
+              <p className="text-xl font-black text-[var(--brand-cyan)]">
+                {totalEarned.toLocaleString()} <span className="text-[10px] text-muted-foreground font-normal">pts</span>
               </p>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Progress to Level {currentLevel + 1}</span>
-              <span className="font-medium">
-                {pointsInCurrentLevel.toLocaleString()} / {pointsNeededForLevel.toLocaleString()} pts
+              <span className="text-muted-foreground font-medium">Progress to Level {currentLevel + 1}</span>
+              <span className="font-bold">
+                {pointsInCurrentLevel.toLocaleString()} / {pointsPerLevel.toLocaleString()} pts
               </span>
             </div>
-            <Progress value={levelProgress} className="h-4" />
-            <p className="text-sm text-muted-foreground">
-              {(pointsNeededForLevel - pointsInCurrentLevel).toLocaleString()} more points needed
+            {/* الشريط المصلح */}
+            <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                <div 
+                  className="h-full bg-gradient-to-r from-[#00D2FF] to-[#A65FFF] transition-all duration-700 shadow-[0_0_10px_rgba(168,85,247,0.3)]" 
+                  style={{ width: `${levelProgress}%` }}
+                />
+            </div>
+            <p className="text-[11px] text-muted-foreground italic">
+              {(pointsPerLevel - pointsInCurrentLevel).toLocaleString()} more points needed
             </p>
           </div>
         </CardContent>
@@ -197,7 +208,7 @@ export default function LevelsPage() {
         <Card className="border-emerald-500/30 bg-emerald-500/5">
           <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500 shadow-lg shadow-emerald-500/20">
                 <Gift className="h-6 w-6 text-white" />
               </div>
               <div>
@@ -205,14 +216,14 @@ export default function LevelsPage() {
                   {unclaimedBonuses.length} Unclaimed Bonuses!
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  You have ${unclaimedBonuses.length}.00 in unclaimed level bonuses
+                  You have ${unclaimedBonuses.length}.00 in unclaimed rewards
                 </p>
               </div>
             </div>
             <Button
               onClick={claimAllBonuses}
               disabled={claiming !== null}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white"
+              className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold"
             >
               {claiming === -1 ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -228,8 +239,8 @@ export default function LevelsPage() {
       {/* Bonuses Earned */}
       <Card className="border-border bg-card">
         <CardContent className="flex items-center gap-4 p-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500">
-            <Gift className="h-6 w-6 text-primary-foreground" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+            <Gift className="h-6 w-6 text-emerald-500" />
           </div>
           <div className="flex-1">
             <p className="text-sm text-muted-foreground">Total Bonuses Claimed</p>
@@ -245,7 +256,7 @@ export default function LevelsPage() {
 
       {/* Level Grid */}
       <div>
-        <h2 className="mb-4 text-xl font-bold">All Levels</h2>
+        <h2 className="mb-4 text-xl font-bold italic">All Levels</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {levels.map((level) => {
             const isCompleted = currentLevel > level.level;
@@ -259,7 +270,7 @@ export default function LevelsPage() {
                 key={level.level}
                 className={`border-border bg-card transition-all ${
                   isCurrent
-                    ? "border-[var(--brand-cyan)] ring-2 ring-[var(--brand-cyan)]/20"
+                    ? "border-[var(--brand-cyan)] ring-1 ring-[var(--brand-cyan)]/20 shadow-lg shadow-cyan-500/5"
                     : isCompleted
                     ? "border-emerald-500/30"
                     : "opacity-60"
@@ -271,7 +282,7 @@ export default function LevelsPage() {
                       <div
                         className={`flex h-10 w-10 items-center justify-center rounded-xl ${
                           isCurrent
-                            ? "brand-gradient"
+                            ? "brand-gradient shadow-md"
                             : isCompleted
                             ? "bg-emerald-500"
                             : "bg-muted"
@@ -282,22 +293,22 @@ export default function LevelsPage() {
                         ) : isLocked ? (
                           <Lock className="h-5 w-5 text-muted-foreground" />
                         ) : (
-                          <Star className="h-5 w-5 text-primary-foreground" />
+                          <Star className="h-5 w-5 text-white" />
                         )}
                       </div>
                       <div>
                         <p className={`font-bold ${isCurrent ? "text-[var(--brand-cyan)]" : ""}`}>
                           Level {level.level}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-[10px] text-muted-foreground font-mono">
                           {level.threshold.toLocaleString()} pts
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="flex items-center gap-1">
-                        <Coins className={`h-4 w-4 ${isCompleted ? "text-emerald-500" : "text-muted-foreground"}`} />
-                        <span className={`text-sm font-bold ${isCompleted ? "text-emerald-500" : "text-muted-foreground"}`}>
+                        <Coins className={`h-3 w-3 ${isCompleted ? "text-emerald-500" : "text-muted-foreground"}`} />
+                        <span className={`text-xs font-black ${isCompleted ? "text-emerald-500" : "text-muted-foreground"}`}>
                           +$1.00
                         </span>
                       </div>
@@ -306,7 +317,7 @@ export default function LevelsPage() {
                           size="sm"
                           onClick={() => claimLevelBonus(level.level)}
                           disabled={claiming !== null}
-                          className="mt-1 h-7 bg-emerald-500 hover:bg-emerald-600 text-white text-xs"
+                          className="mt-1 h-7 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold"
                         >
                           {claiming === level.level ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
@@ -315,7 +326,7 @@ export default function LevelsPage() {
                           )}
                         </Button>
                       ) : isClaimed ? (
-                        <Badge className="mt-1 bg-emerald-500/10 text-emerald-500 border-0 text-xs">
+                        <Badge className="mt-1 bg-emerald-500/10 text-emerald-500 border-0 text-[10px]">
                           Claimed
                         </Badge>
                       ) : null}
@@ -323,7 +334,7 @@ export default function LevelsPage() {
                   </div>
                   {isCurrent && (
                     <div className="mt-3">
-                      <Progress value={levelProgress} className="h-2" />
+                      <Progress value={levelProgress} className="h-1.5" />
                     </div>
                   )}
                 </CardContent>
@@ -332,32 +343,6 @@ export default function LevelsPage() {
           })}
         </div>
       </div>
-
-      {/* Info Card */}
-      <Card className="border-border bg-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Gift className="h-5 w-5 text-[var(--brand-purple)]" />
-            Level Rewards
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex items-start gap-2">
-              <span className="font-bold text-[var(--brand-cyan)]">1.</span>
-              Each level requires 10,000 additional points.
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="font-bold text-[var(--brand-cyan)]">2.</span>
-              When you reach a new level, you can claim a $1.00 bonus (1,000 points).
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="font-bold text-[var(--brand-cyan)]">3.</span>
-              Click the "Claim" button on completed levels to receive your bonus!
-            </li>
-          </ul>
-        </CardContent>
-      </Card>
     </div>
   );
 }
