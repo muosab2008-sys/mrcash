@@ -217,7 +217,7 @@ export default function EarnPage() {
         </div>
       </div>
 
-    {/* --- Footer المصلح والكامل العرض --- */}
+   {/* --- Footer المصلح والكامل العرض --- */}
       <footer className="mt-12 border-t border-white/5 bg-[#080808]/80 pt-12 pb-10 w-full px-4 sm:px-10">
         <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           
@@ -242,7 +242,7 @@ export default function EarnPage() {
           <div className="space-y-5">
             <h4 className="text-[11px] font-black text-white/20 uppercase tracking-[0.2em]">Legal</h4>
             <nav className="flex flex-col gap-3">
-              {/* تم تعديل الروابط لتطابق روابط موقعك الفعلية */}
+              {/* توجيه الروابط للمسارات الصحيحة */}
               <Link href="/privacy-policy" className="text-[11px] text-slate-500 hover:text-white transition-colors">
                 Privacy Policy
               </Link>
@@ -270,3 +270,6 @@ export default function EarnPage() {
           <p className="text-[10px] font-mono text-slate-700 tracking-[0.5em]">© 2026 MR.CASH • ALL RIGHTS RESERVED</p>
         </div>
       </footer>
+    </div> // إغلاق حاوية الصفحة الرئيسية
+  );
+} // إغلاق دالة EarnPage
