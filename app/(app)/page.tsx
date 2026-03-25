@@ -154,7 +154,7 @@ export default function EarnPage() {
               <Image src="/coin.png" alt="Coin" width={24} height={24} className="animate-pulse object-contain sm:w-7 sm:h-7" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Points Balance</p>
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Balance</p>
               <p className="text-xl sm:text-2xl font-black text-white truncate">{Number(userData?.points ?? 0).toLocaleString()}</p>
             </div>
           </CardContent>
