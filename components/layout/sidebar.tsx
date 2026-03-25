@@ -144,13 +144,12 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
                   )}
                 >
                   <Icon className="h-5 w-5 shrink-0" />
-{/* سيظهر النص مرة واحدة فقط ويختفي في الديسكتاب فقط إذا كان السايدبار مصغراً */}
-<span className={cn(
-  "truncate",
-  isCollapsed ? "lg:hidden" : "lg:block"
-)}>
-  {item.label}
-</span>
+{/* عرض النص دائماً في الجوال، وإخفاؤه في الديسكتاب فقط إذا كان السايدبار مصغراً */}
+{!isCollapsed || isOpen ? (
+  <span className="truncate">{item.label}</span>
+) : (
+  <span className="lg:hidden truncate">{item.label}</span>
+)}
 
               return (
                 <li key={item.href}>
