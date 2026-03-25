@@ -11,12 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   ExternalLink, Trophy, X, ArrowLeft, Maximize2, 
-  DollarSign, Send, ShieldCheck, Users, Globe 
+  Send, ShieldCheck, Users, Globe 
 } from "lucide-react"; 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 
-// --- مكون الـ Live Feed العلوي ---
+// --- Live Feed Component ---
 function LiveFeed() {
   const [feedItems, setFeedItems] = useState<any[]>([]);
 
@@ -43,7 +43,6 @@ function LiveFeed() {
             </span>
           </div>
         </div>
-
         <div className="flex-1 h-full overflow-hidden rounded-full ml-24 relative z-10">
           <div className="flex whitespace-nowrap items-center h-full animate-scroll group hover:[animation-play-state:paused]">
             {[...feedItems, ...feedItems].map((item, index) => (
@@ -166,10 +165,9 @@ export default function EarnPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full min-h-screen">
+    <div className="flex flex-col gap-6 w-full min-h-full">
       <LiveFeed />
 
-      {/* بطاقات الرصيد والمستوى */}
       <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
         <Card className="border-border bg-card">
           <CardContent className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4">
@@ -198,7 +196,6 @@ export default function EarnPage() {
         </Card>
       </div>
 
-      {/* شريط التقدم */}
       <Card className="border-border bg-[#0D0D0D] border-white/5">
         <CardContent className="p-3 sm:p-4">
           <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
@@ -216,7 +213,6 @@ export default function EarnPage() {
         </CardContent>
       </Card>
 
-      {/* قسم العروض */}
       <div>
         <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-black text-white tracking-tight">Earn Points</h2>
         <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -227,24 +223,24 @@ export default function EarnPage() {
               <Card key={wall.id} className="border-border bg-card transition-all hover:border-[#A65FFF]/30">
                 <CardHeader className="pb-2 p-3 sm:p-4">
                   <div className="flex items-start justify-between gap-2">
-                    <img src={wall.logoUrl} alt={wall.name} className="h-10 sm:h-12 w-10 sm:w-12 rounded-lg sm:rounded-xl object-contain bg-white/5 p-1 shrink-0" />
-                    <Badge variant="secondary" className="bg-[#A65FFF]/10 text-[#A65FFF] border border-[#A65FFF]/20 flex items-center gap-1 font-bold text-[9px] sm:text-xs px-2 py-1 shrink-0">
-                      <Image src="/coin.png" width={10} height={10} alt="coin" className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <img src={wall.logoUrl} alt={wall.name} className="h-10 sm:h-12 rounded-lg sm:rounded-xl object-contain bg-white/5 p-1 shrink-0" />
+                    <Badge variant="secondary" className="bg-[#A65FFF]/10 text-[#A65FFF] border border-[#A65FFF]/20 flex items-center gap-1 font-bold text-[9px] px-2 py-1 shrink-0">
+                      <Image src="/coin.png" width={10} height={10} alt="coin" className="w-3 h-3" />
                       <span className="truncate">~{Number(wall.avgPoints ?? 0).toLocaleString()}</span>
                     </Badge>
                   </div>
-                  <CardTitle className="text-sm sm:text-base lg:text-lg mt-2 sm:mt-3 font-black text-white line-clamp-1">{wall.name}</CardTitle>
-                  <CardDescription className="line-clamp-2 text-[10px] sm:text-xs">{wall.description}</CardDescription>
+                  <CardTitle className="text-sm sm:text-base lg:text-lg mt-2 font-black text-white line-clamp-1">{wall.name}</CardTitle>
+                  <CardDescription className="line-clamp-2 text-[10px]">{wall.description}</CardDescription>
                 </CardHeader>
-                <CardContent className="pt-1 sm:pt-2 px-3 sm:px-4 pb-3 sm:pb-4">
+                <CardContent className="pt-1 px-3 sm:px-4 pb-3 sm:pb-4">
                   <Button 
-                    className="w-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] text-white font-black text-[10px] sm:text-xs hover:opacity-90 active:scale-95 border-none shadow-lg shadow-purple-500/10 h-8 sm:h-10" 
+                    className="w-full bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] text-white font-black text-[10px] sm:text-xs hover:opacity-90 active:scale-95 border-none shadow-lg h-8 sm:h-10" 
                     onClick={() => {
                       const url = getDynamicUrl(wall);
                       if (url !== "#") setActiveOffer({ url, title: wall.name });
                     }}
                   >
-                    START <ExternalLink className="ml-1 h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    START <ExternalLink className="ml-1 h-3 w-3" />
                   </Button>
                 </CardContent>
               </Card>
@@ -253,89 +249,87 @@ export default function EarnPage() {
         </div>
       </div>
 
-      {/* --- الشريط السفلي (FOOTER) الاحترافي الجديد --- */}
-      <footer className="mt-12 border-t border-white/5 bg-[#080808]/50 pt-10 pb-6 rounded-t-[2.5rem]">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+      {/* --- Mrcash Professional Footer (Full Width & English) --- */}
+      <footer className="mt-auto border-t border-white/5 bg-[#080808]/50 pt-10 pb-6 rounded-t-[2rem]">
+        <div className="w-full px-6 lg:px-10"> {/* Removed max-w to avoid gaps */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 text-left">
             
-            {/* 1. هوية الموقع */}
+            {/* 1. Website Identity (Using your upper logo style) */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00D2FF] to-[#A65FFF] flex items-center justify-center shadow-lg shadow-purple-500/20">
-                  <DollarSign className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00D2FF] via-[#A65FFF] to-[#E366FF] flex items-center justify-center shadow-lg shadow-purple-500/20">
+                  <Image src="/logo.png" alt="Logo" width={22} height={22} className="object-contain" />
                 </div>
                 <span className="text-2xl font-black bg-gradient-to-r from-[#00D2FF] to-[#A65FFF] bg-clip-text text-transparent tracking-tighter">
                   MrCash
                 </span>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed font-medium">
-                المنصة الأولى عربياً لتحويل وقتك إلى مكافآت حقيقية. أمان، سرعة، ومصداقية في مكان واحد.
+              <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                The most trusted platform in the region to turn your time into real rewards by completing tasks, gaming, and surveys.
               </p>
-              <div className="flex items-center gap-4 pt-2">
+              <div className="flex items-center gap-6 pt-2">
                 <div className="flex flex-col">
                   <span className="text-white font-black text-lg">50K+</span>
-                  <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">User</span>
+                  <span className="text-[9px] text-slate-600 uppercase font-bold">Users</span>
                 </div>
-                <div className="w-px h-8 bg-white/5"></div>
                 <div className="flex flex-col">
                   <span className="text-cyan-400 font-black text-lg">10M+</span>
-                  <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Paid</span>
+                  <span className="text-[9px] text-slate-600 uppercase font-bold">Paid</span>
                 </div>
               </div>
             </div>
 
-            {/* 2. الأمان والموثوقية */}
+            {/* 2. Security & Compliance */}
             <div className="space-y-4">
-              <h4 className="text-[11px] font-black text-white/30 uppercase tracking-[0.2em]">Security</h4>
+              <h4 className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Security</h4>
               <ul className="space-y-3">
-                <li className="flex items-center gap-2 text-xs text-slate-400 font-medium">
-                  <ShieldCheck className="w-4 h-4 text-emerald-500" /> تشفير بيانات 256-bit
+                <li className="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" /> 256-bit Data Encryption
                 </li>
-                <li className="flex items-center gap-2 text-xs text-slate-400 font-medium">
-                  <Globe className="w-4 h-4 text-cyan-500" /> سحب فوري عالمي
+                <li className="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
+                  <Globe className="w-4 h-4 text-cyan-500" /> Instant Global Payouts
                 </li>
-                <li className="flex items-center gap-2 text-xs text-slate-400 font-medium">
-                  <Users className="w-4 h-4 text-purple-500" /> دعم فني 24/7
+                <li className="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
+                  <Users className="w-4 h-4 text-purple-500" /> 24/7 Technical Support
                 </li>
               </ul>
             </div>
 
-            {/* 3. روابط سريعة */}
+            {/* 3. Navigation Links */}
             <div className="space-y-4">
-              <h4 className="text-[11px] font-black text-white/30 uppercase tracking-[0.2em]">Quick Links</h4>
-              <nav className="flex flex-col gap-2">
-                <a href="/terms" className="text-xs text-slate-500 hover:text-white transition-colors font-medium">شروط الاستخدام</a>
-                <a href="/privacy" className="text-xs text-slate-500 hover:text-white transition-colors font-medium">سياسة الخصوصية</a>
-                <a href="/faq" className="text-xs text-slate-500 hover:text-white transition-colors font-medium">الأسئلة الشائعة</a>
+              <h4 className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Legal Pages</h4>
+              <nav className="flex flex-col gap-3">
+                <a href="/terms" className="text-[11px] text-slate-500 hover:text-cyan-400 transition-colors font-semibold">Terms of Service</a>
+                <a href="/privacy" className="text-[11px] text-slate-500 hover:text-cyan-400 transition-colors font-semibold">Privacy Policy</a>
+                <a href="/faq" className="text-[11px] text-slate-500 hover:text-cyan-400 transition-colors font-semibold">Help Center</a>
               </nav>
             </div>
 
-            {/* 4. التواصل (التيليجرام) */}
+            {/* 4. Realistic Telegram Button */}
             <div className="space-y-4">
-              <h4 className="text-[11px] font-black text-white/30 uppercase tracking-[0.2em]">Telegram Community</h4>
+              <h4 className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Community</h4>
               <a 
                 href="https://t.me/+HaIWYiOHx-FkNzY0" 
                 target="_blank" 
-                className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-[#00D2FF]/10 hover:border-[#00D2FF]/20 transition-all duration-300 group"
+                className="flex items-center gap-4 px-5 py-4 rounded-2xl bg-black border border-white/5 hover:border-cyan-500/30 hover:bg-[#111] transition-all duration-300 group shadow-2xl"
               >
-                <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center group-hover:bg-cyan-500 transition-colors shrink-0">
-                  <Send className="w-5 h-5 text-cyan-400 group-hover:text-white" />
+                <div className="w-10 h-10 rounded-lg bg-[#0088cc]/10 flex items-center justify-center group-hover:bg-[#0088cc] transition-all">
+                  <Send className="w-5 h-5 text-[#0088cc] group-hover:text-white" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs font-bold text-white group-hover:text-cyan-400 transition-colors">قناة مستر كاش</span>
-                  <span className="text-[10px] text-slate-500 font-bold tracking-tight">t.me/MrCash_Official</span>
+                  <span className="text-xs font-black text-white uppercase tracking-tight">Telegram</span>
+                  <span className="text-[9px] text-slate-600 font-bold">Official Channel</span>
                 </div>
               </a>
-              <p className="text-[10px] text-slate-600 font-bold leading-tight px-1">
-                انضم لأكثر من 15,000 مشترك لتصلك أحدث العروض وأكواد الهدايا اليومية.
+              <p className="text-[9px] text-slate-600 font-semibold px-1 italic">
+                * Join 15,000+ members for daily promo codes.
               </p>
             </div>
-
           </div>
 
-          <div className="mt-10 pt-6 border-t border-white/5 text-center">
-            <p className="text-[10px] font-mono text-slate-600 uppercase tracking-[0.3em]">
-              © 2026 MR.CASH PLATFORM • ALL RIGHTS RESERVED
+          <div className="mt-12 pt-6 border-t border-white/5 text-center">
+            <p className="text-[9px] font-mono text-slate-700 uppercase tracking-[0.4em]">
+              © 2026 MR.CASH PLATFORM • SECURE REWARDS SYSTEM
             </p>
           </div>
         </div>
