@@ -27,8 +27,9 @@ export default function LevelsPage() {
   const [claiming, setClaiming] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const currentLevel = userData?.level || 1;
   const totalEarned = userData?.totalEarned || 0;
+  // الحسبة: كل 10,000 نقطة ترفع لفل واحد تلقائياً
+  const currentLevel = Math.floor(totalEarned / 10000) + 1;
 
   // Calculate current level progress
   const currentLevelThreshold = currentLevel * 10000;
