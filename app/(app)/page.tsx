@@ -217,14 +217,17 @@ export default function EarnPage() {
         </div>
       </div>
 
-      {/* --- Footer المصلح والكامل العرض --- */}
+     {/* --- Footer المصلح والكامل العرض --- */}
       <footer className="mt-12 border-t border-white/5 bg-[#080808]/80 pt-12 pb-10 w-full px-4 sm:px-10">
         <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           
           <div className="space-y-5">
             <div className="flex items-center gap-3">
               <Image src="/logo.png" alt="Logo" width={32} height={32} />
-              <span className="text-2xl font-black bg-gradient-to-r from-[#00D2FF] to-[#E366FF] bg-clip-text text-transparent">MrCash</span>
+              {/* تعديل الاسم ليكون مائلاً ونفس استايل الهيدر */}
+              <span className="text-2xl font-black bg-gradient-to-r from-[#00D2FF] via-[#A65FFF] to-[#E366FF] bg-clip-text text-transparent italic tracking-tighter">
+                MrCash
+              </span>
             </div>
             <p className="text-[12px] text-slate-500 leading-relaxed font-medium">The premier destination for turning tasks into real digital rewards securely and instantly.</p>
           </div>
@@ -240,15 +243,20 @@ export default function EarnPage() {
           <div className="space-y-5">
             <h4 className="text-[11px] font-black text-white/20 uppercase tracking-[0.2em]">Legal</h4>
             <nav className="flex flex-col gap-3">
-              <a href="#" className="text-[11px] text-slate-500 hover:text-white transition-colors">Privacy Policy</a>
-              <a href="#" className="text-[11px] text-slate-500 hover:text-white transition-colors">Terms of Use</a>
+              {/* تم إصلاح الروابط هنا لتستخدم مكون Link وتوجه للمسار الصحيح */}
+              <Link href="/privacy" className="text-[11px] text-slate-500 hover:text-white transition-colors">
+                Privacy Policy
+              </Link>
+              <Link href="/terms" className="text-[11px] text-slate-500 hover:text-white transition-colors">
+                Terms of Use
+              </Link>
             </nav>
           </div>
 
           <div className="space-y-5">
             <h4 className="text-[11px] font-black text-white/20 uppercase tracking-[0.2em]">Community</h4>
-            <a href="https://t.me/+HaIWYiOHx-FkNzY0" target="_blank" className="flex items-center gap-4 p-4 rounded-2xl bg-black border border-white/5 hover:border-cyan-500/30 transition-all group">
-              <div className="w-10 h-10 rounded-xl bg-[#111] flex items-center justify-center border border-white/5 group-hover:bg-[#0088cc]">
+            <a href="https://t.me/+HaIWYiOHx-FkNzY0" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-2xl bg-black border border-white/5 hover:border-cyan-500/30 transition-all group">
+              <div className="w-10 h-10 rounded-xl bg-[#111] flex items-center justify-center border border-white/5 group-hover:bg-[#0088cc] transition-colors">
                 <Send className="w-5 h-5 text-white" />
               </div>
               <div className="flex flex-col">
@@ -263,6 +271,3 @@ export default function EarnPage() {
           <p className="text-[10px] font-mono text-slate-700 tracking-[0.5em]">© 2026 MR.CASH • ALL RIGHTS RESERVED</p>
         </div>
       </footer>
-    </div>
-  );
-}
