@@ -63,16 +63,13 @@ export async function GET(request: NextRequest) {
       searchParams.get("email") || 
       "";
 
-    const offerName = 
-      searchParams.get("offer_name") || 
-      searchParams.get("offerName") || 
-      "Special Task";
-
     const transactionId = 
       searchParams.get("transaction_id") || 
       searchParams.get("transId") ||    
       searchParams.get("offer_id") || 
       `TX-${Date.now()}`;
+
+    const offerName = searchParams.get("offer_name") || searchParams.get("offerName") || "Task";
 
     if (!userIdentifier) return new NextResponse("ok", { status: 200 });
 
@@ -101,18 +98,21 @@ export async function GET(request: NextRequest) {
 
     const userData = userSnap.data();
 
-    // --- الحسابات المعدلة (لحل مشكلة الـ 5 نقاط) ---
-    // نقرأ القيمة القادمة من الشركة (سواء كانت payout أو reward أو amount)
-    const rawPayout = searchParams.get("payout") || searchParams.get("reward") || searchParams.get("amount") || "0";
-    const payoutValue = parseFloat(rawPayout);
+    // --- الحسابات (أخذ النقاط كما هي تماماً من الشركة) ---
+    // جلب القيمة من أي باراميتر ترسل فيه الشركة النقاط
+    const rawPoints = searchParams.get("points") || searchParams.get("payout") || searchParams.get("reward") || searchParams.get("amount") || "0";
     
-    // نضرب القيمة في 1000 لتحويل الدولار إلى نقاط (مثلاً 0.50$ تصبح 500 نقطة)
-    let points = Math.round(payoutValue * 1000); 
+    // تحويل القيمة لرقم صحيح (بدون أي عمليات ضرب)
+    let points = Math.floor(parseFloat(rawPoints)); 
 
-    // حد أدنى للأمان
-    if (points <= 0) points = 5;
+    // إذا كانت الشركة أرسلت صفر أو لم ترسل شيئاً، نضع 1 كحد أدنى بدلاً من 5 (أو يمكنك جعلها 0)
+    if (points < 0) points = 0;
 
-    // حساب الليفل الجديد بناءً على النقاط الكلية
+    // --- فحص التكرار ---
+    const dupCheck = await adminDb.collection("transactions").where("transactionId", "==", transactionId).get();
+    if (!dupCheck.empty) return new NextResponse("ok", { status: 200 });
+
+    // حساب الليفل الجديد
     const totalEarnedSoFar = (userData?.totalEarned || 0) + points;
     let newLevel = 1;
     if (totalEarnedSoFar >= 100000) newLevel = 4;
@@ -120,13 +120,9 @@ export async function GET(request: NextRequest) {
     else if (totalEarnedSoFar >= 20000) newLevel = 2;
     else newLevel = 1;
 
-    // --- فحص التكرار لمنع غش النقاط ---
-    const dupCheck = await adminDb.collection("transactions").where("transactionId", "==", transactionId).get();
-    if (!dupCheck.empty) return new NextResponse("ok", { status: 200 });
-
     const batch = adminDb.batch();
 
-    // 1. تسجيل المعاملة
+    // 1. سجل المعاملة
     batch.set(adminDb.collection("transactions").doc(), {
       userId: userSnap.id,
       transactionId,
@@ -135,31 +131,30 @@ export async function GET(request: NextRequest) {
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // 2. تحديث رصيد المستخدم واللفل
+    // 2. تحديث المستخدم
     batch.update(userRef, {
       points: FieldValue.increment(points),
       totalEarned: FieldValue.increment(points),
       level: newLevel,
     });
 
-    // 3. إرسال إشعار للمستخدم
+    // 3. إشعار
     batch.set(adminDb.collection("notifications").doc(), {
       userId: userSnap.id,
-      title: "New Points Added! 💰",
-      message: `Congratulations! ${points} points have been added to your balance from ${wallName}.`,
+      title: "Points Received!",
+      message: `You earned ${points} points from ${wallName}.`,
       isRead: false,
       type: "reward",
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // 4. تحديث الـ Live Feed ليظهر للجميع
+    // 4. لايف فيد
     batch.set(adminDb.collection("live_feed").doc(), {
       userId: userSnap.id,
       username: userData?.username || "User",
-      photoURL: userData?.photoURL || "",
       points: points,
       source: wallName,
-      offerName: offerName || "Task",
+      offerName: offerName,
       createdAt: FieldValue.serverTimestamp(),
     });
 
@@ -167,7 +162,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse("ok", { status: 200 });
 
   } catch (err: any) {
-    console.error("Error Processing Postback:", err.message);
+    console.error("Postback Error:", err.message);
     return new NextResponse("ok", { status: 200 });
   }
 }
