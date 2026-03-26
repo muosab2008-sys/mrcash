@@ -50,7 +50,6 @@ export async function GET(request: NextRequest) {
     const adminDb = getAdminDb();
     const { searchParams } = new URL(request.url);
 
-    // --- استخراج المتغيرات ---
     const wallParam = searchParams.get("wall") || "Offerwall";
     const wallName = wallParam.charAt(0).toUpperCase() + wallParam.slice(1);
 
@@ -73,7 +72,6 @@ export async function GET(request: NextRequest) {
 
     if (!userIdentifier) return new NextResponse("ok", { status: 200 });
 
-    // --- جلب بيانات المستخدم ---
     let userRef = adminDb.collection("users").doc(userIdentifier);
     let userSnap = await userRef.get();
 
@@ -99,20 +97,14 @@ export async function GET(request: NextRequest) {
     const userData = userSnap.data();
 
     // --- الحسابات (أخذ النقاط كما هي تماماً من الشركة) ---
-    // جلب القيمة من أي باراميتر ترسل فيه الشركة النقاط
-    const rawPoints = searchParams.get("points") || searchParams.get("payout") || searchParams.get("reward") || searchParams.get("amount") || "0";
-    
-    // تحويل القيمة لرقم صحيح (بدون أي عمليات ضرب)
-    let points = Math.floor(parseFloat(rawPoints)); 
-
-    // إذا كانت الشركة أرسلت صفر أو لم ترسل شيئاً، نضع 1 كحد أدنى بدلاً من 5 (أو يمكنك جعلها 0)
+    const rawVal = searchParams.get("points") || searchParams.get("payout") || searchParams.get("reward") || searchParams.get("amount") || "0";
+    let points = Math.floor(parseFloat(rawVal)); 
     if (points < 0) points = 0;
 
     // --- فحص التكرار ---
     const dupCheck = await adminDb.collection("transactions").where("transactionId", "==", transactionId).get();
     if (!dupCheck.empty) return new NextResponse("ok", { status: 200 });
 
-    // حساب الليفل الجديد
     const totalEarnedSoFar = (userData?.totalEarned || 0) + points;
     let newLevel = 1;
     if (totalEarnedSoFar >= 100000) newLevel = 4;
@@ -122,7 +114,6 @@ export async function GET(request: NextRequest) {
 
     const batch = adminDb.batch();
 
-    // 1. سجل المعاملة
     batch.set(adminDb.collection("transactions").doc(), {
       userId: userSnap.id,
       transactionId,
@@ -131,14 +122,12 @@ export async function GET(request: NextRequest) {
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // 2. تحديث المستخدم
     batch.update(userRef, {
       points: FieldValue.increment(points),
       totalEarned: FieldValue.increment(points),
       level: newLevel,
     });
 
-    // 3. إشعار
     batch.set(adminDb.collection("notifications").doc(), {
       userId: userSnap.id,
       title: "Points Received!",
@@ -148,7 +137,6 @@ export async function GET(request: NextRequest) {
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // 4. لايف فيد
     batch.set(adminDb.collection("live_feed").doc(), {
       userId: userSnap.id,
       username: userData?.username || "User",
