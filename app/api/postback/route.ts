@@ -50,9 +50,11 @@ export async function GET(request: NextRequest) {
     const adminDb = getAdminDb();
     const { searchParams } = new URL(request.url);
 
+    // 1. تحديد اسم جدار العروض
     const wallParam = searchParams.get("wall") || "Offerwall";
     const wallName = wallParam.charAt(0).toUpperCase() + wallParam.slice(1);
 
+    // 2. تحديد هوية المستخدم (يبحث في كل الاحتمالات)
     const userIdentifier = 
       searchParams.get("user_id") || 
       searchParams.get("ml_sub1") || 
@@ -62,6 +64,7 @@ export async function GET(request: NextRequest) {
       searchParams.get("email") || 
       "";
 
+    // 3. تحديد رقم المعاملة
     const transactionId = 
       searchParams.get("transaction_id") || 
       searchParams.get("transId") ||    
@@ -72,6 +75,7 @@ export async function GET(request: NextRequest) {
 
     if (!userIdentifier) return new NextResponse("ok", { status: 200 });
 
+    // 4. جلب أو إنشاء المستخدم
     let userRef = adminDb.collection("users").doc(userIdentifier);
     let userSnap = await userRef.get();
 
@@ -96,12 +100,17 @@ export async function GET(request: NextRequest) {
 
     const userData = userSnap.data();
 
-    // --- الحسابات (أخذ النقاط كما هي تماماً من الشركة) ---
+    // --- 5. الحسبة المباشرة (نفس الرقم تماماً) ---
     const rawVal = searchParams.get("points") || searchParams.get("payout") || searchParams.get("reward") || searchParams.get("amount") || "0";
-    let points = Math.floor(parseFloat(rawVal)); 
-    if (points < 0) points = 0;
+    
+    // تحويل النص لرقم صحيح فقط (بدون ضرب، بدون شروط)
+    // نستخدم Number() لضمان قراءة الرقم كما هو
+    let points = Math.floor(Number(rawVal));
 
-    // --- فحص التكرار ---
+    // إذا كان الرقم المدخل غير صالح أو أقل من صفر، نجعله 0
+    if (isNaN(points) || points < 0) points = 0;
+
+    // 6. فحص التكرار (لعدم احتساب العرض مرتين)
     const dupCheck = await adminDb.collection("transactions").where("transactionId", "==", transactionId).get();
     if (!dupCheck.empty) return new NextResponse("ok", { status: 200 });
 
@@ -112,22 +121,26 @@ export async function GET(request: NextRequest) {
     else if (totalEarnedSoFar >= 20000) newLevel = 2;
     else newLevel = 1;
 
+    // 7. تنفيذ العملية في قاعدة البيانات
     const batch = adminDb.batch();
 
+    // تسجيل المعاملة
     batch.set(adminDb.collection("transactions").doc(), {
       userId: userSnap.id,
       transactionId,
       offerwall: wallName,
-      points,
+      points: points,
       createdAt: FieldValue.serverTimestamp(),
     });
 
+    // تحديث نقاط المستخدم
     batch.update(userRef, {
       points: FieldValue.increment(points),
       totalEarned: FieldValue.increment(points),
       level: newLevel,
     });
 
+    // إرسال إشعار
     batch.set(adminDb.collection("notifications").doc(), {
       userId: userSnap.id,
       title: "Points Received!",
@@ -137,6 +150,7 @@ export async function GET(request: NextRequest) {
       createdAt: FieldValue.serverTimestamp(),
     });
 
+    // إضافة للـ Live Feed
     batch.set(adminDb.collection("live_feed").doc(), {
       userId: userSnap.id,
       username: userData?.username || "User",
@@ -151,8 +165,10 @@ export async function GET(request: NextRequest) {
 
   } catch (err: any) {
     console.error("Postback Error:", err.message);
+    // نرسل ok للشركة دائماً لمنع إعادة المحاولة المزعجة
     return new NextResponse("ok", { status: 200 });
   }
 }
 
-export async function POST(req: NextRequest) { return GET(req); } 
+export async function POST(req: NextRequest) { return GET(req); }
+ 
