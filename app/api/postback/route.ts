@@ -45,14 +45,12 @@ slmtyUkuZDNy/ESBNJCEjA==
   return getFirestore();
 }
 
-const POINTS_PER_DOLLAR = 1000;
-
 export async function GET(request: NextRequest) {
   try {
     const adminDb = getAdminDb();
     const { searchParams } = new URL(request.url);
 
-    // --- استخراج المتغيرات (نفس كودك القديم تماماً) ---
+    // --- استخراج المتغيرات ---
     const wallParam = searchParams.get("wall") || "Offerwall";
     const wallName = wallParam.charAt(0).toUpperCase() + wallParam.slice(1);
 
@@ -78,7 +76,7 @@ export async function GET(request: NextRequest) {
 
     if (!userIdentifier) return new NextResponse("ok", { status: 200 });
 
-    // --- جلب بيانات المستخدم (يجب أن تكون قبل الحسابات) ---
+    // --- جلب بيانات المستخدم ---
     let userRef = adminDb.collection("users").doc(userIdentifier);
     let userSnap = await userRef.get();
 
@@ -88,7 +86,6 @@ export async function GET(request: NextRequest) {
         userRef = emailQuery.docs[0].ref;
         userSnap = emailQuery.docs[0];
       } else {
-        // إنشاء مستخدم جديد إذا لم يوجد (كما في كودك)
         const newUserRef = await adminDb.collection("users").add({
           email: userIdentifier.includes("@") ? userIdentifier : `${userIdentifier}@mrcash.com`,
           username: userIdentifier.split("@")[0],
@@ -102,18 +99,20 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // الآن نستخرج الـ userData بعد التأكد من وجود السناب شوت
     const userData = userSnap.data();
 
-    // --- الحسابات (الآن ستعمل لأن userData معرفة) ---
-    const rawPayout = searchParams.get("payout") || searchParams.get("reward") || "0";
+    // --- الحسابات المعدلة (لحل مشكلة الـ 5 نقاط) ---
+    // نقرأ القيمة القادمة من الشركة (سواء كانت payout أو reward أو amount)
+    const rawPayout = searchParams.get("payout") || searchParams.get("reward") || searchParams.get("amount") || "0";
     const payoutValue = parseFloat(rawPayout);
     
-    // حساب النقاط (بدون تدبيل كما طلبت)
-    let points = Math.round(payoutValue); 
+    // نضرب القيمة في 1000 لتحويل الدولار إلى نقاط (مثلاً 0.50$ تصبح 500 نقطة)
+    let points = Math.round(payoutValue * 1000); 
+
+    // حد أدنى للأمان
     if (points <= 0) points = 5;
 
-    // حساب الليفل
+    // حساب الليفل الجديد بناءً على النقاط الكلية
     const totalEarnedSoFar = (userData?.totalEarned || 0) + points;
     let newLevel = 1;
     if (totalEarnedSoFar >= 100000) newLevel = 4;
@@ -121,11 +120,10 @@ export async function GET(request: NextRequest) {
     else if (totalEarnedSoFar >= 20000) newLevel = 2;
     else newLevel = 1;
 
-    // --- فحص التكرار ---
+    // --- فحص التكرار لمنع غش النقاط ---
     const dupCheck = await adminDb.collection("transactions").where("transactionId", "==", transactionId).get();
     if (!dupCheck.empty) return new NextResponse("ok", { status: 200 });
 
-    // --- تنفيذ الـ Batch (الآن الـ batch معرف قبل الاستخدام) ---
     const batch = adminDb.batch();
 
     // 1. تسجيل المعاملة
@@ -137,14 +135,14 @@ export async function GET(request: NextRequest) {
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // 2. تحديث النقاط والليفل (بدون شظايا)
+    // 2. تحديث رصيد المستخدم واللفل
     batch.update(userRef, {
       points: FieldValue.increment(points),
       totalEarned: FieldValue.increment(points),
       level: newLevel,
     });
 
-    // 3. إضافة الإشعار
+    // 3. إرسال إشعار للمستخدم
     batch.set(adminDb.collection("notifications").doc(), {
       userId: userSnap.id,
       title: "New Points Added! 💰",
@@ -154,7 +152,7 @@ export async function GET(request: NextRequest) {
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // 4. تحديث الـ Live Feed
+    // 4. تحديث الـ Live Feed ليظهر للجميع
     batch.set(adminDb.collection("live_feed").doc(), {
       userId: userSnap.id,
       username: userData?.username || "User",
@@ -169,7 +167,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse("ok", { status: 200 });
 
   } catch (err: any) {
-    console.error("Error:", err.message);
+    console.error("Error Processing Postback:", err.message);
     return new NextResponse("ok", { status: 200 });
   }
 }
