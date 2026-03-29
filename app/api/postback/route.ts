@@ -54,117 +54,83 @@ export async function GET(request: NextRequest) {
     const wallParam = searchParams.get("wall") || "Offerwall";
     const wallName = wallParam.charAt(0).toUpperCase() + wallParam.slice(1).toLowerCase();
 
-    // 2. UNIVERSAL USER IDENTIFIER
-    const userIdentifier =
-      searchParams.get("user_id") ||
-      searchParams.get("ml_sub1") ||
-      searchParams.get("subId") ||
-      searchParams.get("subid") ||
-      searchParams.get("uid") ||
-      "";
-
+    // 2. UNIVERSAL USER IDENTIFIER (Supports s1, user_id, ml_sub1, etc.)
+    const userIdentifier = searchParams.get("user_id") || searchParams.get("s1") || searchParams.get("ml_sub1") || searchParams.get("uid") || "";
     if (!userIdentifier) return new NextResponse("ok", { status: 200 });
 
-    // 3. DUPLICATE PREVENTION
-    const transactionId =
-      searchParams.get("transaction_id") ||
-      searchParams.get("click_id") ||
-      searchParams.get("transId") ||
-      `TX-${Date.now()}`;
+    // 3. DUPLICATE PREVENTION ID
+    const transactionId = searchParams.get("transaction_id") || searchParams.get("txid") || searchParams.get("click_id") || `TX-${Date.now()}`;
 
-    // 4. Get offer name
-    const offerName = searchParams.get("offer_name") || searchParams.get("offerName") || "Task";
+    // 4. Offer name
+    const offerName = searchParams.get("offer_name") || searchParams.get("off_name") || "Task";
 
-    // 5. AUTO-USER CREATION
+    // 5. FETCH OR CREATE USER
     let userRef = adminDb.collection("users").doc(userIdentifier);
     let userSnap = await userRef.get();
 
     if (!userSnap.exists) {
-      if (userIdentifier.includes("@")) {
-        const emailQuery = await adminDb.collection("users").where("email", "==", userIdentifier).limit(1).get();
-        if (!emailQuery.empty) {
-          userRef = emailQuery.docs[0].ref;
-          userSnap = emailQuery.docs[0];
-        } else {
-          await userRef.set({
-            email: userIdentifier,
-            username: userIdentifier.split("@")[0],
+        await userRef.set({
+            email: userIdentifier.includes("@") ? userIdentifier : null,
+            userId: userIdentifier,
+            username: userIdentifier.includes("@") ? userIdentifier.split("@")[0] : "User",
             points: 0,
             totalEarned: 0,
             level: 1,
-            createdAt: FieldValue.serverTimestamp(),
-          });
-          userSnap = await userRef.get();
-        }
-      } else {
-        await userRef.set({
-          userId: userIdentifier,
-          points: 0,
-          totalEarned: 0,
-          level: 1,
-          createdAt: FieldValue.serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp()
         });
         userSnap = await userRef.get();
-      }
     }
-
     const userData = userSnap.data();
 
-    // 6. NO-ROUNDING POINTS CALCULATION (Exact decimal value)
-    const rawVal =
-      searchParams.get("points") ||
-      searchParams.get("payout") ||
-      searchParams.get("payout_usd") ||
-      searchParams.get("reward") ||
-      searchParams.get("amount") ||
-      "0";
+    // 6. POINTS CALCULATION (Conversion: 1 USD = 1000 Points)
+    // No rounding used to keep precision (e.g., 0.1 remains 0.1)
+    const rawVal = searchParams.get("payout") || searchParams.get("points") || searchParams.get("amount") || "0";
+    let points = parseFloat(rawVal) * 1000;
 
-    // Using parseFloat directly to keep decimals like 0.5 exactly as they are
-    let points = parseFloat(rawVal);
+    if (isNaN(points) || points < 0) points = 0;
 
-    if (isNaN(points) || points < 0) {
-      points = 0;
-    }
-
-    // 7. DUPLICATE PREVENTION CHECK
+    // 7. DUPLICATE CHECK
     const dupCheck = await adminDb.collection("transactions").where("transactionId", "==", transactionId).limit(1).get();
     if (!dupCheck.empty) return new NextResponse("ok", { status: 200 });
 
-    // 8. Calculate new level
+    // 8. Calculate Level (Optional logic based on total earnings)
     const totalEarnedSoFar = (userData?.totalEarned || 0) + points;
     let newLevel = 1;
     if (totalEarnedSoFar >= 100000) newLevel = 4;
     else if (totalEarnedSoFar >= 60000) newLevel = 3;
     else if (totalEarnedSoFar >= 20000) newLevel = 2;
 
-    // 9. Batch write to database
+    // 9. BATCH UPDATE DATABASE
     const batch = adminDb.batch();
 
+    // Record Transaction
     batch.set(adminDb.collection("transactions").doc(), {
       userId: userSnap.id,
-      userIdentifier: userIdentifier,
       transactionId: transactionId,
       offerwall: wallName,
       offerName: offerName,
-      points: points, // Saved as decimal
+      points: points,
       createdAt: FieldValue.serverTimestamp(),
     });
 
+    // Update User Document
     batch.update(userRef, {
       points: FieldValue.increment(points),
       totalEarned: FieldValue.increment(points),
       level: newLevel,
     });
 
+    // Create Notification
     batch.set(adminDb.collection("notifications").doc(), {
       userId: userSnap.id,
-      title: "نقاط جديدة!",
-      message: `ربحت ${points} نقطة من ${wallName}.`,
+      title: "Reward Received!",
+      message: `You earned ${points.toFixed(2)} points from ${wallName}.`,
       isRead: false,
       type: "reward",
       createdAt: FieldValue.serverTimestamp(),
     });
 
+    // Add to Live Feed
     batch.set(adminDb.collection("live_feed").doc(), {
       userId: userSnap.id,
       username: userData?.username || "User",
@@ -178,11 +144,9 @@ export async function GET(request: NextRequest) {
     return new NextResponse("ok", { status: 200 });
 
   } catch (err: any) {
-    console.error("[Postback Error]", err.message);
+    console.error("Error:", err.message);
     return new NextResponse("ok", { status: 200 });
   }
 }
 
-export async function POST(req: NextRequest) {
-  return GET(req);
-}
+export async function POST(req: NextRequest) { return GET(req); }
