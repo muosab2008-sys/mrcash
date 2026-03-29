@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     // 6. POINTS CALCULATION (Conversion: 1 USD = 1000 Points)
     // No rounding used to keep precision (e.g., 0.1 remains 0.1)
     const rawVal = searchParams.get("payout") || searchParams.get("points") || searchParams.get("amount") || "0";
-    let points = parseFloat(rawVal) * 1000;
+    let points = parseFloat(rawVal) * 500;
 
     if (isNaN(points) || points < 0) points = 0;
 
