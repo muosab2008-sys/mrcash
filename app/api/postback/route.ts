@@ -50,101 +50,100 @@ export async function GET(request: NextRequest) {
     const adminDb = getAdminDb();
     const { searchParams } = new URL(request.url);
 
-    // 1. Determine the offerwall name
-    const wallParam = searchParams.get("wall") || "Offerwall";
-    const wallName = wallParam.charAt(0).toUpperCase() + wallParam.slice(1).toLowerCase();
-
-    // 2. UNIVERSAL USER IDENTIFIER (Supports s1, user_id, ml_sub1, etc.)
-    const userIdentifier = searchParams.get("user_id") || searchParams.get("s1") || searchParams.get("ml_sub1") || searchParams.get("uid") || "";
-    if (!userIdentifier) return new NextResponse("ok", { status: 200 });
-
-    // 3. DUPLICATE PREVENTION ID
-    const transactionId = searchParams.get("transaction_id") || searchParams.get("txid") || searchParams.get("click_id") || `TX-${Date.now()}`;
-
-    // 4. Offer name
-    const offerName = searchParams.get("offer_name") || searchParams.get("off_name") || "Task";
-
-    // 5. FETCH OR CREATE USER
-    let userRef = adminDb.collection("users").doc(userIdentifier);
-    let userSnap = await userRef.get();
-
-    if (!userSnap.exists) {
-        await userRef.set({
-            email: userIdentifier.includes("@") ? userIdentifier : null,
-            userId: userIdentifier,
-            username: userIdentifier.includes("@") ? userIdentifier.split("@")[0] : "User",
-            points: 0,
-            totalEarned: 0,
-            level: 1,
-            createdAt: FieldValue.serverTimestamp()
-        });
-        userSnap = await userRef.get();
+    // --- 1. البحث المرن عن المعرف (User ID) ---
+    const userKeys = ["user_id", "s1", "sub1", "uid", "subId", "click_id", "external_id"];
+    let userId = "";
+    for (const key of userKeys) {
+      if (searchParams.get(key)) {
+        userId = searchParams.get(key) || "";
+        break;
+      }
     }
-    const userData = userSnap.data();
 
-    // 6. POINTS CALCULATION (Conversion: 1 USD = 1000 Points)
-    // No rounding used to keep precision (e.g., 0.1 remains 0.1)
-    const rawVal = searchParams.get("payout") || searchParams.get("points") || searchParams.get("amount") || "0";
-    let points = parseFloat(rawVal) * 500;
+    if (!userId) return new NextResponse("ok", { status: 200 });
 
-    if (isNaN(points) || points < 0) points = 0;
+    // --- 2. البحث المرن عن المبلغ (Amount/Value) ---
+    const valueKeys = ["amount", "value", "payout", "points", "reward", "payout_usd"];
+    let rawValue = "0";
+    for (const key of valueKeys) {
+      if (searchParams.get(key)) {
+        rawValue = searchParams.get(key) || "0";
+        break;
+      }
+    }
 
-    // 7. DUPLICATE CHECK
-    const dupCheck = await adminDb.collection("transactions").where("transactionId", "==", transactionId).limit(1).get();
+    // الضرب في 500
+    let points = parseFloat(rawValue) * 500;
+    if (isNaN(points) || points <= 0) return new NextResponse("ok", { status: 200 });
+
+    // --- 3. البحث المرن عن اسم العرض والشركة ---
+    const wallName = searchParams.get("wall") || searchParams.get("source") || "Offerwall";
+    const offerName = searchParams.get("offer_name") || searchParams.get("off_name") || searchParams.get("ad_name") || "Task";
+
+    // --- 4. المعرف الفريد لمنع التكرار (Transaction ID) ---
+    const txId = searchParams.get("signature") || searchParams.get("token") || searchParams.get("txid") || searchParams.get("transaction_id") || `AUTO-${Date.now()}`;
+
+    // --- 5. العمليات على قاعدة البيانات ---
+    const userRef = adminDb.collection("users").doc(userId);
+    const userSnap = await userRef.get();
+
+    // إنشاء المستخدم إذا لم يكن موجوداً
+    if (!userSnap.exists) {
+      await userRef.set({
+        userId: userId,
+        username: userId.includes("@") ? userId.split("@")[0] : "User",
+        points: 0,
+        totalEarned: 0,
+        level: 1,
+        createdAt: FieldValue.serverTimestamp()
+      });
+    }
+
+    // فحص التكرار
+    const dupCheck = await adminDb.collection("transactions").where("transactionId", "==", txId).limit(1).get();
     if (!dupCheck.empty) return new NextResponse("ok", { status: 200 });
 
-    // 8. Calculate Level (Optional logic based on total earnings)
-    const totalEarnedSoFar = (userData?.totalEarned || 0) + points;
-    let newLevel = 1;
-    if (totalEarnedSoFar >= 100000) newLevel = 4;
-    else if (totalEarnedSoFar >= 60000) newLevel = 3;
-    else if (totalEarnedSoFar >= 20000) newLevel = 2;
-
-    // 9. BATCH UPDATE DATABASE
     const batch = adminDb.batch();
 
-    // Record Transaction
+    // تحديث النقاط والرصيد
+    batch.update(userRef, {
+      points: FieldValue.increment(points),
+      totalEarned: FieldValue.increment(points),
+    });
+
+    // تسجيل العملية
     batch.set(adminDb.collection("transactions").doc(), {
-      userId: userSnap.id,
-      transactionId: transactionId,
+      userId: userId,
+      transactionId: txId,
       offerwall: wallName,
       offerName: offerName,
       points: points,
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // Update User Document
-    batch.update(userRef, {
-      points: FieldValue.increment(points),
-      totalEarned: FieldValue.increment(points),
-      level: newLevel,
-    });
-
-    // Create Notification
+    // إرسال إشعار
     batch.set(adminDb.collection("notifications").doc(), {
-      userId: userSnap.id,
-      title: "Reward Received!",
-      message: `You earned ${points.toFixed(2)} points from ${wallName}.`,
+      userId: userId,
+      title: "Reward Added!",
+      message: `You earned ${points.toFixed(2)} points from ${offerName}.`,
       isRead: false,
-      type: "reward",
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // Add to Live Feed
+    // إضافة لآخر العمليات (Live Feed)
     batch.set(adminDb.collection("live_feed").doc(), {
-      userId: userSnap.id,
-      username: userData?.username || "User",
+      userId: userId,
+      username: userId.includes("@") ? userId.split("@")[0] : "User",
       points: points,
       source: wallName,
-      offerName: offerName,
       createdAt: FieldValue.serverTimestamp(),
     });
 
     await batch.commit();
     return new NextResponse("ok", { status: 200 });
 
-  } catch (err: any) {
-    console.error("Error:", err.message);
+  } catch (err) {
+    console.error("Postback Error:", err);
     return new NextResponse("ok", { status: 200 });
   }
 }
