@@ -1,25 +1,34 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  // المفتاح الصحيح والكامل من صورتك السابقة (32 حرف)
-  const MY_API_KEY = "uccnjpr7cd6llvbomgr04no1hofoobb1";
+  // المفاتيح مأخوذة بدقة من لقطة الشاشة الخاصة بك (Offery Dashboard)
+  // تأكد أن الـ API_KEY ينتهي بـ b1
+  const API_KEY = "uccnjpr7cd6llvbomgr04no1hofoobb1"; 
+  const SECRET = "c880611e471a9f5a46c26c383a1269";
+  const APP_ID = "1069";
 
   try {
-    // هذا هو الرابط الرسمي حرفياً كما ورد في الدليل
-    const url = `https://offery.io/api/?apikey=${MY_API_KEY}`;
+    // هذا الرابط المباشر والبسيط حسب الدليل (Documentation)
+    const url = `https://offery.io/api/?apikey=${API_KEY}`;
     
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-      cache: 'no-store' // لضمان جلب عروض جديدة دائماً
+      cache: 'no-store'
     });
 
     const data = await response.json();
+
+    // إذا لم ينجح الرابط البسيط، نجرب الرابط الكامل بالـ Secret والـ ID
+    if (data.status === "error") {
+      const fullUrl = `https://offery.io/api/?apikey=${API_KEY}&app_id=${APP_ID}&secret=${SECRET}`;
+      const res2 = await fetch(fullUrl, { cache: 'no-store' });
+      const data2 = await res2.json();
+      return NextResponse.json(data2);
+    }
+
     return NextResponse.json(data);
 
   } catch (error) {
-    return NextResponse.json({ status: "error", message: "Failed to connect to Offery" }, { status: 500 });
+    return NextResponse.json({ status: "error", message: "Connection Error" }, { status: 500 });
   }
 }
