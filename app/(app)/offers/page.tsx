@@ -1,113 +1,207 @@
-import { headers } from "next/headers";
+"use client";
 
-// واجهة تعريف العرض
+export const dynamic = "force-dynamic";
+
+import { useEffect, useState } from "react";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ExternalLink, Search, Filter, LayoutGrid, List, DollarSign } from "lucide-react";
+
+// تحويل النقاط (العملة) إلى دولار
+const pointsToUSD = (points: any) => (parseFloat(points) / 1000).toFixed(2);
+
 interface Offer {
-  offer: {
-    id: string;
-    name: string;
-    description: string;
-    image: string;
-  };
-  payout: {
-    reward: string;
-    currency: string;
-  };
-  devices: string[];
+  id: string;
+  name: string;
+  description: string;
+  provider: string;
+  points: number;
+  difficulty: "easy" | "medium" | "hard";
+  type: "survey" | "app" | "video" | "signup" | "other";
   url: string;
+  image?: string;
+  isActive: boolean;
 }
 
-export default async function OffersPage() {
-  // تفعيل خاصية الـ Dynamic عشان الـ Headers تشتغل صح
-  const headerList = headers();
-  const userAgent = headerList.get("user-agent") || "";
-  
-  const isAndroid = /Android/i.test(userAgent);
-  const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
+const difficultyConfig = {
+  easy: { label: "سهل", color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" },
+  medium: { label: "متوسط", color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+  hard: { label: "صعب", color: "bg-red-500/10 text-red-500 border-red-500/20" },
+};
 
-  const API_KEY = process.env.OFFERY_API_KEY;
-  let offers: Offer[] = [];
-  let errorOccurred = false;
+const typeConfig = {
+  survey: { label: "استطلاع", color: "bg-[#3B82F6]/10 text-[#3B82F6] border-[#3B82F6]/20" },
+  app: { label: "تثبيت تطبيق", color: "bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/20" },
+  video: { label: "فيديو", color: "bg-pink-500/10 text-pink-500 border-pink-500/20" },
+  signup: { label: "تسجيل", color: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20" },
+  other: { label: "أخرى", color: "bg-gray-500/10 text-gray-500 border-gray-500/20" },
+};
 
-  try {
-    // جلب العروض مع مهلة زمنية (Timeout)
-    const res = await fetch(`https://offery.io/api/?apikey=${API_KEY}`, {
-      next: { revalidate: 60 }, // تحديث كل دقيقة
+export default function OffersPage() {
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterDifficulty, setFilterDifficulty] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("points-high");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  useEffect(() => {
+    async function fetchAllOffers() {
+      setLoading(true);
+      try {
+        // 1. جلب عروض Offery من الـ API (عبر Route داخلي لتجنب مشاكل الـ CORS)
+        const response = await fetch('/api/get-offery'); // سننشئ هذا الملف لاحقاً أو نضع الرابط مباشرة
+        const result = await response.json();
+        
+        let fetchedOffers: Offer[] = [];
+
+        if (result && result.status === "success") {
+          fetchedOffers = result.data.map((item: any) => ({
+            id: item.offer.id,
+            name: item.offer.name,
+            description: item.offer.description,
+            provider: "Offery",
+            points: parseFloat(item.payout.reward),
+            image: item.offer.image,
+            difficulty: "medium", // افتراضي من Offery
+            type: item.offer.name.toLowerCase().includes("survey") ? "survey" : "app",
+            url: item.url,
+            isActive: true
+          }));
+        }
+
+        setOffers(fetchedOffers);
+      } catch (error) {
+        console.error("Error fetching offers:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchAllOffers();
+  }, []);
+
+  // الفلترة والترتيب
+  const filteredOffers = offers
+    .filter((offer) => {
+      const matchesSearch =
+        offer.name.toLowerCase().includes(search.toLowerCase()) ||
+        offer.description.toLowerCase().includes(search.toLowerCase());
+      const matchesType = filterType === "all" || offer.type === filterType;
+      return matchesSearch && matchesType;
+    })
+    .sort((a, b) => {
+      if (sortBy === "points-high") return b.points - a.points;
+      if (sortBy === "points-low") return a.points - b.points;
+      return a.name.localeCompare(b.name);
     });
 
-    if (!res.ok) {
-      throw new Error("Failed to fetch");
-    }
-
-    const result = await res.json();
-    
-    if (result && result.status === "success" && Array.isArray(result.data)) {
-      offers = result.data.sort((a: Offer, b: Offer) => 
-        parseFloat(b.payout.reward) - parseFloat(a.payout.reward)
-      );
-    }
-  } catch (err) {
-    console.error("Fetch error:", err);
-    errorOccurred = true;
-  }
-
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      {/* الهيدر العلوي */}
-      <div className="sticky top-0 z-10 bg-[#0a0a0a]/90 border-b border-gray-800 p-4 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-xl font-bold text-green-500">Mr.Cash <span className="text-white font-light text-sm">| العروض</span></h1>
-          <div className="flex gap-2">
-            <span className={`text-[10px] px-2 py-1 rounded border ${isAndroid ? 'border-green-500 text-green-500' : 'border-gray-700 text-gray-400'}`}>Android</span>
-            <span className={`text-[10px] px-2 py-1 rounded border ${isIOS ? 'border-green-500 text-green-500' : 'border-gray-700 text-gray-400'}`}>iOS</span>
-          </div>
-        </div>
+    <div className="space-y-6 p-4 sm:p-6 bg-[#050505] min-h-screen">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-white">عروض Offery المباشرة</h1>
+        <p className="text-white/50">أكمل العروض واحصد النقاط الآن</p>
       </div>
 
-      <main className="p-4 md:p-8 max-w-7xl mx-auto">
-        {errorOccurred ? (
-          <div className="text-center py-20 text-red-500 bg-red-500/10 rounded-2xl border border-red-500/20">
-            حدث خطأ أثناء الاتصال بشركة العروض. يرجى المحاولة لاحقاً.
+      {/* Filters */}
+      <Card className="border-white/5 bg-[#0a0a0a] rounded-2xl shadow-2xl">
+        <CardContent className="p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/30" />
+              <Input
+                placeholder="ابحث عن عرض..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-12 h-12 rounded-2xl bg-white/[0.02] border-white/5 text-white placeholder:text-white/30"
+              />
+            </div>
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-full lg:w-44 h-12 rounded-2xl bg-white/[0.02] border-white/5 text-white">
+                <SelectValue placeholder="ترتيب حسب" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#0a0a0a] border-white/10 text-white">
+                <SelectItem value="points-high">الأعلى نقاطاً</SelectItem>
+                <SelectItem value="points-low">الأقل نقاطاً</SelectItem>
+                <SelectItem value="name">الاسم A-Z</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="flex rounded-2xl border border-white/5 overflow-hidden">
+              <Button
+                variant="ghost"
+                onClick={() => setViewMode("grid")}
+                className={`px-4 h-12 ${viewMode === "grid" ? "bg-white/5 text-white" : "text-white/50"}`}
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setViewMode("list")}
+                className={`px-4 h-12 ${viewMode === "list" ? "bg-white/5 text-white" : "text-white/50"}`}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        ) : offers.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {offers.map((item) => (
-              <div key={item.offer.id} className="bg-[#111] border border-gray-800 rounded-xl overflow-hidden hover:border-green-500/50 transition-all flex flex-col">
-                <div className="relative h-40 bg-[#1a1a1a]">
-                  <img 
-                    src={item.offer.image || "/placeholder.png"} 
-                    alt={item.offer.name} 
-                    className="w-full h-full object-cover" 
-                  />
-                  <div className="absolute top-2 left-2 flex gap-1">
-                    {item.devices.includes("Android") && <span className="bg-black/80 p-1 rounded text-[10px]">🤖</span>}
-                    {item.devices.includes("iOS") && <span className="bg-black/80 p-1 rounded text-[10px]">🍎</span>}
+        </CardContent>
+      </Card>
+
+      {/* Results */}
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-48 bg-white/5 animate-pulse rounded-2xl" />
+          ))}
+        </div>
+      ) : (
+        <div className={viewMode === "grid" ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3" : "space-y-3"}>
+          {filteredOffers.map((offer) => (
+            <Card key={offer.id} className="border-white/5 bg-[#0a0a0a] rounded-2xl hover:border-[#3B82F6]/30 transition-all group">
+              <CardContent className="p-5 flex flex-col h-full">
+                <div className="flex items-center gap-4 mb-4">
+                  <img src={offer.image} className="w-12 h-12 rounded-xl object-cover" alt="" />
+                  <div className="flex-1">
+                    <CardTitle className="text-white text-base line-clamp-1">{offer.name}</CardTitle>
+                    <p className="text-xs text-white/40">{offer.provider}</p>
                   </div>
                 </div>
-                <div className="p-4 flex flex-col flex-grow">
-                  <h3 className="font-bold truncate text-sm">{item.offer.name}</h3>
-                  <p className="text-[10px] text-gray-500 line-clamp-2 mt-1 mb-4 h-8">{item.offer.description}</p>
-                  <div className="flex justify-between items-center mt-auto">
-                    <span className="text-green-500 font-bold text-sm">{item.payout.reward} نقطة</span>
-                    <a 
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-green-600 text-black text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-green-500 transition-colors"
-                    >
-                      تنفيذ
-                    </a>
-                  </div>
+                <CardDescription className="text-white/50 text-sm line-clamp-2 mb-4 flex-grow">
+                  {offer.description}
+                </CardDescription>
+                <div className="flex items-center justify-between mt-auto">
+                   <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                        <DollarSign className="h-4 w-4 text-green-500" />
+                      </div>
+                      <span className="text-white font-bold text-lg">{offer.points}</span>
+                   </div>
+                   <Button 
+                     className="rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold"
+                     onClick={() => window.open(offer.url, "_blank")}
+                   >
+                     ابدأ العرض
+                   </Button>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-gray-500 text-sm">جاري جلب العروض المتاحة...</p>
-          </div>
-        )}
-      </main>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
