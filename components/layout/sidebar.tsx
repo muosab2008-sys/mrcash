@@ -11,7 +11,7 @@ import {
   Users,
   Ticket,
   User,
-  DollarSign,
+  Wallet,
   LayoutGrid,
   Shield,
   X,
@@ -32,12 +32,15 @@ interface SidebarProps {
   isCollapsed?: boolean;
 }
 
+// Points to USD conversion
+const pointsToUSD = (points: number) => (points / 1000).toFixed(2);
+
 const navItems = [
   { href: "/", label: "Earn", icon: Coins },
   { href: "/levels", label: "Levels", icon: Trophy },
   { href: "/referrals", label: "Referrals", icon: Users },
   { href: "/promo", label: "Promo Codes", icon: Ticket },
-  { href: "/cashout", label: "Cashout", icon: DollarSign },
+  { href: "/cashout", label: "Cashout", icon: Wallet },
   { href: "/offers", label: "Offers", icon: LayoutGrid },
   { href: "/profile", label: "Profile", icon: User },
 ];
@@ -46,24 +49,17 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
   const pathname = usePathname();
   const { userData } = useAuth();
 
-  // --- الحسبة الدقيقة لشريط الليفل ---
   const pointsPerLevel = 10000;
   const totalEarned = userData?.totalEarned || 0;
   const currentLevel = Math.floor(totalEarned / pointsPerLevel) + 1;
   const pointsInCurrentLevel = totalEarned % pointsPerLevel;
   const levelProgress = (pointsInCurrentLevel / pointsPerLevel) * 100;
 
-  // دالة لتنسيق الأرقام الكبيرة (مثل 1M)
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
-    return num.toLocaleString();
-  };
-
   return (
     <TooltipProvider delayDuration={0}>
       {/* Mobile overlay */}
       {isOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={onClose} />
+        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden" onClick={onClose} />
       )}
 
       {/* Sidebar Container */}
@@ -75,35 +71,40 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
         )}
       >
         {/* Mobile Header */}
-        <div className="flex items-center justify-between border-b border-border p-3 sm:p-4 lg:hidden gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <Image src="/logo.png" alt="MrCash" width={32} height={32} className="rounded-lg shrink-0" />
-            <span className="font-bold brand-gradient-text truncate">MrCash</span>
+        <div className="flex items-center justify-between border-b border-border p-4 lg:hidden">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Image src="/logo.png" alt="MrCash" width={32} height={32} className="rounded-xl shrink-0" />
+            <span className="font-bold text-lg brand-gradient-text">MrCash</span>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Desktop Header */}
         <div className={cn(
-          "hidden items-center gap-2 border-b border-border p-3 sm:p-4 lg:flex",
+          "hidden items-center gap-2.5 border-b border-border p-4 lg:flex",
           isCollapsed && "justify-center"
         )}>
-          <Image src="/logo.png" alt="MrCash" width={isCollapsed ? 32 : 40} height={isCollapsed ? 32 : 40} className="rounded-lg shrink-0" />
-          {!isCollapsed && <span className="text-lg font-bold brand-gradient-text truncate">MrCash</span>}
+          <Image src="/logo.png" alt="MrCash" width={isCollapsed ? 32 : 36} height={isCollapsed ? 32 : 36} className="rounded-xl shrink-0" />
+          {!isCollapsed && <span className="text-lg font-bold brand-gradient-text">MrCash</span>}
         </div>
 
         {/* User Stats (Mobile only) */}
         {userData && (
-          <div className="border-b border-border p-3 sm:p-4 lg:hidden space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Points</span>
-              <span className="font-bold text-[var(--brand-cyan)]">{formatNumber(userData.points || 0)}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Fragments</span>
-              <span className="font-bold text-[var(--brand-purple)]">{formatNumber(userData.fragments || 0)}</span>
+          <div className="border-b border-border p-4 lg:hidden">
+            <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl">
+              <Image 
+                src="/coin.png" 
+                alt="Points"
+                width={32} 
+                height={32}
+                className="w-8 h-8 object-contain"
+              />
+              <div>
+                <p className="font-bold text-foreground">{(userData.points || 0).toLocaleString()} PTS</p>
+                <p className="text-xs text-muted-foreground">= ${pointsToUSD(userData.points || 0)}</p>
+              </div>
             </div>
           </div>
         )}
@@ -122,9 +123,11 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
                         href={item.href}
                         onClick={onClose}
                         className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                          isActive ? "brand-gradient text-primary-foreground shadow-lg shadow-purple-500/20" : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                          isCollapsed && "lg:justify-center"
+                          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                          isActive 
+                            ? "brand-gradient text-white shadow-lg glow-primary" 
+                            : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                          isCollapsed && "lg:justify-center lg:px-2"
                         )}
                       >
                         <Icon className="h-5 w-5 shrink-0" />
@@ -139,16 +142,18 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
 
             {/* Admin Section */}
             {userData?.isAdmin && (
-              <li className="mt-4 pt-4 border-t border-border/50">
+              <li className="mt-4 pt-4 border-t border-border">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Link
                       href="/admin"
                       onClick={onClose}
                       className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                        pathname.startsWith("/admin") ? "brand-gradient text-primary-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                        isCollapsed && "lg:justify-center"
+                        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                        pathname.startsWith("/admin") 
+                          ? "brand-gradient text-white shadow-lg" 
+                          : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                        isCollapsed && "lg:justify-center lg:px-2"
                       )}
                     >
                       <Shield className="h-5 w-5 shrink-0" />
@@ -163,35 +168,35 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
         </nav>
 
         {/* Legal Links */}
-        <div className={cn("px-4 py-2 border-t border-border/50", isCollapsed && "lg:hidden")}>
-          <Link href="/privacy-policy" className="flex items-center gap-2 py-1.5 text-[10px] text-slate-500 hover:text-white transition-colors">
-            <ShieldCheck className="h-3.5 w-3.5" />
+        <div className={cn("px-4 py-3 border-t border-border", isCollapsed && "lg:hidden")}>
+          <Link href="/privacy-policy" className="flex items-center gap-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <ShieldCheck className="h-4 w-4" />
             <span>Privacy Policy</span>
           </Link>
-          <Link href="/terms-of-service" className="flex items-center gap-2 py-1.5 text-[10px] text-slate-500 hover:text-white transition-colors">
-            <Globe className="h-3.5 w-3.5" />
+          <Link href="/terms-of-service" className="flex items-center gap-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <Globe className="h-4 w-4" />
             <span>Terms of Service</span>
           </Link>
         </div>
 
         {/* Level Progress Footer */}
         <div className={cn(
-          "mt-auto border-t border-border p-4 bg-black/20",
+          "border-t border-border p-4 bg-secondary/20",
           isCollapsed && "lg:p-2 lg:flex lg:justify-center"
         )}>
           {userData && !isCollapsed ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-white font-bold">Level {currentLevel}</span>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-foreground font-bold">Level {currentLevel}</span>
                 <span className="text-muted-foreground font-mono">{Math.floor(levelProgress)}%</span>
               </div>
-              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+              <div className="h-2 w-full bg-secondary rounded-full overflow-hidden border border-border">
                 <div 
-                  className="h-full bg-gradient-to-r from-[#00D2FF] to-[#A65FFF] transition-all duration-700" 
+                  className="h-full brand-gradient transition-all duration-700" 
                   style={{ width: `${levelProgress}%` }} 
                 />
               </div>
-              <div className="text-[9px] text-center text-muted-foreground uppercase tracking-widest">
+              <div className="text-[10px] text-center text-muted-foreground uppercase tracking-wider">
                 {pointsInCurrentLevel.toLocaleString()} / {pointsPerLevel.toLocaleString()} XP
               </div>
             </div>
@@ -199,8 +204,8 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
             userData && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 border border-white/10 mx-auto cursor-help">
-                    <span className="text-[10px] font-black text-purple-400">L{currentLevel}</span>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary border border-border mx-auto cursor-help">
+                    <span className="text-xs font-black text-primary">L{currentLevel}</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="right">Level {currentLevel} - {Math.floor(levelProgress)}%</TooltipContent>

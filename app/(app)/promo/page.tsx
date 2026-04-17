@@ -10,7 +10,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Ticket, Gift, Coins, Zap, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Ticket, Gift, Loader2, CheckCircle, XCircle } from "lucide-react";
+import Image from "next/image";
+
+// Points to USD conversion
+const pointsToUSD = (points: number) => (points / 1000).toFixed(2);
 
 export default function PromoPage() {
   const { userData } = useAuth();
@@ -42,7 +46,6 @@ export default function PromoPage() {
 
       const promoData = promoSnap.data();
 
-      // Check if code is active
       if (!promoData.isActive) {
         toast.error("This promo code has expired");
         setRecentCodes([
@@ -53,7 +56,6 @@ export default function PromoPage() {
         return;
       }
 
-      // Check if user already used this code
       const usageRef = doc(db, "promoCodes", code.toUpperCase(), "usedBy", userData.uid);
       const usageSnap = await getDoc(usageRef);
 
@@ -67,7 +69,6 @@ export default function PromoPage() {
         return;
       }
 
-      // Check uses limit
       if (promoData.maxUses && promoData.usesCount >= promoData.maxUses) {
         toast.error("This promo code has reached its usage limit");
         setRecentCodes([
@@ -78,119 +79,100 @@ export default function PromoPage() {
         return;
       }
 
-      // Redeem the code
       await runTransaction(db, async (transaction) => {
         const userRef = doc(db, "users", userData.uid);
 
-        // Update user points/fragments
         const updates: Record<string, any> = {};
         if (promoData.pointsReward) {
           updates.points = (userData.points || 0) + promoData.pointsReward;
           updates.totalEarned = (userData.totalEarned || 0) + promoData.pointsReward;
         }
-        if (promoData.fragmentsReward) {
-          updates.fragments = (userData.fragments || 0) + promoData.fragmentsReward;
-        }
 
         transaction.update(userRef, updates);
 
-        // Mark code as used by this user
         transaction.set(usageRef, {
           userId: userData.uid,
           usedAt: serverTimestamp(),
         });
 
-        // Increment uses count
         transaction.update(promoRef, {
           usesCount: (promoData.usesCount || 0) + 1,
         });
       });
 
-      const rewardText = [];
-      if (promoData.pointsReward) rewardText.push(`${promoData.pointsReward} points`);
-      if (promoData.fragmentsReward) rewardText.push(`${promoData.fragmentsReward} fragments`);
+      const rewardText = promoData.pointsReward 
+        ? `${promoData.pointsReward.toLocaleString()} points ($${pointsToUSD(promoData.pointsReward)})`
+        : "Bonus";
 
-      toast.success(`Code redeemed! You received ${rewardText.join(" + ")}`);
+      toast.success(`Code redeemed! You received ${rewardText}`);
       setRecentCodes([
-        { code: code.toUpperCase(), success: true, reward: rewardText.join(" + ") },
+        { code: code.toUpperCase(), success: true, reward: rewardText },
         ...recentCodes.slice(0, 4),
       ]);
       setCode("");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to redeem code");
+    } catch {
+      toast.error("Failed to redeem code");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 sm:p-6 max-w-4xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Promo Codes</h1>
+        <h1 className="text-2xl font-bold text-foreground">Promo Codes</h1>
         <p className="text-muted-foreground">
-          Enter promo codes to receive bonus points and fragments!
+          Enter promo codes to receive bonus points!
         </p>
       </div>
 
       {/* Current Balance */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card className="border-border bg-card">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl brand-gradient">
-              <Coins className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Points Balance</p>
-              <p className="text-2xl font-bold text-[var(--brand-cyan)]">
-                {userData?.points.toLocaleString() || 0}
+      <Card className="glass-card">
+        <CardContent className="flex items-center gap-4 p-5">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-secondary border border-border">
+            <Image src="/coin.png" alt="Points" width={32} height={32} className="w-8 h-8 object-contain" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm text-muted-foreground">Current Balance</p>
+            <div className="flex items-baseline gap-2">
+              <p className="text-3xl font-black text-foreground">
+                {(userData?.points || 0).toLocaleString()}
               </p>
+              <span className="text-sm text-muted-foreground">PTS</span>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border bg-card">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--brand-purple)]">
-              <Zap className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Fragments</p>
-              <p className="text-2xl font-bold text-[var(--brand-purple)]">
-                {userData?.fragments.toLocaleString() || 0}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            <p className="text-xs text-primary">= ${pointsToUSD(userData?.points || 0)} USD</p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Redeem Code */}
-      <Card className="border-[var(--brand-cyan)]/30 bg-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Ticket className="h-5 w-5 text-[var(--brand-cyan)]" />
+      <Card className="glass-card border-primary/20">
+        <CardHeader className="p-5 pb-3">
+          <CardTitle className="flex items-center gap-2 text-foreground text-lg">
+            <Ticket className="h-5 w-5 text-primary" />
             Redeem Promo Code
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-muted-foreground">
             Enter your promo code below to claim your rewards
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleRedeem} className="flex gap-2">
+        <CardContent className="px-5 pb-5">
+          <form onSubmit={handleRedeem} className="flex gap-3">
             <Input
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               placeholder="Enter code..."
-              className="flex-1 font-mono text-center text-lg uppercase tracking-widest"
+              className="flex-1 font-mono text-center text-lg uppercase tracking-widest h-14 rounded-xl bg-secondary/30 border-border"
               maxLength={20}
             />
             <Button
               type="submit"
               disabled={loading || !code.trim()}
-              className="brand-gradient text-primary-foreground px-8"
+              className="brand-gradient text-white px-8 h-14 rounded-xl font-bold"
             >
               {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 "Redeem"
               )}
@@ -201,17 +183,17 @@ export default function PromoPage() {
 
       {/* Recent Redemptions */}
       {recentCodes.length > 0 && (
-        <Card className="border-border bg-card">
-          <CardHeader>
-            <CardTitle>Recent Attempts</CardTitle>
+        <Card className="glass-card">
+          <CardHeader className="p-5 pb-3">
+            <CardTitle className="text-foreground text-lg">Recent Attempts</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-5 pb-5">
             <div className="space-y-2">
               {recentCodes.map((item, index) => (
                 <div
                   key={index}
-                  className={`flex items-center justify-between rounded-lg p-3 ${
-                    item.success ? "bg-emerald-500/10" : "bg-destructive/10"
+                  className={`flex items-center justify-between rounded-xl p-4 ${
+                    item.success ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-destructive/10 border border-destructive/20"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -220,10 +202,10 @@ export default function PromoPage() {
                     ) : (
                       <XCircle className="h-5 w-5 text-destructive" />
                     )}
-                    <span className="font-mono font-medium">{item.code}</span>
+                    <span className="font-mono font-bold text-foreground">{item.code}</span>
                   </div>
                   <span
-                    className={`text-sm ${
+                    className={`text-sm font-medium ${
                       item.success ? "text-emerald-500" : "text-destructive"
                     }`}
                   >
@@ -237,29 +219,29 @@ export default function PromoPage() {
       )}
 
       {/* Info */}
-      <Card className="border-border bg-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Gift className="h-5 w-5 text-[var(--brand-purple)]" />
+      <Card className="glass-card">
+        <CardHeader className="p-5 pb-3">
+          <CardTitle className="flex items-center gap-2 text-foreground text-lg">
+            <Gift className="h-5 w-5 text-primary" />
             Where to Find Codes
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex items-start gap-2">
-              <span className="font-bold text-[var(--brand-cyan)]">1.</span>
+        <CardContent className="px-5 pb-5">
+          <ul className="space-y-3 text-sm text-muted-foreground">
+            <li className="flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">1</span>
               Follow our social media for exclusive promo codes.
             </li>
-            <li className="flex items-start gap-2">
-              <span className="font-bold text-[var(--brand-cyan)]">2.</span>
+            <li className="flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">2</span>
               Check your email for special promotional offers.
             </li>
-            <li className="flex items-start gap-2">
-              <span className="font-bold text-[var(--brand-cyan)]">3.</span>
+            <li className="flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">3</span>
               Participate in community events to win codes.
             </li>
-            <li className="flex items-start gap-2">
-              <span className="font-bold text-[var(--brand-cyan)]">4.</span>
+            <li className="flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">4</span>
               Each code can only be used once per account.
             </li>
           </ul>
