@@ -85,7 +85,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                     }
                   </span>
                   <span className="text-[10px] text-muted-foreground font-medium uppercase">
-                    {displayMode === "points" ? "PTS" : "USD"}
+                    {displayMode === "points" ? "MC" : "USD"}
                   </span>
                 </button>
 
