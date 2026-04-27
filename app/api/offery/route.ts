@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const API_KEY = "uccnjpr7cd6llvbomgr04no1hofoobb1";
+  const API_KEY = "c9dow9gf6dwikkp48nnlxxynr24ng6";
   const url = `https://offery.io/api/?apikey=${API_KEY}`;
 
   try {
