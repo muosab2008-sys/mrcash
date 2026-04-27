@@ -17,6 +17,30 @@ export const metadata: Metadata = {
     icon: '/logo.png',
     apple: '/logo.png',
   },
+  // --- إضافة إعدادات الصورة هنا ---
+  openGraph: {
+    title: 'MrCash - Earn Rewards & Cash',
+    description: 'Share your link and get paid! The best platform to earn rewards online.',
+    url: 'https://mrcash.vercel.app',
+    siteName: 'MrCash',
+    images: [
+      {
+        url: '/og-image.png', // تأكد أن الصورة بهذا الاسم داخل مجلد public
+        width: 1200,
+        height: 630,
+        alt: 'MrCash Preview',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'MrCash - Earn Rewards & Cash',
+    description: 'Earn real cash rewards by completing tasks.',
+    images: ['/og-image.png'],
+  },
+  // ------------------------------
 }
 
 export const viewport: Viewport = {
