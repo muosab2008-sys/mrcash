@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  // المفتاح الكامل كما في صورتك (32 حرف تماماً)
+  // المفتاح الخاص بك من لوحة تحكم Offery
   const API_KEY = "uccnjpr7cd6llvbomgr04no1hofoobb1";
 
   try {
-    // الرابط الرسمي من الدليل: apikey فقط
     const url = `https://offery.io/api/?apikey=${API_KEY}`;
     
     const response = await fetch(url, {
@@ -16,12 +15,17 @@ export async function GET() {
       cache: 'no-store'
     });
 
-    const data = await response.json();
+    const result = await response.json();
     
-    // إرجاع البيانات للصفحة
-    return NextResponse.json(data);
+    // التعديل هنا: نرسل result داخل كائن يحتوي على status و data
+    // لكي يتوافق مع سطر (result.status === "success" && Array.isArray(result.data)) في صفحتك
+    return NextResponse.json({
+      status: "success",
+      data: result 
+    });
 
   } catch (error) {
+    console.error("Offery Error:", error);
     return NextResponse.json({ status: "error", message: "Fetch failed" }, { status: 500 });
   }
 }
