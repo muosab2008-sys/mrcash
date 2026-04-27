@@ -197,7 +197,7 @@ export default function EarnPage() {
       pubscale: `https://wow.pubscale.com?app_id=99429038&user_id=${uid}`,
       gemiad: `https://gemiwall.com/69c1622e82a1cd59c17a2e21/${uid}`,
       revtoo: `https://revtoo.com/offerwall/xol9xws01wsarkpuv7miwdair6ikvu/${uid}`,
-      offery: `https://offery.io/offerwall/uccnjpr7cd6llvbomgr04no1hofoobb1/${uid}`,
+      offery: `https://offery.io/offerwall/c9dow9gf6dwikkp48nnlxxynr24ng6/${uid}`,
       adtogame: `https://adtowall.com/7683/${uid}`,
       pixylabs: `https://offerwall.pixylabs.co/230?uid=${uid}`,
       adlexy: `https://adlexy.com/offerwall/7czsknu4bdnqutvkilmntorwwr0s2s/${uid}`,
