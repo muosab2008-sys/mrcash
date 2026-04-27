@@ -1,20 +1,34 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const API_KEY = "c9dow9gf6dwikkp48nnlxxynr24ng6";
+  // يفضل وضع هذا في env variable
+  const API_KEY = process.env.OFFERY_API_KEY || "c9dow9gf6dwikkp48nnlxxynr24ng6";
   const url = `https://offery.io/api/?apikey=${API_KEY}`;
 
   try {
-    const response = await fetch(url, { cache: 'no-store' });
+    const response = await fetch(url, { 
+      next: { revalidate: 300 } // تحديث العروض كل 5 دقائق بدل كل ثانية لتقليل الضغط
+    });
+    
+    if (!response.ok) throw new Error('Failed to fetch from Offery');
+
     const result = await response.json();
 
-    // هنا نتأكد أننا نرسل "success" و "data" مهما كان شكل رد الشركة
+    // تنظيم البيانات لضمان عدم حدوث خطأ في الواجهة (Frontend)
+    const offers = Array.isArray(result) ? result : (result.offers || []);
+
     return NextResponse.json({
       status: "success",
-      data: Array.isArray(result) ? result : (result.offers || [])
+      count: offers.length,
+      data: offers
     });
 
   } catch (error) {
-    return NextResponse.json({ status: "error", data: [] });
+    console.error("Offery API Error:", error);
+    return NextResponse.json({ 
+      status: "error", 
+      message: "Could not load offers",
+      data: [] 
+    }, { status: 500 });
   }
 }
