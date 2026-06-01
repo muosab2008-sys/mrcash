@@ -17,7 +17,6 @@ import {
   X,
   ShieldCheck,
   Globe,
-  Settings,
   Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,14 +39,12 @@ const pointsToUSD = (points: number) => (points / 1000).toFixed(2);
 
 const navItems = [
   { href: "/", label: "Earn", icon: Coins },
-  { href: "/levels", label: "Levels", icon: Trophy },
   { href: "/leaderboard", label: "Leaderboard", icon: Crown },
   { href: "/referrals", label: "Referrals", icon: Users },
   { href: "/promo", label: "Promo Codes", icon: Ticket },
   { href: "/cashout", label: "Cashout", icon: Wallet },
   { href: "/offers", label: "Offers", icon: LayoutGrid },
   { href: "/profile", label: "Profile", icon: User },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) {

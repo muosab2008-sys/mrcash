@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verify } from "otplib";
+import { authenticator } from "otplib";
 import { adminDb } from "@/lib/firebase-admin";
+
+// Configure TOTP with a wider time window to handle clock drift
+authenticator.options = {
+  window: 2, // Allow codes from 2 steps before and after current time (2 minutes tolerance)
+  step: 30, // Standard 30-second step
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,15 +19,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the TOTP code
-    const isValid = verify({
+    // Verify the TOTP code with window tolerance for clock synchronization issues
+    const isValid = authenticator.verify({
       token: code,
       secret: secret,
     });
 
     if (!isValid) {
       return NextResponse.json(
-        { error: "Invalid verification code" },
+        { error: "Invalid verification code. Please try again or check your device time settings." },
         { status: 400 }
       );
     }

@@ -1,18 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Download, X, Smartphone } from "lucide-react";
+import { Download, X, Smartphone, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-export function PWAInstallButton({ variant = "button" }: { variant?: "button" | "card" }) {
+export function PWAInstallButton({ variant = "button" }: { variant?: "button" | "card" | "header" }) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
     // Check if already installed
@@ -22,15 +24,18 @@ export function PWAInstallButton({ variant = "button" }: { variant?: "button" | 
     }
 
     // Check if running on iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    setIsIOS(isIOSDevice);
     const isInStandaloneMode = window.matchMedia("(display-mode: standalone)").matches;
     
-    if (isIOS && !isInStandaloneMode) {
-      // Show iOS-specific install instructions
+    if (isIOSDevice && !isInStandaloneMode) {
+      // Check if user has dismissed the prompt before
       const hasSeenIOSPrompt = localStorage.getItem("ios_pwa_prompt_seen");
       if (!hasSeenIOSPrompt) {
-        setShowIOSPrompt(true);
+        // Delay showing the prompt
+        setTimeout(() => setShowIOSPrompt(true), 5000);
       }
+      setIsInstallable(true);
     }
 
     // Listen for the beforeinstallprompt event (Android/Chrome)
@@ -57,6 +62,11 @@ export function PWAInstallButton({ variant = "button" }: { variant?: "button" | 
   }, []);
 
   const handleInstallClick = async () => {
+    if (isIOS) {
+      setShowIOSPrompt(true);
+      return;
+    }
+    
     if (!deferredPrompt) return;
 
     try {
@@ -80,65 +90,193 @@ export function PWAInstallButton({ variant = "button" }: { variant?: "button" | 
   };
 
   // Don't show if already installed
-  if (isInstalled) return null;
-
-  // iOS Install Prompt
-  if (showIOSPrompt) {
-    return (
-      <div className="fixed bottom-0 inset-x-0 z-[150] p-4 animate-in slide-in-from-bottom duration-500">
-        <div className="max-w-md mx-auto glass-card p-4 shadow-2xl">
-          <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-xl brand-gradient flex items-center justify-center shrink-0">
-              <Smartphone className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-bold text-foreground text-sm">Install App</h3>
-                <button onClick={dismissIOSPrompt} className="text-muted-foreground hover:text-foreground">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
-                To install MrCash on your device: tap the share icon 
-                <span className="inline-block mx-1 px-1.5 py-0.5 bg-secondary rounded text-[10px]">Share</span>
-                then select &quot;Add to Home Screen&quot;
-              </p>
-            </div>
+  if (isInstalled) {
+    if (variant === "card") {
+      return (
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+            <Check className="w-5 h-5 text-emerald-500" />
+          </div>
+          <div className="text-left">
+            <p className="font-bold text-emerald-500 text-sm">App Installed</p>
+            <p className="text-xs text-muted-foreground">MrCash is ready to use</p>
           </div>
         </div>
-      </div>
-    );
+      );
+    }
+    return null;
   }
 
   // Don't show if not installable (on desktop/unsupported browsers)
   if (!isInstallable) return null;
 
+  // Header variant - compact button
+  if (variant === "header") {
+    return (
+      <>
+        <Button
+          onClick={handleInstallClick}
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-xl hover:bg-secondary text-muted-foreground hover:text-foreground"
+          title="Install App"
+        >
+          <Download className="w-4 h-4" />
+        </Button>
+        
+        {/* iOS Install Modal */}
+        {showIOSPrompt && (
+          <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-2xl animate-in slide-in-from-bottom duration-300">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl brand-gradient flex items-center justify-center shrink-0">
+                  <Smartphone className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-foreground">Install MrCash</h3>
+                    <button onClick={dismissIOSPrompt} className="text-muted-foreground hover:text-foreground p-1">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Add to your home screen for the best experience
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">1</span>
+                  <span>{"Tap the Share button in your browser"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">2</span>
+                  <span>{"Scroll and tap \"Add to Home Screen\""}</span>
+                </div>
+              </div>
+              <Button
+                onClick={dismissIOSPrompt}
+                className="w-full mt-4 h-11 rounded-xl brand-gradient text-white font-medium"
+              >
+                Got it
+              </Button>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
   // Card variant for sidebar/profile
   if (variant === "card") {
     return (
-      <button
-        onClick={handleInstallClick}
-        className="w-full flex items-center gap-3 p-4 rounded-xl glass-card hover:bg-secondary/50 transition-colors group"
-      >
-        <div className="w-10 h-10 rounded-xl brand-gradient flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-          <Download className="w-5 h-5 text-white" />
-        </div>
-        <div className="text-left">
-          <p className="font-bold text-foreground text-sm">Install App</p>
-          <p className="text-xs text-muted-foreground">Add MrCash to your device</p>
-        </div>
-      </button>
+      <>
+        <button
+          onClick={handleInstallClick}
+          className="w-full flex items-center gap-3 p-4 rounded-xl bg-secondary/50 border border-border hover:bg-secondary/80 transition-colors group"
+        >
+          <div className="w-10 h-10 rounded-xl brand-gradient flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <Download className="w-5 h-5 text-white" />
+          </div>
+          <div className="text-left">
+            <p className="font-bold text-foreground text-sm">Install App</p>
+            <p className="text-xs text-muted-foreground">Add MrCash to your device</p>
+          </div>
+        </button>
+        
+        {/* iOS Install Modal */}
+        {showIOSPrompt && (
+          <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-2xl animate-in slide-in-from-bottom duration-300">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl brand-gradient flex items-center justify-center shrink-0">
+                  <Smartphone className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-foreground">Install MrCash</h3>
+                    <button onClick={dismissIOSPrompt} className="text-muted-foreground hover:text-foreground p-1">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Add to your home screen for the best experience
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">1</span>
+                  <span>{"Tap the Share button in your browser"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">2</span>
+                  <span>{"Scroll and tap \"Add to Home Screen\""}</span>
+                </div>
+              </div>
+              <Button
+                onClick={dismissIOSPrompt}
+                className="w-full mt-4 h-11 rounded-xl brand-gradient text-white font-medium"
+              >
+                Got it
+              </Button>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 
   // Default button variant
   return (
-    <button
-      onClick={handleInstallClick}
-      className="flex items-center gap-2 px-4 py-2.5 rounded-xl brand-gradient text-white font-medium text-sm hover:opacity-90 transition-opacity shadow-lg glow-primary"
-    >
-      <Download className="w-4 h-4" />
-      <span>Install App</span>
-    </button>
+    <>
+      <button
+        onClick={handleInstallClick}
+        className="flex items-center gap-2 px-4 py-2.5 rounded-xl brand-gradient text-white font-medium text-sm hover:opacity-90 transition-opacity shadow-lg glow-primary"
+      >
+        <Download className="w-4 h-4" />
+        <span>Install App</span>
+      </button>
+      
+      {/* iOS Install Modal */}
+      {showIOSPrompt && (
+        <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-2xl animate-in slide-in-from-bottom duration-300">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-12 h-12 rounded-xl brand-gradient flex items-center justify-center shrink-0">
+                <Smartphone className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-foreground">Install MrCash</h3>
+                  <button onClick={dismissIOSPrompt} className="text-muted-foreground hover:text-foreground p-1">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Add to your home screen for the best experience
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">1</span>
+                <span>{"Tap the Share button in your browser"}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">2</span>
+                <span>{"Scroll and tap \"Add to Home Screen\""}</span>
+              </div>
+            </div>
+            <Button
+              onClick={dismissIOSPrompt}
+              className="w-full mt-4 h-11 rounded-xl brand-gradient text-white font-medium"
+            >
+              Got it
+            </Button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

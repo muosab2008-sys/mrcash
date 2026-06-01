@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateSecret, generateURI } from "otplib";
+import { authenticator } from "otplib";
 import QRCode from "qrcode";
+
+// Configure TOTP options for consistency
+authenticator.options = {
+  window: 2,
+  step: 30,
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,17 +20,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate a new TOTP secret
-    const secret = generateSecret();
+    const secret = authenticator.generateSecret();
 
     // Create the otpauth URL for Google Authenticator
-    const otpauthUrl = generateURI({
-      issuer: "MrCash",
-      label: email,
-      secret: secret,
-      algorithm: "SHA1",
-      digits: 6,
-      period: 30,
-    });
+    const otpauthUrl = authenticator.keyuri(email, "MrCash", secret);
 
     // Generate QR code as data URL
     const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl, {
