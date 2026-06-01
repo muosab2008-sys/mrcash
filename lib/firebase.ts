@@ -4,9 +4,9 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  authDomain: "mrcash-com.firebaseapp.com",
+  authDomain: "mrcash.app",
   projectId: "mrcash-com",
-  storageBucket: "mrcash-com.firebasestorage.app",
+  storageBucket: "mrcash.app",
   messagingSenderId: "348374269609",
   appId: "1:348374269609:web:9fed2a4f69f2c0f00ff3b8",
   measurementId: "G-9ZZLG53Z64"
