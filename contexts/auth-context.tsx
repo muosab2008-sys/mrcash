@@ -46,6 +46,7 @@ interface AuthContextType {
   user: User | null;
   userData: UserData | null;
   loading: boolean;
+  firebaseReady: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   register: (email: string, password: string, username: string, photoURL?: string, referralCode?: string) => Promise<void>;
@@ -65,9 +66,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [firebaseReady, setFirebaseReady] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
+    // Check if Firebase is initialized
+    if (!auth || !db) {
+      setLoading(false);
+      setFirebaseReady(false);
+      return;
+    }
+
+    setFirebaseReady(true);
+
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
 
@@ -113,10 +124,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router]);
 
   const login = async (email: string, password: string) => {
+    if (!auth) throw new Error("Firebase not initialized");
     await signInWithEmailAndPassword(auth, email, password);
   };
 
   const loginWithGoogle = async () => {
+    if (!auth || !db) throw new Error("Firebase not initialized");
     const result = await signInWithPopup(auth, googleProvider);
     const firebaseUser = result.user;
 
@@ -151,6 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (email: string, password: string, username: string, photoURL?: string, referralCode?: string) => {
+    if (!auth || !db) throw new Error("Firebase not initialized");
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
 
@@ -184,22 +198,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    if (!auth) throw new Error("Firebase not initialized");
     await signOut(auth);
     router.push("/login");
   };
 
   const resetPassword = async (email: string) => {
+    if (!auth) throw new Error("Firebase not initialized");
     await sendPasswordResetEmail(auth, email);
   };
 
   const updateUserProfile = async (username: string) => {
-    if (!user) throw new Error("No user logged in");
+    if (!user || !db) throw new Error("No user logged in or Firebase not initialized");
     await updateProfile(user, { displayName: username });
     await setDoc(doc(db, "users", user.uid), { username }, { merge: true });
   };
 
   const updateUserEmail = async (newEmail: string) => {
-    if (!user) throw new Error("No user logged in");
+    if (!user || !db) throw new Error("No user logged in or Firebase not initialized");
     await updateEmail(user, newEmail);
     await setDoc(doc(db, "users", user.uid), { email: newEmail }, { merge: true });
   };
@@ -210,7 +226,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateUserAvatar = async (photoURL: string) => {
-    if (!user) throw new Error("No user logged in");
+    if (!user || !db) throw new Error("No user logged in or Firebase not initialized");
     await updateProfile(user, { photoURL });
     await setDoc(doc(db, "users", user.uid), { photoURL }, { merge: true });
   };
@@ -221,6 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         userData,
         loading,
+        firebaseReady,
         login,
         loginWithGoogle,
         register,
