@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verify } from "otplib";
+import { authenticator } from "otplib";
 import { adminDb } from "@/lib/firebase-admin";
+
+// Configure authenticator with wider time window for better compatibility
+authenticator.options = {
+  window: 2, // Allow 2 steps before and after (2 minutes tolerance)
+  step: 30, // 30 second steps
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,13 +19,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the TOTP code
-    const isValid = verify({
-      token: code,
-      secret: secret,
-    });
+    // Clean the code - remove any spaces
+    const cleanCode = code.toString().replace(/\s/g, "");
+
+    // Verify the TOTP code with wider time window
+    const isValid = authenticator.check(cleanCode, secret);
 
     if (!isValid) {
+      console.log("[v0] 2FA setup verification failed for user:", userId);
       return NextResponse.json(
         { error: "Invalid verification code" },
         { status: 400 }

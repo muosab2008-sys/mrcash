@@ -40,6 +40,7 @@ export interface UserData {
   createdAt: Date;
   twoFactorEnabled: boolean;
   twoFactorSecret?: string;
+  needsAvatarSelection?: boolean;
 }
 
 interface AuthContextType {
@@ -47,7 +48,7 @@ interface AuthContextType {
   userData: UserData | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
+  loginWithGoogle: () => Promise<{ isNewUser: boolean; needsAvatarSelection?: boolean }>;
   register: (email: string, password: string, username: string, photoURL?: string, referralCode?: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -125,12 +126,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userSnap = await getDoc(userDocRef);
 
     if (!userSnap.exists()) {
-      // Create new user document for Google sign-in
+      // Create new user document for Google sign-in - without photoURL to force avatar selection
       await setDoc(userDocRef, {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
         username: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "User",
-        photoURL: firebaseUser.photoURL || null,
+        photoURL: null, // Set to null to force avatar selection
+        needsAvatarSelection: true, // Flag to indicate avatar selection needed
         points: 0,
         fragments: 0,
         level: 1,
@@ -141,13 +143,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isBanned: false,
         createdAt: serverTimestamp(),
       });
+      // Redirect to avatar selection will be handled by the component
+      return { isNewUser: true };
     } else {
-      // Update photoURL if changed for existing Google users
+      // Existing user - check if they need avatar selection
       const existingData = userSnap.data();
-      if (firebaseUser.photoURL && existingData?.photoURL !== firebaseUser.photoURL) {
-        await setDoc(userDocRef, { photoURL: firebaseUser.photoURL }, { merge: true });
+      if (existingData?.needsAvatarSelection || !existingData?.photoURL) {
+        return { isNewUser: true, needsAvatarSelection: true };
       }
     }
+    return { isNewUser: false };
   };
 
   const register = async (email: string, password: string, username: string, photoURL?: string, referralCode?: string) => {

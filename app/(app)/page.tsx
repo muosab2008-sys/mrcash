@@ -8,17 +8,13 @@ import { collection, query, orderBy, onSnapshot, doc, getDoc, setDoc, updateDoc,
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X, ArrowLeft, Maximize2, ThumbsUp, ThumbsDown, Flame, Trophy, TrendingUp } from "lucide-react"; 
-
+import { X, ArrowLeft, Maximize2, ThumbsUp, ThumbsDown, Flame, Trophy, TrendingUp, Sparkles, Zap } from "lucide-react"; 
+import { Button } from "@/components/ui/button";
 import Image from "next/image";
-
 
 // Helper function to convert points to USD (1000 points = $1)
 const pointsToUSD = (points: number) => (points / 1000).toFixed(2);
-
-
 
 interface Offerwall { 
   id: string; 
@@ -75,7 +71,6 @@ export default function EarnPage() {
     return () => unsubscribe();
   }, []);
 
-  // Subscribe to real-time votes for each offerwall
   useEffect(() => {
     const unsubscribes: (() => void)[] = [];
 
@@ -114,33 +109,28 @@ export default function EarnPage() {
     };
   }, [userData?.uid]);
 
-  // Handle vote with optimistic UI and debounce
   const handleVote = async (wallId: string, voteType: "like" | "dislike", e: React.MouseEvent) => {
     e.stopPropagation();
     if (!userData?.uid || votingId) return;
     
     setVotingId(wallId);
     
-    // Optimistic update
     const currentVote = votes[wallId] || { likes: 0, dislikes: 0, userVote: null };
     const newVotes = { ...votes };
     
     if (currentVote.userVote === voteType) {
-      // Remove vote
       newVotes[wallId] = {
         ...currentVote,
         [voteType === "like" ? "likes" : "dislikes"]: Math.max(0, currentVote[voteType === "like" ? "likes" : "dislikes"] - 1),
         userVote: null,
       };
     } else if (currentVote.userVote) {
-      // Change vote
       newVotes[wallId] = {
         likes: voteType === "like" ? currentVote.likes + 1 : Math.max(0, currentVote.likes - 1),
         dislikes: voteType === "dislike" ? currentVote.dislikes + 1 : Math.max(0, currentVote.dislikes - 1),
         userVote: voteType,
       };
     } else {
-      // New vote
       newVotes[wallId] = {
         ...currentVote,
         [voteType === "like" ? "likes" : "dislikes"]: currentVote[voteType === "like" ? "likes" : "dislikes"] + 1,
@@ -224,18 +214,18 @@ export default function EarnPage() {
   if (activeOffer) {
     return (
       <div className="fixed inset-0 z-[100] bg-background flex flex-col">
-        <div className="flex items-center justify-between p-4 bg-card/90 backdrop-blur-xl border-b border-border">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => setActiveOffer(null)} className="text-foreground rounded-xl hover:bg-secondary">
+        <div className="flex items-center justify-between p-3 sm:p-4 bg-card/90 backdrop-blur-xl border-b border-border">
+          <div className="flex items-center gap-3 min-w-0">
+            <Button variant="ghost" size="icon" onClick={() => setActiveOffer(null)} className="text-foreground rounded-xl hover:bg-secondary shrink-0 h-9 w-9">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <span className="font-bold text-foreground text-sm">{activeOffer.title}</span>
+            <span className="font-bold text-foreground text-sm truncate">{activeOffer.title}</span>
           </div>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="icon" onClick={() => window.open(activeOffer.url, '_blank')} className="text-muted-foreground rounded-xl hover:bg-secondary">
+          <div className="flex gap-2 shrink-0">
+            <Button variant="ghost" size="icon" onClick={() => window.open(activeOffer.url, '_blank')} className="text-muted-foreground rounded-xl hover:bg-secondary h-9 w-9">
               <Maximize2 className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => setActiveOffer(null)} className="text-muted-foreground rounded-xl hover:bg-secondary">
+            <Button variant="ghost" size="icon" onClick={() => setActiveOffer(null)} className="text-muted-foreground rounded-xl hover:bg-secondary h-9 w-9">
               <X className="h-5 w-5" />
             </Button>
           </div>
@@ -246,139 +236,202 @@ export default function EarnPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full p-4 sm:p-6"> 
-      {/* Balance and Level Cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-        {/* Balance Card - Points Display */}
-        <Card className="backdrop-blur-xl bg-background/40 border border-white/10 overflow-hidden hover-lift">
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-secondary border border-border">
-              <Image src="/coin.png" alt="Points" width={32} height={32} className="w-8 h-8 object-contain" />
+    <div className="flex flex-col gap-4 sm:gap-6 w-full p-3 sm:p-4 lg:p-6 pb-24 lg:pb-6"> 
+      {/* Welcome Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-accent/10 to-transparent border border-primary/20 p-4 sm:p-6">
+        <div className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl brand-gradient flex items-center justify-center shadow-lg glow-primary shrink-0">
+              <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-black text-foreground">
+                Welcome{userData?.username ? `, ${userData.username}` : ""}!
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">Complete tasks and earn real rewards</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Badge className="bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 rounded-lg px-3 py-1.5 text-xs font-bold">
+              <Zap className="w-3 h-3 mr-1" />
+              {offerwalls.length} Active Offers
+            </Badge>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        {/* Balance Card */}
+        <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 hover:border-primary/30 transition-all">
+          <CardContent className="flex items-center gap-3 p-3 sm:p-4">
+            <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-secondary border border-border shrink-0">
+              <Image src="/coin.png" alt="Points" width={24} height={24} className="w-6 h-6 sm:w-7 sm:h-7 object-contain" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm text-muted-foreground font-medium">Available Balance</p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-3xl font-black text-foreground">{(userData?.points ?? 0).toLocaleString()}</p>
-                <span className="text-sm text-muted-foreground">MC</span>
-              </div>
-              <p className="text-xs text-primary font-medium">= ${pointsToUSD(userData?.points ?? 0)} USD</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">Balance</p>
+              <p className="text-lg sm:text-2xl font-black text-foreground truncate">{(userData?.points ?? 0).toLocaleString()}</p>
+              <p className="text-[10px] text-primary font-medium">= ${pointsToUSD(userData?.points ?? 0)}</p>
             </div>
           </CardContent>
         </Card>
 
         {/* Level Card */}
-        <Card className="backdrop-blur-xl bg-background/40 border border-white/10 overflow-hidden hover-lift">
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl brand-gradient shadow-lg glow-primary">
-              <Trophy className="h-7 w-7 text-white" />
+        <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 hover:border-amber-500/30 transition-all">
+          <CardContent className="flex items-center gap-3 p-3 sm:p-4">
+            <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20 shrink-0">
+              <Trophy className="h-5 w-5 sm:h-6 sm:w-6 text-amber-500" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm text-muted-foreground font-medium">Current Level</p>
-              <p className="text-3xl font-black text-foreground">Level {currentLevel}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Level</p>
+              <p className="text-lg sm:text-2xl font-black text-amber-500">{currentLevel}</p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Total Earned Card */}
+        <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 hover:border-primary/30 transition-all">
+          <CardContent className="flex items-center gap-3 p-3 sm:p-4">
+            <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl brand-gradient shadow-lg glow-primary shrink-0">
+              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">Total Earned</p>
+              <p className="text-lg sm:text-2xl font-black text-primary truncate">{(userData?.totalEarned || 0).toLocaleString()}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Level Progress Card - Hidden on mobile, visible on desktop */}
+        <Card className="hidden lg:block bg-gradient-to-br from-card to-card/50 border-border/50">
+          <CardContent className="p-4 h-full flex flex-col justify-center">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-muted-foreground font-medium">Level Progress</p>
+              <p className="text-xs font-bold text-foreground">{Math.floor(levelProgress)}%</p>
+            </div>
+            <div className="h-2.5 w-full bg-secondary rounded-full overflow-hidden border border-border">
+              <div className="h-full brand-gradient transition-all duration-500 rounded-full" style={{ width: `${levelProgress}%` }} />
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1.5">
+              {pointsInCurrentLevel.toLocaleString()} / {pointsPerLevel.toLocaleString()} MC
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Level Progress */}
-      <Card className="backdrop-blur-xl bg-background/40 border border-white/10">
-        <CardContent className="p-5">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0 text-foreground font-bold text-sm">
-              <TrendingUp className="h-5 w-5 text-primary shrink-0" />
-              <span>Level {currentLevel} Progress</span>
+      {/* Level Progress - Mobile only */}
+      <Card className="lg:hidden bg-gradient-to-br from-card to-card/50 border-border/50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-amber-500" />
+              <span className="text-sm font-bold text-foreground">Level {currentLevel}</span>
             </div>
-            <span className="text-xs font-medium text-muted-foreground">{pointsInCurrentLevel.toLocaleString()} / {pointsPerLevel.toLocaleString()} MC</span>
+            <span className="text-xs text-muted-foreground">{pointsInCurrentLevel.toLocaleString()} / {pointsPerLevel.toLocaleString()}</span>
           </div>
-          <div className="h-3 w-full bg-secondary rounded-xl overflow-hidden border border-border">
-            <div className="h-full brand-gradient transition-all duration-500 rounded-xl" style={{ width: `${levelProgress}%` }}></div>
+          <div className="h-2.5 w-full bg-secondary rounded-full overflow-hidden border border-border">
+            <div className="h-full brand-gradient transition-all duration-500 rounded-full" style={{ width: `${levelProgress}%` }} />
           </div>
         </CardContent>
       </Card>
 
       {/* Offerwalls Section */}
-      <div>
-        <h2 className="mb-4 text-xl font-black text-foreground tracking-tight">Earn MC</h2>
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg sm:text-xl font-black text-foreground tracking-tight">Earn MC</h2>
+          <Badge variant="outline" className="text-[10px] border-border text-muted-foreground">
+            {offerwalls.length} Available
+          </Badge>
+        </div>
+        
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {loading ? ( 
-            <p className="col-span-full text-sm text-muted-foreground text-center py-8">Loading...</p> 
+            Array.from({ length: 8 }).map((_, i) => (
+              <Card key={i} className="bg-card/50 border-border/50 p-4 animate-pulse">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-secondary" />
+                  <div className="h-4 w-20 bg-secondary rounded" />
+                  <div className="h-2 w-full bg-secondary rounded" />
+                </div>
+              </Card>
+            ))
           ) : (
             offerwalls.map((wall) => {
               const wallVotes = votes[wall.id] || { likes: wall.likes || 0, dislikes: wall.dislikes || 0, userVote: null };
               const isVoting = votingId === wall.id;
               
               return (
-                <div 
+                <Card 
                   key={wall.id} 
                   onClick={() => { const url = getDynamicUrl(wall); if (url !== "#") setActiveOffer({ url, title: wall.name }); }}
-                  className="relative backdrop-blur-xl bg-background/40 border border-white/10 p-5 rounded-2xl cursor-pointer transition-all hover:border-primary/30 hover-lift group"
+                  className="relative bg-gradient-to-br from-card to-card/50 border-border/50 p-3 sm:p-4 cursor-pointer transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 group"
                 >
                   {/* Hot Badge */}
                   {wall.isHot && (
-                    <div className="absolute top-4 right-4">
-                      <Badge className="bg-orange-500/10 text-orange-500 border border-orange-500/20 font-bold text-[10px] px-2 py-1 rounded-lg flex items-center gap-1">
-                        <Flame className="h-3 w-3" />
-                        Hot
+                    <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
+                      <Badge className="bg-orange-500/20 text-orange-500 border border-orange-500/30 font-bold text-[9px] px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                        <Flame className="h-2.5 w-2.5" />
+                        <span className="hidden sm:inline">Hot</span>
                       </Badge>
                     </div>
                   )}
 
                   {/* Logo and Name */}
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="h-12 w-12 rounded-xl overflow-hidden bg-white/5 p-2 shrink-0 border border-white/10">
-                      <img src={wall.logoUrl} alt={wall.name} className="h-full w-full object-contain" />
+                  <div className="flex flex-col items-center gap-3 mb-3">
+                    <div className="h-11 w-11 sm:h-14 sm:w-14 rounded-xl overflow-hidden bg-secondary p-2 border border-border group-hover:border-primary/30 transition-all">
+                      <img src={wall.logoUrl} alt={wall.name} className="h-full w-full object-contain group-hover:scale-110 transition-transform duration-300" />
                     </div>
-                    <span className="font-bold text-foreground text-lg">{wall.name}</span>
+                    <span className="font-bold text-foreground text-xs sm:text-sm text-center line-clamp-1">{wall.name}</span>
                   </div>
 
                   {/* Progress Bar */}
-                  <div className="mb-4">
-                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden flex border border-white/10">
+                  <div className="mb-3">
+                    <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden flex">
                       <div 
-                        className="h-full brand-gradient transition-all duration-500" 
+                        className="h-full bg-emerald-500 transition-all duration-500" 
                         style={{ width: `${getLikePercentage(wallVotes.likes, wallVotes.dislikes)}%` }}
-                      ></div>
+                      />
                       <div 
-                        className="h-full bg-white/10" 
+                        className="h-full bg-destructive/50" 
                         style={{ width: `${100 - getLikePercentage(wallVotes.likes, wallVotes.dislikes)}%` }}
-                      ></div>
+                      />
                     </div>
                   </div>
 
-                  {/* Interactive Like/Dislike Buttons */}
-                  <div className="flex items-center justify-between">
+                  {/* Like/Dislike Buttons */}
+                  <div className="flex items-center justify-between gap-2">
                     <button
                       disabled={!userData?.uid || isVoting}
                       onClick={(e) => handleVote(wall.id, "like", e)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                      className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg transition-all text-xs ${
                         wallVotes.userVote === "like"
                           ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                          : "bg-white/5 text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10 border border-transparent"
+                          : "bg-secondary text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10 border border-transparent"
                       } ${isVoting ? "opacity-50" : ""}`}
                     >
-                      <ThumbsUp className="h-3.5 w-3.5" />
-                      <span className="font-medium text-xs">{wallVotes.likes}</span>
+                      <ThumbsUp className="h-3 w-3" />
+                      <span className="font-medium">{wallVotes.likes}</span>
                     </button>
                     <button
                       disabled={!userData?.uid || isVoting}
                       onClick={(e) => handleVote(wall.id, "dislike", e)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                      className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg transition-all text-xs ${
                         wallVotes.userVote === "dislike"
                           ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                          : "bg-white/5 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 border border-transparent"
+                          : "bg-secondary text-muted-foreground hover:text-red-400 hover:bg-red-500/10 border border-transparent"
                       } ${isVoting ? "opacity-50" : ""}`}
                     >
-                      <ThumbsDown className="h-3.5 w-3.5" />
-                      <span className="font-medium text-xs">{wallVotes.dislikes}</span>
+                      <ThumbsDown className="h-3 w-3" />
+                      <span className="font-medium">{wallVotes.dislikes}</span>
                     </button>
                   </div>
-                </div>
+                </Card>
               );
             })
           )}
         </div>
       </div>
-
-      </div>
+    </div>
   );
 }

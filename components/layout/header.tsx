@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
-import { Settings, Menu, ArrowRightLeft, Shield, Info, X } from "lucide-react";
+import { Menu, ArrowRightLeft, Shield, Info, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,6 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NotificationPanel } from "@/components/notifications/notification-panel";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { PWAInstallButton } from "@/components/pwa-install-button";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -33,8 +35,8 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="flex h-14 sm:h-16 items-center justify-between px-3 sm:px-6">
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
+        <div className="flex h-14 sm:h-16 items-center justify-between px-3 sm:px-4 lg:px-6 gap-2">
           
           {/* Left: Menu & Logo */}
           <div className="flex items-center gap-2 min-w-0">
@@ -47,7 +49,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               <Menu className="h-5 w-5" />
             </Button>
 
-            <Link href="/" className="lg:hidden flex items-center gap-2.5 min-w-0 group">
+            <Link href="/" className="lg:hidden flex items-center gap-2 min-w-0 group">
               <Image 
                 src="/logo.png" 
                 alt="MrCash Logo"
@@ -56,35 +58,40 @@ export function Header({ onMenuClick }: HeaderProps) {
                 priority
                 className="object-contain w-7 h-7 shrink-0 transition-transform group-hover:scale-105"
               />
-              <span className="text-xl font-black tracking-tight brand-gradient-text">
+              <span className="text-lg sm:text-xl font-black tracking-tight brand-gradient-text">
                 MrCash
               </span>
             </Link>
           </div>
 
           {/* Right: Balance & Settings */}
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             {user && userData ? (
               <>
+                {/* PWA Install Button - Desktop only */}
+                <div className="hidden md:block">
+                  <PWAInstallButton />
+                </div>
+
                 {/* Balance Display - Clickable for info */}
                 <button
                   onClick={() => setShowPointsInfo(true)}
-                  className="flex items-center gap-2 rounded-xl bg-secondary/80 px-3 py-2 sm:px-4 sm:py-2.5 border border-border hover:border-primary/30 transition-all group"
+                  className="flex items-center gap-1.5 sm:gap-2 rounded-xl bg-secondary/80 px-2.5 py-2 sm:px-3 sm:py-2.5 border border-border hover:border-primary/30 transition-all group"
                 >
                   <Image 
                     src="/coin.png" 
                     alt="Coin"
-                    width={24} 
-                    height={24}
-                    className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
+                    width={20} 
+                    height={20}
+                    className="w-5 h-5 object-contain"
                   />
-                  <span className="font-bold text-sm sm:text-base text-foreground">
+                  <span className="font-bold text-xs sm:text-sm text-foreground">
                     {displayMode === "points" 
                       ? userPoints.toLocaleString()
                       : `$${pointsToUSD(userPoints)}`
                     }
                   </span>
-                  <span className="text-[10px] text-muted-foreground font-medium uppercase">
+                  <span className="text-[9px] sm:text-[10px] text-muted-foreground font-medium uppercase hidden sm:inline">
                     {displayMode === "points" ? "MC" : "USD"}
                   </span>
                 </button>
@@ -94,13 +101,13 @@ export function Header({ onMenuClick }: HeaderProps) {
                   variant="ghost"
                   size="icon"
                   onClick={() => setDisplayMode(displayMode === "points" ? "usd" : "points")}
-                  className="hover:bg-secondary text-muted-foreground hover:text-foreground h-9 w-9 rounded-xl"
+                  className="hover:bg-secondary text-muted-foreground hover:text-foreground h-8 w-8 sm:h-9 sm:w-9 rounded-xl"
                   title="Switch display mode"
                 >
-                  <ArrowRightLeft className="h-4 w-4" />
+                  <ArrowRightLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </Button>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5 sm:gap-1">
                   <NotificationPanel />
 
                   <DropdownMenu>
@@ -108,9 +115,14 @@ export function Header({ onMenuClick }: HeaderProps) {
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="hover:bg-secondary text-muted-foreground h-9 w-9 sm:h-10 sm:w-10 rounded-xl"
+                        className="hover:bg-secondary h-9 w-9 sm:h-10 sm:w-10 rounded-xl p-0"
                       >
-                        <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <Avatar className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg border-2 border-border">
+                          <AvatarImage src={userData.photoURL || ""} alt={userData.username} className="object-cover" />
+                          <AvatarFallback className="rounded-lg bg-secondary text-foreground text-xs font-bold">
+                            {userData.username?.charAt(0).toUpperCase() || "U"}
+                          </AvatarFallback>
+                        </Avatar>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent 
@@ -125,7 +137,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                       </div>
                       <DropdownMenuSeparator className="bg-border" />
                       <DropdownMenuItem asChild className="cursor-pointer rounded-lg py-2.5 text-sm font-medium focus:bg-secondary focus:text-primary">
-                        <Link href="/profile">Profile Settings</Link>
+                        <Link href="/profile">Profile & Settings</Link>
                       </DropdownMenuItem>
                       {userData?.isAdmin && (
                         <DropdownMenuItem asChild className="cursor-pointer rounded-lg py-2.5 text-sm font-medium focus:bg-secondary focus:text-primary">
@@ -145,7 +157,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               </>
             ) : (
               <Link href="/login">
-                <Button className="h-9 px-5 rounded-xl brand-gradient text-white font-bold text-sm border-none active:scale-95 transition-all shadow-lg glow-primary">
+                <Button className="h-9 px-4 sm:px-5 rounded-xl brand-gradient text-white font-bold text-sm border-none active:scale-95 transition-all shadow-lg glow-primary">
                   Sign In
                 </Button>
               </Link>

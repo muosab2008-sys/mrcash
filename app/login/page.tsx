@@ -10,12 +10,13 @@ import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Loader2, Mail, Lock, ArrowLeft, KeyRound, Shield } from "lucide-react";
+import { Loader2, Mail, Lock, ArrowLeft, ArrowRight, KeyRound, Shield, Check } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db, auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { AvatarSelector } from "@/components/avatar-selector";
+import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -32,7 +33,12 @@ export default function LoginPage() {
   const [verifying2FA, setVerifying2FA] = useState(false);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   
-  const { login, loginWithGoogle, resetPassword } = useAuth();
+  // Avatar selection state for Google users
+  const [showAvatarSelection, setShowAvatarSelection] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
+  const [savingAvatar, setSavingAvatar] = useState(false);
+  
+  const { login, loginWithGoogle, resetPassword, updateUserAvatar } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,8 +64,9 @@ export default function LoginPage() {
       
       toast.success("Welcome back!");
       router.push("/");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to login");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to login";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -89,8 +96,9 @@ export default function LoginPage() {
       await login(email, password);
       toast.success("Welcome back!");
       router.push("/");
-    } catch (error: any) {
-      toast.error(error.message || "Invalid verification code");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Invalid verification code";
+      toast.error(message);
       setTwoFactorCode("");
     } finally {
       setVerifying2FA(false);
@@ -100,7 +108,14 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     try {
-      await loginWithGoogle();
+      const result = await loginWithGoogle();
+      
+      // Check if new user needs avatar selection
+      if (result.isNewUser || result.needsAvatarSelection) {
+        setShowAvatarSelection(true);
+        setGoogleLoading(false);
+        return;
+      }
       
       // Check if user has 2FA enabled
       const currentUser = auth.currentUser;
@@ -117,10 +132,37 @@ export default function LoginPage() {
       
       toast.success("Welcome!");
       router.push("/");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to login with Google");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to login with Google";
+      toast.error(message);
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  const handleSaveAvatar = async () => {
+    if (!selectedAvatar) {
+      toast.error("Please select an avatar to continue");
+      return;
+    }
+
+    setSavingAvatar(true);
+    try {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        await updateUserAvatar(selectedAvatar);
+        // Remove the needsAvatarSelection flag
+        await updateDoc(doc(db, "users", currentUser.uid), {
+          needsAvatarSelection: false,
+        });
+        toast.success("Welcome to MrCash!");
+        router.push("/");
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to save avatar";
+      toast.error(message);
+    } finally {
+      setSavingAvatar(false);
     }
   };
 
@@ -136,8 +178,9 @@ export default function LoginPage() {
       toast.success("Password reset email sent! Check your inbox.");
       setShowResetForm(false);
       setResetEmail("");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to send reset email");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to send reset email";
+      toast.error(message);
     } finally {
       setResetLoading(false);
     }
@@ -149,10 +192,10 @@ export default function LoginPage() {
     setPendingUserId(null);
   };
 
-  // 2FA Verification Form
-  if (show2FA) {
+  // Avatar Selection Form for Google users
+  if (showAvatarSelection) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#080808] p-4">
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="flex justify-center mb-8">
@@ -164,26 +207,103 @@ export default function LoginPage() {
                 height={48}
                 className="rounded-2xl"
               />
-              <span className="text-2xl font-black bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] bg-clip-text text-transparent italic tracking-tighter">
+              <span className="text-2xl font-black brand-gradient-text italic tracking-tighter">
+                MrCash
+              </span>
+            </Link>
+          </div>
+
+          {/* Progress Steps */}
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-emerald-500 text-white">
+                <Check className="w-4 h-4" />
+              </div>
+              <span className="text-sm font-medium text-foreground">Account</span>
+            </div>
+            <div className="w-8 h-[2px] bg-border" />
+            <div className="flex items-center gap-2">
+              <div className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all",
+                "brand-gradient text-white"
+              )}>
+                2
+              </div>
+              <span className="text-sm font-medium text-foreground">Avatar</span>
+            </div>
+          </div>
+
+          {/* Avatar Card */}
+          <div className="bg-card border border-border rounded-2xl p-6 sm:p-8">
+            <div className="text-center mb-6">
+              <h1 className="text-2xl font-bold text-foreground mb-2">Choose Your Avatar</h1>
+              <p className="text-sm text-muted-foreground">Pick a profile picture that represents you</p>
+            </div>
+
+            <AvatarSelector
+              selectedAvatar={selectedAvatar}
+              onSelect={setSelectedAvatar}
+            />
+
+            <Button
+              type="button"
+              onClick={handleSaveAvatar}
+              className="w-full h-14 mt-6 rounded-2xl brand-gradient text-white font-bold shadow-lg glow-primary"
+              disabled={savingAvatar || !selectedAvatar}
+            >
+              {savingAvatar ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Setting up...
+                </>
+              ) : (
+                <>
+                  Continue
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2FA Verification Form
+  if (show2FA) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
+            <Link href="/" className="flex items-center gap-3">
+              <Image
+                src="/logo.png"
+                alt="MrCash"
+                width={48}
+                height={48}
+                className="rounded-2xl"
+              />
+              <span className="text-2xl font-black brand-gradient-text italic tracking-tighter">
                 MrCash
               </span>
             </Link>
           </div>
 
           {/* 2FA Card */}
-          <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-8">
+          <div className="bg-card border border-border rounded-2xl p-6 sm:p-8">
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#3B82F6] to-[#8B5CF6] flex items-center justify-center">
+              <div className="w-12 h-12 rounded-2xl brand-gradient flex items-center justify-center shrink-0">
                 <Shield className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Two-Factor Authentication</h1>
-                <p className="text-sm text-white/40">Enter your verification code</p>
+                <h1 className="text-xl font-bold text-foreground">Two-Factor Authentication</h1>
+                <p className="text-sm text-muted-foreground">Enter your verification code</p>
               </div>
             </div>
 
             <div className="space-y-6">
-              <p className="text-sm text-white/60 text-center">
+              <p className="text-sm text-muted-foreground text-center">
                 Enter the 6-digit code from your authenticator app to continue signing in.
               </p>
 
@@ -194,12 +314,12 @@ export default function LoginPage() {
                   onChange={(value) => setTwoFactorCode(value)}
                 >
                   <InputOTPGroup>
-                    <InputOTPSlot index={0} className="w-12 h-14 text-lg bg-white/[0.02] border-white/10 text-white" />
-                    <InputOTPSlot index={1} className="w-12 h-14 text-lg bg-white/[0.02] border-white/10 text-white" />
-                    <InputOTPSlot index={2} className="w-12 h-14 text-lg bg-white/[0.02] border-white/10 text-white" />
-                    <InputOTPSlot index={3} className="w-12 h-14 text-lg bg-white/[0.02] border-white/10 text-white" />
-                    <InputOTPSlot index={4} className="w-12 h-14 text-lg bg-white/[0.02] border-white/10 text-white" />
-                    <InputOTPSlot index={5} className="w-12 h-14 text-lg bg-white/[0.02] border-white/10 text-white" />
+                    <InputOTPSlot index={0} className="w-11 h-14 text-lg bg-secondary/50 border-border text-foreground" />
+                    <InputOTPSlot index={1} className="w-11 h-14 text-lg bg-secondary/50 border-border text-foreground" />
+                    <InputOTPSlot index={2} className="w-11 h-14 text-lg bg-secondary/50 border-border text-foreground" />
+                    <InputOTPSlot index={3} className="w-11 h-14 text-lg bg-secondary/50 border-border text-foreground" />
+                    <InputOTPSlot index={4} className="w-11 h-14 text-lg bg-secondary/50 border-border text-foreground" />
+                    <InputOTPSlot index={5} className="w-11 h-14 text-lg bg-secondary/50 border-border text-foreground" />
                   </InputOTPGroup>
                 </InputOTP>
               </div>
@@ -207,7 +327,7 @@ export default function LoginPage() {
               <Button
                 type="button"
                 onClick={handle2FAVerification}
-                className="w-full h-14 rounded-2xl bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] text-white font-bold shadow-lg shadow-[#3B82F6]/20"
+                className="w-full h-14 rounded-2xl brand-gradient text-white font-bold shadow-lg glow-primary"
                 disabled={twoFactorCode.length !== 6 || verifying2FA}
               >
                 {verifying2FA ? (
@@ -223,7 +343,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={handleBack2FA}
-                className="w-full flex items-center justify-center gap-2 text-sm text-white/50 hover:text-white transition-colors py-3"
+                className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-3"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back to Sign In
@@ -235,10 +355,10 @@ export default function LoginPage() {
     );
   }
 
-  // Password Reset Form - Professional Dark Rectangular Theme
+  // Password Reset Form
   if (showResetForm) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#080808] p-4">
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="flex justify-center mb-8">
@@ -250,35 +370,35 @@ export default function LoginPage() {
                 height={48}
                 className="rounded-2xl"
               />
-              <span className="text-2xl font-black bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] bg-clip-text text-transparent italic tracking-tighter">
+              <span className="text-2xl font-black brand-gradient-text italic tracking-tighter">
                 MrCash
               </span>
             </Link>
           </div>
 
           {/* Reset Card */}
-          <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-8">
+          <div className="bg-card border border-border rounded-2xl p-6 sm:p-8">
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#3B82F6] to-[#8B5CF6] flex items-center justify-center">
+              <div className="w-12 h-12 rounded-2xl brand-gradient flex items-center justify-center shrink-0">
                 <KeyRound className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Reset Password</h1>
-                <p className="text-sm text-white/40">Enter your email to receive a reset link</p>
+                <h1 className="text-xl font-bold text-foreground">Reset Password</h1>
+                <p className="text-sm text-muted-foreground">Enter your email to receive a reset link</p>
               </div>
             </div>
 
             <form onSubmit={handleResetPassword} className="space-y-5">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase text-white/30 tracking-widest ml-1">Email Address</label>
+                <label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest ml-1">Email Address</label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/30" />
+                  <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     type="email"
                     placeholder="Enter your email"
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
-                    className="pl-12 h-14 rounded-2xl bg-white/[0.02] border-white/5 focus:border-[#3B82F6]/50 text-white placeholder:text-white/20"
+                    className="pl-12 h-14 rounded-2xl bg-secondary/30 border-border focus:border-primary/50 text-foreground placeholder:text-muted-foreground"
                     required
                   />
                 </div>
@@ -286,7 +406,7 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full h-14 rounded-2xl bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] text-white font-bold shadow-lg shadow-[#3B82F6]/20"
+                className="w-full h-14 rounded-2xl brand-gradient text-white font-bold shadow-lg glow-primary"
                 disabled={resetLoading}
               >
                 {resetLoading ? (
@@ -302,7 +422,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowResetForm(false)}
-                className="w-full flex items-center justify-center gap-2 text-sm text-white/50 hover:text-white transition-colors py-3"
+                className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-3"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back to Sign In
@@ -314,9 +434,9 @@ export default function LoginPage() {
     );
   }
 
-  // Main Login Form - Professional Dark Rectangular Theme
+  // Main Login Form
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#080808] p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
@@ -328,45 +448,45 @@ export default function LoginPage() {
               height={48}
               className="rounded-2xl"
             />
-            <span className="text-2xl font-black bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] bg-clip-text text-transparent italic tracking-tighter">
+            <span className="text-2xl font-black brand-gradient-text italic tracking-tighter">
               MrCash
             </span>
           </Link>
         </div>
 
         {/* Login Card */}
-        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-8">
+        <div className="bg-card border border-border rounded-2xl p-6 sm:p-8">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-white mb-2">Welcome Back</h1>
-            <p className="text-sm text-white/40">Sign in to your MrCash account</p>
+            <h1 className="text-2xl font-bold text-foreground mb-2">Welcome Back</h1>
+            <p className="text-sm text-muted-foreground">Sign in to your MrCash account</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase text-white/30 tracking-widest ml-1">Email</label>
+              <label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest ml-1">Email</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/30" />
+                <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="email"
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-12 h-14 rounded-2xl bg-white/[0.02] border-white/5 focus:border-[#3B82F6]/50 text-white placeholder:text-white/20"
+                  className="pl-12 h-14 rounded-2xl bg-secondary/30 border-border focus:border-primary/50 text-foreground placeholder:text-muted-foreground"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase text-white/30 tracking-widest ml-1">Password</label>
+              <label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest ml-1">Password</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/30" />
+                <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="password"
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-12 h-14 rounded-2xl bg-white/[0.02] border-white/5 focus:border-[#3B82F6]/50 text-white placeholder:text-white/20"
+                  className="pl-12 h-14 rounded-2xl bg-secondary/30 border-border focus:border-primary/50 text-foreground placeholder:text-muted-foreground"
                   required
                 />
               </div>
@@ -376,7 +496,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowResetForm(true)}
-                className="text-sm text-[#3B82F6] hover:text-[#8B5CF6] transition-colors font-medium"
+                className="text-sm text-primary hover:text-accent transition-colors font-medium"
               >
                 Forgot password?
               </button>
@@ -384,7 +504,7 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              className="w-full h-14 rounded-2xl bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] text-white font-bold shadow-lg shadow-[#3B82F6]/20"
+              className="w-full h-14 rounded-2xl brand-gradient text-white font-bold shadow-lg glow-primary"
               disabled={loading}
             >
               {loading ? (
@@ -401,10 +521,10 @@ export default function LoginPage() {
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-white/5" />
+              <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-[#0a0a0a] px-4 text-white/30 font-medium">Or continue with</span>
+              <span className="bg-card px-4 text-muted-foreground font-medium">Or continue with</span>
             </div>
           </div>
 
@@ -412,7 +532,7 @@ export default function LoginPage() {
           <Button
             type="button"
             variant="outline"
-            className="w-full h-14 rounded-2xl bg-white/[0.02] border-white/5 hover:bg-white/5 hover:border-white/10 text-white font-medium"
+            className="w-full h-14 rounded-2xl bg-secondary/30 border-border hover:bg-secondary hover:border-primary/30 text-foreground font-medium"
             onClick={handleGoogleLogin}
             disabled={googleLoading}
           >
@@ -442,9 +562,9 @@ export default function LoginPage() {
           </Button>
 
           {/* Sign Up Link */}
-          <p className="mt-6 text-center text-sm text-white/50">
+          <p className="mt-6 text-center text-sm text-muted-foreground">
             {"Don't have an account? "}
-            <Link href="/register" className="text-[#3B82F6] hover:text-[#8B5CF6] font-medium transition-colors">
+            <Link href="/register" className="text-primary hover:text-accent font-medium transition-colors">
               Sign up
             </Link>
           </p>
