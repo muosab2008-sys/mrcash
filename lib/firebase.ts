@@ -4,7 +4,8 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  authDomain: "mrcash.app",
+  apiKey: "AIzaSyAd9KgnzExZ5RdrJVB_hpzxUvrqHiQ3jmU",
+  authDomain: "mrcash.app", // الدومين الاحترافي الجديد الخاص بك
   projectId: "mrcash-com",
   storageBucket: "mrcash-com.firebasestorage.app",
   messagingSenderId: "348374269609",
@@ -12,7 +13,7 @@ const firebaseConfig = {
   measurementId: "G-9ZZLG53Z64"
 };
 
-// Initialize Firebase (prevent re-initialization)
+// Initialize Firebase (prevent re-initialization in Next.js SSR)
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
