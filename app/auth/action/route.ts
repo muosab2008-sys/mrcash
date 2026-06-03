@@ -1,43 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
+import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  
-  const mode = searchParams.get("mode");
-  const oobCode = searchParams.get("oobCode");
+const handleForgotPassword = async (email: string) => {
+  const auth = getAuth();
 
-  // جلب رابط الموقع الأساسي ديناميكياً لضمان الاستقرار على Vercel
-  const baseUrl = request.nextUrl.origin;
-  let redirectPath = "/login";
+  // هذا السطر يجبر الإيميل على إرسال الرابط إلى ملف الـ route.ts الخاص بك مباشرة رغماً عن إعدادات اللوحة
+  const actionCodeSettings = {
+    url: "https://mrcash.app/auth/action", 
+    handleCodeInApp: true,
+  };
 
-  if (!oobCode || !mode) {
-    return NextResponse.redirect(new URL(redirectPath, baseUrl));
+  try {
+    await sendPasswordResetEmail(auth, email, actionCodeSettings);
+    alert("تم إرسال رابط إعادة تعيين كلمة السر بنجاح من noreply@mrcash.app!");
+  } catch (error: any) {
+    console.error("خطأ أثناء الإرسال:", error.message);
   }
-
-  switch (mode) {
-    case "resetPassword":
-      // تأكد من المسار: إذا كانت الصفحة داخل مجلد auth اجعلها: `/auth/reset-password`
-      redirectPath = `/reset-password?oobCode=${oobCode}&mode=${mode}`;
-      break;
-    
-    case "verifyEmail":
-      redirectPath = `/verify-email?oobCode=${oobCode}&mode=${mode}`;
-      break;
-    
-    case "recoverEmail":
-      redirectPath = `/recover-email?oobCode=${oobCode}&mode=${mode}`;
-      break;
-    
-    default:
-      redirectPath = "/login";
-  }
-
-  // استخدام استجابة توجيه صريحة ومباشرة تمنع الكاش
-  const response = NextResponse.redirect(new URL(redirectPath, baseUrl));
-  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-  return response;
-}
-
-export async function POST(request: NextRequest) {
-  return GET(request);
-}
+};
