@@ -1,28 +1,43 @@
-import { initializeApp, getApps, cert, App } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { NextRequest, NextResponse } from "next/server";
 
-let adminApp: App;
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  
+  const mode = searchParams.get("mode");
+  const oobCode = searchParams.get("oobCode");
 
-if (getApps().length === 0) {
-  // هنا نقوم بقراءة المتغيرات الأربعة التي أضفتها في فيرسيل بشكل مباشر وآمن
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const projectId = process.env.FIREBASE_PROJECT_ID || "mrcash-com";
-  // هذا السطر السحري يقوم بإصلاح مشكلة الأسطر وعلامات الـ \n في المفتاح تلقائياً
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  // جلب رابط الموقع الأساسي ديناميكياً لضمان الاستقرار على Vercel
+  const baseUrl = request.nextUrl.origin;
+  let redirectPath = "/login";
 
-  // إذا كانت البيانات موجودة نقوم بالتشغيل عبر الـ cert
-  const hasCredentials = clientEmail && privateKey;
+  if (!oobCode || !mode) {
+    return NextResponse.redirect(new URL(redirectPath, baseUrl));
+  }
 
-  adminApp = initializeApp({
-    credential: hasCredentials 
-      ? cert({ projectId, clientEmail, privateKey }) 
-      : undefined,
-    projectId: projectId,
-  });
-} else {
-  adminApp = getApps()[0];
+  switch (mode) {
+    case "resetPassword":
+      // تأكد من المسار: إذا كانت الصفحة داخل مجلد auth اجعلها: `/auth/reset-password`
+      redirectPath = `/reset-password?oobCode=${oobCode}&mode=${mode}`;
+      break;
+    
+    case "verifyEmail":
+      redirectPath = `/verify-email?oobCode=${oobCode}&mode=${mode}`;
+      break;
+    
+    case "recoverEmail":
+      redirectPath = `/recover-email?oobCode=${oobCode}&mode=${mode}`;
+      break;
+    
+    default:
+      redirectPath = "/login";
+  }
+
+  // استخدام استجابة توجيه صريحة ومباشرة تمنع الكاش
+  const response = NextResponse.redirect(new URL(redirectPath, baseUrl));
+  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  return response;
 }
 
-const adminDb = getFirestore(adminApp);
-
-export { adminApp, adminDb };
+export async function POST(request: NextRequest) {
+  return GET(request);
+}
