@@ -1,26 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
+import { adminAuth } from "@/lib/firebase-admin";
 
-// 1. تهيئة الـ Firebase Admin بشكل آمن داخل الملف لتفادي أخطاء الاستيراد (Import Errors)
-const firebaseAdminConfig = {
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  // استبدال الـ \n لضمان قراءة المفتاح الخاص بشكل صحيح في فيرسيل
-  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-};
-
-if (!getApps().length && firebaseAdminConfig.projectId && firebaseAdminConfig.privateKey) {
-  initializeApp({
-    credential: cert(firebaseAdminConfig),
-  });
+// Lazy initialization for Resend
+function getResend() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY environment variable is required");
+  }
+  return new Resend(apiKey);
 }
 
-const adminAuth = getAuth();
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-// دالة GET: التوجيه المستقر الخالي من الكاش
+// GET: Stable, cache-free redirection based on mode and oobCode
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   
@@ -56,7 +47,7 @@ export async function GET(request: NextRequest) {
   return response;
 }
 
-// دالة POST: توليد المفاتيح والروابط سرياً داخل السيرفر وإرسالها عبر Resend
+// POST: Secure server-side link generation and email sending via Resend
 export async function POST(request: NextRequest) {
   try {
     const { email, mode, username } = await request.json();
@@ -68,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     let rawFirebaseLink = "";
 
-    // طلب توليد الرابط من الـ Admin SDK
+    // Generate secure link using Firebase Admin SDK
     if (mode === "resetPassword") {
       rawFirebaseLink = await adminAuth.generatePasswordResetLink(email, {
         url: `${baseUrl}/login`,
@@ -81,22 +72,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "الوضع (mode) غير مدعوم" }, { status: 400 });
     }
 
+    // Extract the secure oobCode from Firebase's generated link
     const firebaseUrlParams = new URL(rawFirebaseLink).searchParams;
     const secureOobCode = firebaseUrlParams.get("oobCode");
 
-    const actionLink = `${baseUrl}/api/auth/action?oobCode=${secureOobCode}&mode=${mode}`;
+    // Construct internal redirection URL pointing to GET route
+    const actionLink = `${baseUrl}/auth/action?oobCode=${secureOobCode}&mode=${mode}`;
 
     let subject = "تنبيه من Mr. Cash";
     let buttonText = "اضغط هنا";
     let description = "يرجى الضغط على الزر أدناه للمتابعة:";
 
     if (mode === "resetPassword") {
-      subject = "🔒 إعادة تعيين كلمة المرور - Mr. Cash";
-      buttonText = "تعيين كلمة مرور جديدة 🔑";
+      subject = "إعادة تعيين كلمة المرور - Mr. Cash";
+      buttonText = "تعيين كلمة مرور جديدة";
       description = "لقد تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بحسابك في منصة Mr. Cash. يمكنك القيام بذلك عبر الضغط على الزر أدناه:";
     } else if (mode === "verifyEmail") {
-      subject = "🚀 تفعيل حسابك في منصة Mr. Cash";
-      buttonText = "تفعيل الحساب الآن ✨";
+      subject = "تفعيل حسابك في منصة Mr. Cash";
+      buttonText = "تفعيل الحساب الآن";
       description = "يسعدنا انضمامك إلينا! لتفعيل حسابك والبدء في استخدام كافة ميزات المنصة، يرجى تأكيد بريدك بالضغط أدناه:";
     }
 
@@ -108,7 +101,7 @@ export async function POST(request: NextRequest) {
         </div>
         
         <div style="padding: 30px; background-color: #ffffff; color: #333333; line-height: 1.8; text-align: right;">
-          <h2 style="color: #1e3c72; margin-top: 0;">مرحباً ${username || 'بك'}، 👋</h2>
+          <h2 style="color: #1e3c72; margin-top: 0;">مرحباً ${username || 'بك'}،</h2>
           <p style="font-size: 16px;">${description}</p>
           
           <div style="text-align: center; margin: 35px 0;">
@@ -127,6 +120,7 @@ export async function POST(request: NextRequest) {
       </div>
     `;
 
+    const resend = getResend();
     await resend.emails.send({
       from: "Mr. Cash <noreply@mrcash.app>",
       to: [email],
@@ -135,7 +129,8 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ success: true, message: "Email sent successfully" });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }

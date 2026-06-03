@@ -1,22 +1,9 @@
-import { initializeApp, getApps, cert, ServiceAccount } from "firebase-admin/app";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import crypto from "crypto";
+import { getAdminDb } from "@/lib/firebase-admin";
 
-// ==================== FIREBASE ADMIN ====================
-export function getAdminDb() {
-  if (getApps().length === 0) {
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n') || '';
-    
-    const serviceAccount: ServiceAccount = {
-      projectId: process.env.FIREBASE_PROJECT_ID || "mrcash-com",
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL || "firebase-adminsdk-fbsvc@mrcash-com.iam.gserviceaccount.com",
-      privateKey: privateKey,
-    };
-
-    initializeApp({ credential: cert(serviceAccount) });
-  }
-  return getFirestore();
-}
+// Re-export getAdminDb for backwards compatibility
+export { getAdminDb } from "@/lib/firebase-admin";
 
 // ==================== HASH VERIFICATION ====================
 export function verifyMD5(data: string, expectedHash: string): boolean {

@@ -1,43 +1,96 @@
-import { NextRequest, NextResponse } from "next/server";
+import { initializeApp, getApps, cert, ServiceAccount, App } from "firebase-admin/app";
+import { getAuth, Auth } from "firebase-admin/auth";
+import { getFirestore, Firestore } from "firebase-admin/firestore";
+import { getStorage, Storage } from "firebase-admin/storage";
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  
-  const mode = searchParams.get("mode");
-  const oobCode = searchParams.get("oobCode");
+// Cached instances
+let _app: App | null = null;
+let _adminAuth: Auth | null = null;
+let _adminDb: Firestore | null = null;
+let _adminStorage: Storage | null = null;
 
-  // جلب رابط الموقع الأساسي ديناميكياً لضمان الاستقرار على Vercel
-  const baseUrl = request.nextUrl.origin;
-  let redirectPath = "/login";
-
-  if (!oobCode || !mode) {
-    return NextResponse.redirect(new URL(redirectPath, baseUrl));
-  }
-
-  switch (mode) {
-    case "resetPassword":
-      // تأكد من المسار: إذا كانت الصفحة داخل مجلد auth اجعلها: `/auth/reset-password`
-      redirectPath = `/reset-password?oobCode=${oobCode}&mode=${mode}`;
-      break;
-    
-    case "verifyEmail":
-      redirectPath = `/verify-email?oobCode=${oobCode}&mode=${mode}`;
-      break;
-    
-    case "recoverEmail":
-      redirectPath = `/recover-email?oobCode=${oobCode}&mode=${mode}`;
-      break;
-    
-    default:
-      redirectPath = "/login";
-  }
-
-  // استخدام استجابة توجيه صريحة ومباشرة تمنع الكاش
-  const response = NextResponse.redirect(new URL(redirectPath, baseUrl));
-  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-  return response;
+// Initialize Firebase Admin SDK - safe for both build and runtime
+function getOrInitializeApp(): App {
+  if (_app) {
+    return _app;
+  }
+  
+  const existingApps = getApps();
+  if (existingApps.length > 0) {
+    _app = existingApps[0];
+    return _app;
+  }
+  
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  
+  if (!projectId || !clientEmail || !privateKey) {
+    throw new Error(
+      "Firebase Admin SDK requires FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY environment variables"
+    );
+  }
+  
+  const config: ServiceAccount = {
+    projectId,
+    clientEmail,
+    privateKey,
+  };
+  
+  _app = initializeApp({
+    credential: cert(config),
+  });
+  
+  return _app;
 }
 
-export async function POST(request: NextRequest) {
-  return GET(request);
+// Lazy getter for Auth - only initializes when actually used
+export function getAdminAuth(): Auth {
+  if (!_adminAuth) {
+    getOrInitializeApp();
+    _adminAuth = getAuth();
+  }
+  return _adminAuth;
 }
+
+// Lazy getter for Firestore - only initializes when actually used
+export function getAdminDb(): Firestore {
+  if (!_adminDb) {
+    getOrInitializeApp();
+    _adminDb = getFirestore();
+  }
+  return _adminDb;
+}
+
+// Lazy getter for Storage - only initializes when actually used
+export function getAdminStorage(): Storage {
+  if (!_adminStorage) {
+    getOrInitializeApp();
+    _adminStorage = getStorage();
+  }
+  return _adminStorage;
+}
+
+// Export proxy objects for backwards compatibility with existing imports
+// These will only initialize Firebase when a property/method is accessed at runtime
+export const adminAuth: Auth = new Proxy({} as Auth, {
+  get(_, prop) {
+    const auth = getAdminAuth();
+    const value = (auth as Record<string | symbol, unknown>)[prop];
+    if (typeof value === 'function') {
+      return value.bind(auth);
+    }
+    return value;
+  }
+});
+
+export const adminDb: Firestore = new Proxy({} as Firestore, {
+  get(_, prop) {
+    const db = getAdminDb();
+    const value = (db as Record<string | symbol, unknown>)[prop];
+    if (typeof value === 'function') {
+      return value.bind(db);
+    }
+    return value;
+  }
+});

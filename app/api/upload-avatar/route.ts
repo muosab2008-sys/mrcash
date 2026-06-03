@@ -1,22 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getStorage } from "firebase-admin/storage";
-import { getFirestore } from "firebase-admin/firestore";
+import { getAdminDb, getAdminStorage } from "@/lib/firebase-admin";
 
-// Initialize Firebase Admin
-if (getApps().length === 0) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID || "mrcash-com",
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    }),
-  });
-}
-
-// Get the correct storage bucket
-const bucket = getStorage().bucket(process.env.FIREBASE_STORAGE_BUCKET || "mrcash-com.firebasestorage.app");
-const adminDb = getFirestore();;
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -48,6 +32,11 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Get Firebase instances at runtime
+    const adminDb = getAdminDb();
+    const storage = getAdminStorage();
+    const bucket = storage.bucket(process.env.FIREBASE_STORAGE_BUCKET || "mrcash-com.firebasestorage.app");
 
     // Generate unique filename
     const extension = file.type === "image/png" ? "png" : "jpg";
@@ -82,11 +71,11 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ url: publicUrl });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Avatar upload error details:", error);
-    // CRITICAL FIX: Always return a valid JSON response even during server crashes!
+    const errorMessage = error instanceof Error ? error.message : "Failed to upload image. Please try again.";
     return NextResponse.json(
-      { error: error?.message || "Failed to upload image. Please try again." },
+      { error: errorMessage },
       { status: 500 }
     );
   }
