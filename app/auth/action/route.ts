@@ -1,10 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
-import { adminAuth } from "@/lib/firebaseAdmin"; // ⚠️ تأكد من استيراد الـ Firebase Admin الموثق في مشروعك
+import { initializeApp, getApps, cert } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 
+// 1. تهيئة الـ Firebase Admin بشكل آمن داخل الملف لتفادي أخطاء الاستيراد (Import Errors)
+const firebaseAdminConfig = {
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  // استبدال الـ \n لضمان قراءة المفتاح الخاص بشكل صحيح في فيرسيل
+  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+};
+
+if (!getApps().length && firebaseAdminConfig.projectId && firebaseAdminConfig.privateKey) {
+  initializeApp({
+    credential: cert(firebaseAdminConfig),
+  });
+}
+
+const adminAuth = getAuth();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// 1. دالة GET: التوجيه المستقر الخالي من الكاش (كودك الأصلي)
+// دالة GET: التوجيه المستقر الخالي من الكاش
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   
@@ -40,10 +56,9 @@ export async function GET(request: NextRequest) {
   return response;
 }
 
-// 2. دالة POST: توليد المفاتيح والروابط سرياً داخل السيرفر وإرسالها عبر Resend لحماية حساباتك
+// دالة POST: توليد المفاتيح والروابط سرياً داخل السيرفر وإرسالها عبر Resend
 export async function POST(request: NextRequest) {
   try {
-    // استقبال البيانات الأساسية فقط من الـ Frontend لأعلى درجات الأمان
     const { email, mode, username } = await request.json();
     const baseUrl = request.nextUrl.origin;
 
@@ -53,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     let rawFirebaseLink = "";
 
-    // السيرفر يقوم بطلب توليد الرابط والـ oobCode المشفر مباشرة ومغلقاً من Firebase Admin
+    // طلب توليد الرابط من الـ Admin SDK
     if (mode === "resetPassword") {
       rawFirebaseLink = await adminAuth.generatePasswordResetLink(email, {
         url: `${baseUrl}/login`,
@@ -66,11 +81,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "الوضع (mode) غير مدعوم" }, { status: 400 });
     }
 
-    // استخراج كود الأمان الـ oobCode الذي صنعه السيرفر لإدراجه في رابط موقعك المخصص
     const firebaseUrlParams = new URL(rawFirebaseLink).searchParams;
     const secureOobCode = firebaseUrlParams.get("oobCode");
 
-    // الرابط النهائي الموجه لدالة GET بالأعلى لقراءة الكود
     const actionLink = `${baseUrl}/api/auth/action?oobCode=${secureOobCode}&mode=${mode}`;
 
     let subject = "تنبيه من Mr. Cash";
@@ -87,7 +100,6 @@ export async function POST(request: NextRequest) {
       description = "يسعدنا انضمامك إلينا! لتفعيل حسابك والبدء في استخدام كافة ميزات المنصة، يرجى تأكيد بريدك بالضغط أدناه:";
     }
 
-    // قالب الـ HTML المخصص لألوان وهوية موقعك الاحترافي
     const emailTemplate = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
         <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 30px; text-align: center; color: white;">
@@ -115,7 +127,6 @@ export async function POST(request: NextRequest) {
       </div>
     `;
 
-    // الإرسال من بريدك الرسمي الموثق المباشر بنجاح
     await resend.emails.send({
       from: "Mr. Cash <noreply@mrcash.app>",
       to: [email],
@@ -125,7 +136,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: "Email sent successfully" });
   } catch (error: any) {
-    console.error("Resend/Firebase Server Error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
