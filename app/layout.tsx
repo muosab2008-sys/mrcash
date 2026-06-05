@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'MrCash - Earn Rewards & Cash',
     description: 'Share your link and get paid! The best platform to earn rewards online.',
-    url: 'https://mrcash.vercel.app',
+    url: 'https://mrcash.app',
     siteName: 'MrCash',
     images: [
       {
