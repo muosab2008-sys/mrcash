@@ -3,24 +3,31 @@ import { getFirestore } from "firebase-admin/firestore";
 
 let adminApp: App;
 
+// التحقق من وجود المتغيرات الثلاثة الأساسية بشكل منطقي صريح
+const hasFirebaseEnv = 
+  Boolean(process.env.FIREBASE_PROJECT_ID) && 
+  Boolean(process.env.FIREBASE_CLIENT_EMAIL) && 
+  Boolean(process.env.FIREBASE_PRIVATE_KEY);
+
 // Initialize Firebase Admin
 if (getApps().length === 0) {
-  
-  // دمج المتغيرات الأربعة الموجودة في لوحة تحكم Vercel لديك
-  const serviceAccount = process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY
-    ? {
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        // هنا نقوم بمعالجة مشكلة السطور الجديدة في المفتاح الخاص لـ Vercel
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-      }
-    : undefined;
+  if (hasFirebaseEnv) {
+    // إذا كانت المتغيرات موجودة، يتم البناء باستخدام الـ Service Account مع معالجة الأسطر
+    const serviceAccount = {
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, '\n'),
+    };
 
-  adminApp = initializeApp({
-    // إذا لم تكن المتغيرات موجودة سيعتمد على الـ Default Credentials
-    credential: serviceAccount ? cert(serviceAccount) : undefined,
-    projectId: process.env.FIREBASE_PROJECT_ID || "mrcash-com",
-  });
+    adminApp = initializeApp({
+      credential: cert(serviceAccount),
+    });
+  } else {
+    // إذا لم تكن المتغيرات موجودة في بيئة التطوير المحلية مثلاً، يعتمد على الـ Default Credentials
+    adminApp = initializeApp({
+      projectId: process.env.FIREBASE_PROJECT_ID || "mrcash-com",
+    });
+  }
 } else {
   adminApp = getApps()[0];
 }
