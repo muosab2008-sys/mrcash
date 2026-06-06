@@ -1,26 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebaseAdmin'; 
+// تأكد من استيراد الـ db (Firebase Admin) الخاص بمشروعك هنا
+import { db } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
 
-const ALLOWED_IP = '64.226.124.135';
+const ALLOWED_IP = '64.226.124.135'; [cite: 19]
 
 export async function GET(request: NextRequest) {
   try {
+    // 1. التحقق من الحماية (IP Whitelisting)
     const forwardedFor = request.headers.get('x-forwarded-for');
     const clientIp = forwardedFor ? forwardedFor.split(',')[0].trim() : request.ip;
 
-    if (clientIp !== ALLOWED_IP) {
+    if (clientIp !== ALLOWED_IP) { [cite: 19]
       return NextResponse.json({ error: 'Unauthorized IP access' }, { status: 401 });
     }
 
+    // 2. استخراج البيانات القادمة من Adtowall
     const { searchParams } = new URL(request.url);
     
-    const payoutUsd = searchParams.get('payout_usd');      
-    const pointsStr = searchParams.get('points');          
-    const userId = searchParams.get('user_id');            
-    const offerName = searchParams.get('offer_name') || 'Adtowall Offer';
-    const transactionId = searchParams.get('transaction_id');
+    const payoutUsd = searchParams.get('payout_usd');       [cite: 10]
+    const pointsStr = searchParams.get('points');           [cite: 11]
+    const userId = searchParams.get('user_id');             [cite: 12]
+    const offerName = searchParams.get('offer_name') || 'Adtowall Offer'; [cite: 14]
+    const transactionId = searchParams.get('transaction_id'); [cite: 15]
 
+    // التحقق من وجود البيانات الأساسية
     if (!userId || !pointsStr || !transactionId) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
@@ -31,6 +35,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid points value' }, { status: 400 });
     }
 
+    // 3. منع تكرار المعاملة (التحقق من الـ Transaction ID في Firestore)
     const transactionRef = db.collection('transactions').doc(transactionId);
     const transactionDoc = await transactionRef.get();
 
@@ -38,6 +43,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Transaction already processed' }, { status: 400 });
     }
 
+    // 4. تحديث رصيد المستخدم وإضافة الإشعار والسجل داخل Transaction واحدة (أمان كامل)
     const userRef = db.collection('users').doc(userId);
 
     await db.runTransaction(async (ts) => {
@@ -46,12 +52,14 @@ export async function GET(request: NextRequest) {
         throw new Error('User not found');
       }
 
+      // إضافة النقاط والـ XP لحساب المستخدم
       ts.update(userRef, {
         balance: admin.firestore.FieldValue.increment(pointsToReward),
         totalEarned: admin.firestore.FieldValue.increment(pointsToReward),
-        xp: admin.firestore.FieldValue.increment(pointsToReward)
+        xp: admin.firestore.FieldValue.increment(pointsToReward) // إذا كان الـ XP مرتبط بالنقاط
       });
 
+      // حفظ المعاملة في سجل الـ transactions لمنع التكرار
       ts.set(transactionRef, {
         userId,
         points: pointsToReward,
@@ -61,6 +69,7 @@ export async function GET(request: NextRequest) {
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
 
+      // إضافة إشعار يظهر للمستخدم في لوحة التحكم (Notification)
       const notificationRef = db.collection('notifications').doc();
       ts.set(notificationRef, {
         userId,
@@ -72,6 +81,7 @@ export async function GET(request: NextRequest) {
       });
     });
 
+    // 5. الرد بنجاح على سيرفر Adtowall
     return NextResponse.json({ success: true, message: 'Postback processed and points awarded' }, { status: 200 });
 
   } catch (error: any) {
