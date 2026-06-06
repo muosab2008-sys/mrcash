@@ -1,4 +1,4 @@
-\import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
 
