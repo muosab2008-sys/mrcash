@@ -12,7 +12,7 @@ const _geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
 const _geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
 export const metadata: Metadata = {
-  title: 'Mr.Cash',
+  title: 'Mr.Cash|Earn Rewards',
   description: 'Earn real cash rewards by completing offers, surveys, and tasks. Join MrCash today!',
   generator: 'v0.app',
   manifest: '/manifest.json',
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     apple: '/logo.png',
   },
   openGraph: {
-    title: 'Mr.Cash',
+    title: 'Mr.Cash|Earn Rewards',
     description: 'Share your link and get paid! The best platform to earn rewards online.',
     url: 'https://mrcash.app',
     siteName: 'MrCash',
