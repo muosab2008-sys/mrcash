@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin'; 
+\import { NextRequest, NextResponse } from 'next/server';
+import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
 
 const ALLOWED_IP = '64.226.124.135';
@@ -31,16 +31,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid points value' }, { status: 400 });
     }
 
-    const transactionRef = db.collection('transactions').doc(transactionId);
+    const transactionRef = adminDb.collection('transactions').doc(transactionId);
     const transactionDoc = await transactionRef.get();
 
     if (transactionDoc.exists) {
       return NextResponse.json({ error: 'Transaction already processed' }, { status: 400 });
     }
 
-    const userRef = db.collection('users').doc(userId);
+    const userRef = adminDb.collection('users').doc(userId);
 
-    await db.runTransaction(async (ts) => {
+    await adminDb.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
       if (!userDoc.exists) {
         throw new Error('User not found');
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      const notificationRef = db.collection('notifications').doc();
+      const notificationRef = adminDb.collection('notifications').doc();
       ts.set(notificationRef, {
         userId,
         title: 'Points Earned!',
