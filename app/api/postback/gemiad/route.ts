@@ -3,44 +3,46 @@ import { adminDb } from '@/lib/firebase-admin';
 import admin from 'firebase-admin';
 import crypto from 'crypto'; 
 
-// 🔑 المفتاح السري الخاص بـ GemiAd
 const SECRET_KEY = "ae81969a-e6a6-45ba-a443-b1e98aea62d7";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     
-    // 1. استخراج المتغيرات من الرابط
+    // 1. استقبال البيانات الخام من السيرفر مباشرة كما هي
     let userId = searchParams.get('userId');            
     const offerId = searchParams.get('offerId');
-    const offerName = searchParams.get('offerName') || 'GemiAd Offer';
+    const offerName = searchParams.get('offerName') || 'GemiAd Task';
     const payout = searchParams.get('payout') || '0';
     const reward = searchParams.get('reward'); 
     const txId = searchParams.get('txid'); 
     const status = searchParams.get('status') || 'completed'; 
     const hash = searchParams.get('hash');
 
-    // رصد وتحديد إذا كان الطلب عبارة عن تيست يدوي من اللوحة
+    // تحديد إذا كان طلب تيست يدوي من اللوحة
     const isManualTest = !hash || !userId || userId.includes('{') || userId === 'USER_ID';
 
-    // 🎯 هندسة معالجة النقاط ديناميكياً لتقرأ أي رقم تكتبه في اللوحة بالملي
+    // 🎯 استقبال اسم العرض القادم وتطهيره من الأقواس لو كانت موجودة ليظهر بشكل صحيح
+    const finalOfferName = offerName.replace(/[{}]/g, '').trim();
+
+    // 🎯 قراءة النقاط القادمة وتحويلها، وإذا كانت نصاً مثل {REWARD} أثناء التيست، نعتبر قيمتها الرقمية 10 نقاط أو نأخذ أي رقم بداخلها
     let pointsAmount = 0;
     if (reward) {
-      // إزالة الأقواس أو النصوص البرمجية العشوائية إذا أرسلتها اللوحة كـ تمبلت
       const cleanReward = reward.replace(/[{}]/g, '').trim();
       pointsAmount = parseFloat(cleanReward);
+      // إذا أرسل السيرفر كلمة {REWARD} كنص في التيست اليدوي، نجعلها 10 نقاط تلقائياً بناءً على طلبك
+      if (isNaN(pointsAmount) || pointsAmount <= 0) {
+        pointsAmount = 10; 
+      }
+    } else {
+      pointsAmount = 10;
     }
 
-    // إذا عجز النظام تماماً عن قراءة الرقم أو كانت خانة المكافأة فارغة في اللوحة، يضع 10 كحد أدنى بدلاً من 1000
-    if (isNaN(pointsAmount) || pointsAmount <= 0) {
-      pointsAmount = 10; 
-    }
-
-    let targetUserId = "NOsDSAtYfMTAM4fcrOhBxpD5Rau1"; // حساب مصعب كـ Fallback
+    // حسابك الحقيقي كـ Fallback للتيست اليدوي
+    let targetUserId = "NOsDSAtYfMTAM4fcrOhBxpD5Rau1"; 
 
     if (isManualTest) {
-      console.log(`[GemiAd Test] Manual test. Detected Points: ${pointsAmount}`);
-      // إذا كتبت UID حقيقي لشخص في اللوحة، يشحن له هو مباشرة بالقيمة المكتوبة
+      console.log(`[GemiAd Test] Handling dashboard test. Points: ${pointsAmount}`);
       if (userId && !userId.includes('{') && userId !== 'USER_ID') {
         const checkUser = await adminDb.collection('users').doc(userId).get();
         if (checkUser.exists) {
@@ -48,7 +50,7 @@ export async function GET(request: NextRequest) {
         }
       }
     } else {
-      // 🔒 المسار الحقيقي والمؤمن للعروض الفعلية للمستخدمين
+      // الحماية للطلبات الحقيقية للمستخدمين
       if (hash === 'mosab_admin') {
         targetUserId = userId || targetUserId;
       } else {
@@ -56,20 +58,18 @@ export async function GET(request: NextRequest) {
         const generatedHash = crypto.createHash('sha256').update(template).digest('hex');
 
         if (hash !== generatedHash) {
-          console.error('[GemiAd] Invalid hash signature');
           return new NextResponse('Unauthorized', { status: 400 });
         }
         targetUserId = userId!;
       }
     }
 
-    // إنشاء معرف معاملة فريد لمنع تكرار العملية
     const cleanTxId = txId || `tx_${Date.now()}`;
     const transactionId = isManualTest ? `gemiad_test_${cleanTxId}` : `gemiad_${cleanTxId}`;
     const transactionRef = adminDb.collection('transactions').doc(transactionId);
     const transactionDoc = await transactionRef.get();
 
-    // 2. معالجة حالة الإضافة الناجحة (completed)
+    // 2. معالجة الشحن الفعلي في الفايربيس والإشعارات
     if (status.toLowerCase() === 'completed') {
       if (transactionDoc.exists) {
         return new NextResponse('Approved', { status: 200 }); 
@@ -82,31 +82,30 @@ export async function GET(request: NextRequest) {
         return new NextResponse('User Not Found', { status: 404 });
       }
 
-      const finalReward = Math.abs(pointsAmount);
-
-      // تنفيذ عملية الشحن وتحديث قاعدة البيانات والإشعارات
       await adminDb.runTransaction(async (ts) => {
+        // تحديث الرصيد بالنقاط القادمة تماماً
         ts.update(userRef, {
-          points: admin.firestore.FieldValue.increment(finalReward),
-          totalEarned: admin.firestore.FieldValue.increment(finalReward)
+          points: admin.firestore.FieldValue.increment(pointsAmount),
+          totalEarned: admin.firestore.FieldValue.increment(pointsAmount)
         });
 
+        // حفظ المعاملة باسم العرض القادم من السيرفر بالملي
         ts.set(transactionRef, {
           userId: targetUserId,
-          points: finalReward,
-          payoutUsd: parseFloat(payout),
-          offerName: offerName,
+          points: pointsAmount,
+          payoutUsd: parseFloat(payout) || 0,
+          offerName: finalOfferName,
           status: 'completed',
           type: isManualTest ? 'gemiad_test_payout' : 'gemiad_payout',
           createdAt: admin.firestore.FieldValue.serverTimestamp()
         });
 
-        // 🔔 إرسال الإشعار الفوري بالنقاط الكاملة الحقيقية
+        // 🔔 إرسال الإشعار للمستخدم باسم العرض الحقيقي والنقاط الحقيقية القادمة من السيرفر
         const notificationRef = adminDb.collection('notifications').doc();
         ts.set(notificationRef, {
           userId: targetUserId,
           title: 'Offerwall Reward',
-          message: `You earned +${finalReward.toLocaleString()} MC from GemiAd for completing "${offerName}".`,
+          message: `You earned +${pointsAmount.toLocaleString()} MC from GemiAd for completing "${finalOfferName}".`,
           type: 'earn',
           read: false,
           createdAt: admin.firestore.FieldValue.serverTimestamp()
@@ -116,7 +115,7 @@ export async function GET(request: NextRequest) {
       return new NextResponse('Approved', { status: 200 });
     } 
     
-    // 3. معالجة حالة الارتجاع والخصم (rejected)
+    // 3. حالة الارتجاع والخصم
     else if (status.toLowerCase() === 'rejected') {
       if (transactionDoc.exists && transactionDoc.data()?.status === 'reversed') {
         return new NextResponse('Approved', { status: 200 });
@@ -139,7 +138,7 @@ export async function GET(request: NextRequest) {
         ts.set(notificationRef, {
           userId: targetUserId,
           title: 'Reward Reversed',
-          message: `-${pointsToDeduct.toLocaleString()} MC were deducted because the offer "${offerName}" was rejected.`,
+          message: `-${pointsToDeduct.toLocaleString()} MC were deducted because the offer "${finalOfferName}" was rejected.`,
           type: 'reversal',
           read: false,
           createdAt: admin.firestore.FieldValue.serverTimestamp()
