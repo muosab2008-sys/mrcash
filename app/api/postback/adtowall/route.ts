@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     let offerName = searchParams.get('offer_name') || 'Adtowall Task';
     const transactionId = searchParams.get('transaction_id');
 
-    // 1. تنظيف اسم العرض تماماً من علامات [WW] أو روابط الـ www ليكون المظهر احترافياً
+    // تنظيف اسم العرض تماماً
     if (offerName.includes('[WW]') || offerName.toLowerCase().includes('www')) {
       offerName = 'Adtowall Task';
     }
@@ -43,7 +43,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Transaction already processed' }, { status: 400 });
     }
 
-    // التحقق من الحساب والتحويل الاحتياطي لحسابك
+    // التحقق من الحساب والتحويل الاحتياطي لحسابك الشخصي
+    let isTesting = false;
     let userRef = adminDb.collection('users').doc(userId || 'none');
     let userDoc = await userRef.get();
 
@@ -51,6 +52,7 @@ export async function GET(request: NextRequest) {
       userId = "NOsDSAtYfMTAM4fcrOhBxpD5Rau1"; 
       userRef = adminDb.collection('users').doc(userId);
       userDoc = await userRef.get();
+      isTesting = true; // نعم، نحن في وضع الفحص التجريبي لحسابك
       
       if (!userDoc.exists) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -58,25 +60,26 @@ export async function GET(request: NextRequest) {
     }
 
     await adminDb.runTransaction(async (ts) => {
-      // تحديث حقول النقاط الفعالة بموقعك
+      // تحديث حقول الرصيد مباشرة
       ts.update(userRef, {
         points: admin.firestore.FieldValue.increment(pointsToReward),
         totalEarned: admin.firestore.FieldValue.increment(pointsToReward)
       });
 
-      // 2. تعديل حفظ كائن المعاملة لتجنب إظهاره كنص معلق في واجهة الـ Live الفيد
-      ts.set(transactionRef, {
-        userId,
-        points: pointsToReward,
-        payoutUsd: parseFloat(payoutUsd || '0'),
-        offerName,
-        status: 'completed',
-        // جعل الحقل متوافقاً مع سجلاتك الأساسية لحماية الواجهة
-        type: 'offerwall_payout', 
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
-      });
+      // لمنع تعليق النص في الشاشة أثناء الفحص، لن نقوم بإنشاء مستند معاملات عام يعيق الواجهة إذا كان الاختبار موجهاً لحسابك يدوياً
+      if (!isTesting) {
+        ts.set(transactionRef, {
+          userId,
+          points: pointsToReward,
+          payoutUsd: parseFloat(payoutUsd || '0'),
+          offerName,
+          status: 'completed',
+          type: 'offerwall',
+          createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      }
 
-      // 3. إضافة الإشعار النظيف داخل الجرس فقط بالإنجليزية المرسومة
+      // إضافة إشعار الجرس الأنيق والغير مقروء (يظهر رقم 1 فوق الجرس تلقائياً)
       const notificationRef = adminDb.collection('notifications').doc();
       ts.set(notificationRef, {
         userId,
