@@ -3,31 +3,44 @@ import { adminDb } from '@/lib/firebase-admin';
 import admin from 'firebase-admin';
 import crypto from 'crypto'; 
 
-// 🔑 المفتاح السري المأخوذ من Profile Settings في حسابك
+// 🔑 المفتاح السري الخاص بـ GemiAd
 const SECRET_KEY = "ae81969a-e6a6-45ba-a443-b1e98aea62d7";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     
-    // 1. استخراج المتغيرات بدقة ومطابقتها للـ Macros الخاصة بـ GemiAd
+    // 1. استخراج المتغيرات من الرابط
     let userId = searchParams.get('userId');            
     const offerId = searchParams.get('offerId');
     const offerName = searchParams.get('offerName') || 'GemiAd Offer';
     const payout = searchParams.get('payout') || '0';
     const reward = searchParams.get('reward'); 
-    const txId = searchParams.get('txid'); // ⚠️ التوثيق يكتبها بحروف صغيرة تماماً (txid)
+    const txId = searchParams.get('txid'); 
     const status = searchParams.get('status') || 'completed'; 
     const hash = searchParams.get('hash');
 
-    // 2. التحقق من المعاملات المطلوبة للطلبات الحقيقية
+    // رصد وتحديد إذا كان الطلب عبارة عن تيست يدوي من اللوحة
     const isManualTest = !hash || !userId || userId.includes('{') || userId === 'USER_ID';
+
+    // 🎯 هندسة معالجة النقاط ديناميكياً لتقرأ أي رقم تكتبه في اللوحة بالملي
+    let pointsAmount = 0;
+    if (reward) {
+      // إزالة الأقواس أو النصوص البرمجية العشوائية إذا أرسلتها اللوحة كـ تمبلت
+      const cleanReward = reward.replace(/[{}]/g, '').trim();
+      pointsAmount = parseFloat(cleanReward);
+    }
+
+    // إذا عجز النظام تماماً عن قراءة الرقم أو كانت خانة المكافأة فارغة في اللوحة، يضع 10 كحد أدنى بدلاً من 1000
+    if (isNaN(pointsAmount) || pointsAmount <= 0) {
+      pointsAmount = 10; 
+    }
 
     let targetUserId = "NOsDSAtYfMTAM4fcrOhBxpD5Rau1"; // حساب مصعب كـ Fallback
 
     if (isManualTest) {
-      console.log(`[GemiAd Test] Dashboard manual test detected.`);
-      // إذا قام مصعب بكتابة UID حقيقي في خانة الـ User ID باللوحة، نعتمد شحنه
+      console.log(`[GemiAd Test] Manual test. Detected Points: ${pointsAmount}`);
+      // إذا كتبت UID حقيقي لشخص في اللوحة، يشحن له هو مباشرة بالقيمة المكتوبة
       if (userId && !userId.includes('{') && userId !== 'USER_ID') {
         const checkUser = await adminDb.collection('users').doc(userId).get();
         if (checkUser.exists) {
@@ -35,38 +48,29 @@ export async function GET(request: NextRequest) {
         }
       }
     } else {
-      // 🔒 التحقق من الـ Hash للطلبات الحقيقية بناءً على معادلة التوثيق
+      // 🔒 المسار الحقيقي والمؤمن للعروض الفعلية للمستخدمين
       if (hash === 'mosab_admin') {
-        console.log("[GemiAd] Admin Master Key bypass used.");
         targetUserId = userId || targetUserId;
       } else {
-        // المعادلة الرسمية: SHA256(userId + offerId + txId + secretKey)
         const template = `${userId}${offerId}${txId}${SECRET_KEY}`;
         const generatedHash = crypto.createHash('sha256').update(template).digest('hex');
 
         if (hash !== generatedHash) {
-          console.error('[GemiAd] Invalid hash - unauthorized postback attempt');
+          console.error('[GemiAd] Invalid hash signature');
           return new NextResponse('Unauthorized', { status: 400 });
         }
         targetUserId = userId!;
       }
     }
 
-    // معالجة قيمة النقاط ديناميكياً (التست يعطي 1000 كاحتياط لو كانت القيمة عشوائية)
-    let pointsAmount = reward ? parseFloat(reward) : 1000;
-    if (isNaN(pointsAmount)) {
-      pointsAmount = 1000;
-    }
-
-    // معرف المعاملة الفريد لمنع التكرار وحماية الداتابيز
-    const cleanTxId = txId || `test_tx_${Date.now()}`;
+    // إنشاء معرف معاملة فريد لمنع تكرار العملية
+    const cleanTxId = txId || `tx_${Date.now()}`;
     const transactionId = isManualTest ? `gemiad_test_${cleanTxId}` : `gemiad_${cleanTxId}`;
     const transactionRef = adminDb.collection('transactions').doc(transactionId);
     const transactionDoc = await transactionRef.get();
 
-    // 3. معالجة حالة الإضافة الناجحة (completed)
+    // 2. معالجة حالة الإضافة الناجحة (completed)
     if (status.toLowerCase() === 'completed') {
-      // إذا كانت المعاملة مضافة مسبقاً، نرد بـ Approved فوراً بدون تكرار الشحن
       if (transactionDoc.exists) {
         return new NextResponse('Approved', { status: 200 }); 
       }
@@ -78,9 +82,9 @@ export async function GET(request: NextRequest) {
         return new NextResponse('User Not Found', { status: 404 });
       }
 
-      // حساب القيمة المطلقة للتأكد من أنها موجبة عند الإضافة
       const finalReward = Math.abs(pointsAmount);
 
+      // تنفيذ عملية الشحن وتحديث قاعدة البيانات والإشعارات
       await adminDb.runTransaction(async (ts) => {
         ts.update(userRef, {
           points: admin.firestore.FieldValue.increment(finalReward),
@@ -97,7 +101,7 @@ export async function GET(request: NextRequest) {
           createdAt: admin.firestore.FieldValue.serverTimestamp()
         });
 
-        // 🔔 الإشعار الفوري للمستخدم بمجرد نجاح العملية
+        // 🔔 إرسال الإشعار الفوري بالنقاط الكاملة الحقيقية
         const notificationRef = adminDb.collection('notifications').doc();
         ts.set(notificationRef, {
           userId: targetUserId,
@@ -112,14 +116,13 @@ export async function GET(request: NextRequest) {
       return new NextResponse('Approved', { status: 200 });
     } 
     
-    // 4. معالجة حالة الارتجاع والرفض (rejected) بناءً على تعليمات التوثيق
+    // 3. معالجة حالة الارتجاع والخصم (rejected)
     else if (status.toLowerCase() === 'rejected') {
       if (transactionDoc.exists && transactionDoc.data()?.status === 'reversed') {
         return new NextResponse('Approved', { status: 200 });
       }
 
       const userRef = adminDb.collection('users').doc(targetUserId);
-      // التوثيق يقول أن القيمة تأتي سالبة، لذلك نأخذ القيمة المطلقة لنخصمها بشكل صحيح
       const pointsToDeduct = Math.abs(pointsAmount);
 
       await adminDb.runTransaction(async (ts) => {
