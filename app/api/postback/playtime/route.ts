@@ -6,19 +6,27 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     
-    // 1. جلب الـ user_id الديناميكي القادم من رابط الشركة مباشرة (لكل الناس)
-    const userId = searchParams.get('user_id');            
+    // 1. جلب الـ user_id الديناميكي بأي صيغة
+    let rawUserId = searchParams.get('user_id') || searchParams.get('subId') || searchParams.get('uid');
+    
+    if (!rawUserId) {
+      return NextResponse.json({ error: 'Missing user_id parameter' }, { status: 400 });
+    }
+
+    // 🔥 الحركة الذكية: تنظيف الـ ID وقشع كلمة TEST_ في حال أرسلتها الشركة أثناء الفحص
+    const userId = rawUserId.replace(/^TEST_/, '');
+
+    // جلب النقاط بأي صيغة (amount أو points أو reward)
+    const amountStr = searchParams.get('amount') || searchParams.get('points') || searchParams.get('reward'); 
+
     const offerId = searchParams.get('offer_id') || '123';
     const offerName = searchParams.get('offer_name') || 'Playtime Task';
-    const amountStr = searchParams.get('amount'); 
     const taskId = searchParams.get('task_id') || '1';
     const taskName = searchParams.get('task_name') || '';
-    const transactionId = searchParams.get('transaction_id') || `pt_${Date.now()}`;
+    const transactionId = searchParams.get('transaction_id') || searchParams.get('transId') || `pt_${Date.now()}`;
 
-    // التحقق من وجود المعطيات الأساسية المطلوبة لإتمام الشحن
-    if (!amountStr || !userId) {
-      console.warn("Playtime Postback: Missing required parameters (user_id or amount)");
-      return NextResponse.json({ error: 'Missing user_id or amount' }, { status: 400 });
+    if (!amountStr) {
+      return NextResponse.json({ error: 'Missing amount parameter' }, { status: 400 });
     }
 
     const pointsToReward = parseInt(amountStr, 10);
@@ -27,7 +35,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid points value' }, { status: 400 });
     }
 
-    // 2. 🛡️ حماية ضد التكرار (Deduplication): التحقق من عدم تكرار شحن نفس العملية
+    // 2. 🛡️ حماية ضد التكرار
     const transactionRef = adminDb.collection('transactions').doc(transactionId);
     const transactionDoc = await transactionRef.get();
 
@@ -35,55 +43,50 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Transaction already processed' }, { status: 400 });
     }
 
-    // 3. 🔍 جلب وثيقة المستخدم الحقيقي للتأكد من وجود حسابه في الموقع فعلياً
+    // 3. 🔍 جلب وثيقة المستخدم الحقيقي بعد التنظيف
     const userRef = adminDb.collection('users').doc(userId);
     const userDoc = await userRef.get();
 
-    // 🛑 حماية فولاذية ضد الهاكرز وكسر النقاط: إذا كان الحساب وهمياً أو غير مسجل، يتم صد المحاولة فوراً
+    // إذا لم يتم العثور على الحساب حتى بعد التنظيف
     if (!userDoc.exists) {
-      console.warn(`Unauthorized Postback Attempt: User [${userId}] does not exist in Firestore.`);
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      console.warn(`Unauthorized Postback: User [${userId}] not found.`);
+      return NextResponse.json({ error: `User [${userId}] not found in database.` }, { status: 404 });
     }
 
-    // صياغة اسم العرض بشكل احترافي
     const displayTask = taskName ? ` - ${taskName}` : '';
     const finalOfferTitle = `${offerName}${displayTask}`;
 
-    // 4. تشغيل الـ Firestore Transaction لشحن الحساب وتحديث السجلات دفعة واحدة بأمان عالي
+    // 4. تشغيل الـ Transaction وشحن النقاط للمستخدم الفعلي
     await adminDb.runTransaction(async (ts) => {
       
-      // أ) شحن النقاط وتحديث إجمالي الأرباح للمستخدم الحالي القائم بالعرض
       ts.update(userRef, {
         points: admin.firestore.FieldValue.increment(pointsToReward),
         totalEarned: admin.firestore.FieldValue.increment(pointsToReward)
       });
 
-      // ب) تسجيل المعاملة في سجل الـ History بالتوافق مع الحقول الجديدة
       ts.set(transactionRef, {
         userId: userId,
         points: pointsToReward,
-        amount: pointsToReward, // مضاف للتوافق الشامل والاحتياط
+        amount: pointsToReward, 
         offerName: finalOfferTitle,
         status: 'completed',
         type: 'offer_credit', 
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      // ج) حقن وثيقة الإشعار بالإنجليزية المتوافقة 100% مع الـ Index والـ Provider الجديد لتفجير التوست الأزرق 🚀
       const notificationRef = adminDb.collection('notifications').doc();
       ts.set(notificationRef, {
         userId: userId,
         title: '🎉 Points Credited!',
         message: `Your account has been credited with +${pointsToReward} points for completing: [ ${finalOfferTitle} ].`,
-        type: 'offer_credit', // يطابق السويتش في الفرونت-إند لتشغيل الهدية والتوست الأزرق
+        type: 'offer_credit', 
         points: pointsToReward, 
         amount: pointsToReward, 
         read: false,
-        timestamp: admin.firestore.FieldValue.serverTimestamp() // الحقل السحري المطابق للفهرس (Index) الجديد
+        timestamp: admin.firestore.FieldValue.serverTimestamp() 
       });
     });
 
-    // الرد النهائي الذي يؤكد للشركة نجاح المعالجة تماماً
     return NextResponse.json({ success: true, message: 'Playtime postback processed successfully' }, { status: 200 });
 
   } catch (error: any) {
