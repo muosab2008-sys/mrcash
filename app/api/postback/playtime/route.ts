@@ -56,21 +56,24 @@ export async function GET(request: NextRequest) {
       ts.set(transactionRef, {
         userId,
         points: pointsToReward,
+        amount: pointsToReward, // مضاف للتوافق الشامل
         offerName: finalOfferTitle,
         status: 'completed',
-        type: 'playtime_payout',
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
+        type: 'offer_credit', // موحد مع النظام الجديد
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      // 3. إضافة إشعار الجرس بالإنجليزية النظيفة
+      // 3. إضافة إشعار الجرس بالإنجليزية النظيفة المتوافقة مع الـ Index الجديد 🔥
       const notificationRef = adminDb.collection('notifications').doc();
       ts.set(notificationRef, {
         userId,
-        title: 'Points Credited',
-        message: `You received +${pointsToReward} points from Playtime for completing "${finalOfferTitle}" task.`,
-        type: 'earn',
+        title: '🎉 Points Credited!',
+        message: `Your account has been credited with +${pointsToReward} points for completing: [ ${finalOfferTitle} ].`,
+        type: 'offer_credit', // 🔥 تم التعديل ليفجر التوست الأزرق فوراً
+        points: pointsToReward, // تمرير صريح للنقاط
+        amount: pointsToReward, // تمرير إضافي احتياطي للتوست
         read: false,
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
+        timestamp: admin.firestore.FieldValue.serverTimestamp() // 🔥 الحقل السحري المتوافق مع الفهرس الجديد
       });
     });
 
