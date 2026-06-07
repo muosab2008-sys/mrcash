@@ -26,8 +26,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    // تحويل النقاط لرقم صحيح لحساب التوقيع الرقمي (كما يطلب التوثيق بالضبط)
-    const pointsToReward = Math.floor(parseFloat(valueRaw));
+     // قراءة القيمة العشرية الحقيقية بالفواصل من أجل شحن رصيد المستخدم بدقة
+const actualPoints = parseFloat(valueRaw);
+const pointsForSignature = Math.floor(actualPoints);
 
     if (isNaN(pointsToReward) || pointsToReward <= 0) {
       return NextResponse.json({ error: 'Invalid reward value' }, { status: 400 });
