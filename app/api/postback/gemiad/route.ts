@@ -6,47 +6,30 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     
-    // 🕵️‍♂️ خطوة المطورين: طباعة كل المتغيرات القادمة من اللوحة في الـ Logs لمعرفتها بالملي
-    const allParams = Object.fromEntries(searchParams.entries());
-    console.log("[GemiAd Debug] Incoming Raw Parameters:", allParams);
+    // 1. استقبال المتغيرات من رابط GemiAd
+    let userId = searchParams.get('userId');            
+    const offerName = searchParams.get('offerName') || 'GemiAd Task';
+    const reward = searchParams.get('reward'); 
+    const txId = searchParams.get('txid') || `tx_${Date.now()}`; 
+    const status = searchParams.get('status') || 'completed'; 
 
-    // جلب اسم العرض بكافة الطرق الممكنة (سمول أو كابيتال)
-    const offerName = searchParams.get('offerName') || 
-                      searchParams.get('offername') || 
-                      searchParams.get('OFFER_NAME') || 
-                      'GemiAd Offer';
-
-    // جلب قيمة المكافأة بكافة الطرق الممكنة
-    const rewardRaw = searchParams.get('reward') || 
-                      searchParams.get('REWARD') || 
-                      searchParams.get('reward_amount');
-
-    // جلب اليوزر بكافة الطرق الممكنة
-    let userId = searchParams.get('userId') || 
-                 searchParams.get('userid') || 
-                 searchParams.get('USER_ID');
-
-    // جلب رقم المعاملة
-    const txId = searchParams.get('txid') || 
-                 searchParams.get('txId') || 
-                 searchParams.get('TXID');
-
-    // تحليل النقاط ديناميكياً
+    // 🎯 تنظيف وقراءة النقاط ديناميكياً مهما كانت القيمة المرسلة
     let pointsAmount = 0;
-    if (rewardRaw) {
-      const cleanReward = rewardRaw.replace(/[{}]/g, '').trim();
+    if (reward) {
+      // إزالة أي أقواس مثل { } قد ترسلها اللوحة في التيست التلقائي
+      const cleanReward = reward.replace(/[{}]/g, '').trim();
       pointsAmount = parseFloat(cleanReward);
     }
 
-    // تنظيف اسم العرض من الأقواس
-    const finalOfferName = offerName.replace(/[{}]/g, '').trim();
-
-    // إذا عجز الكود عن قراءة النقاط، سنأخذ أول رقم نجده في الرابط كدعم إضافي للتيست
-    if (isNaN(pointsAmount) || pointsAmount === 0) {
-      pointsAmount = 15; // نضع 15 افتراضية إذا كانت الخانة القادمة فارغة تماماً
+    // إذا كانت الخانة نصية عشوائية أو فارغة، نضع 10 نقاط كحد أدنى لتجنب الصفر
+    if (isNaN(pointsAmount) || pointsAmount <= 0) {
+      pointsAmount = 10; 
     }
 
-    // تحديد حساب مصعب كـ Fallback
+    // تنظيف اسم العرض ليظهر منسقاً في الإشعارات
+    const finalOfferName = offerName.replace(/[{}]/g, '').trim();
+
+    // تحديد حسابك كـ احتياطي لو كان الـ ID المرسل مجرد رمز تجريبي
     let targetUserId = "NOsDSAtYfMTAM4fcrOhBxpD5Rau1"; 
     if (userId && !userId.includes('{') && userId !== 'USER_ID') {
       const checkUser = await adminDb.collection('users').doc(userId).get();
@@ -55,42 +38,44 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // توليد معاملة فريدة غير مكررة مع إضافة التوقيت
-    const cleanTxId = txId ? txId.replace(/[{}]/g, '').trim() : `tx_${Date.now()}`;
-    const transactionId = `gemiad_dynamic_${cleanTxId}_${Date.now()}`;
+    // توليد معرف معاملة فريد باستخدام التوقيت لضمان عدم التكرار أثناء التجريب
+    const transactionId = `gemiad_live_${Date.now()}`;
     const transactionRef = adminDb.collection('transactions').doc(transactionId);
 
-    // تنفيذ الشحن المباشر في الفايربيس
-    const userRef = adminDb.collection('users').doc(targetUserId);
-    
-    await adminDb.runTransaction(async (ts) => {
-      ts.update(userRef, {
-        points: admin.firestore.FieldValue.increment(pointsAmount),
-        totalEarned: admin.firestore.FieldValue.increment(pointsAmount)
+    if (status.toLowerCase() === 'completed') {
+      const userRef = adminDb.collection('users').doc(targetUserId);
+      const finalReward = Math.abs(pointsAmount);
+
+      await adminDb.runTransaction(async (ts) => {
+        ts.update(userRef, {
+          points: admin.firestore.FieldValue.increment(finalReward),
+          totalEarned: admin.firestore.FieldValue.increment(finalReward)
+        });
+
+        ts.set(transactionRef, {
+          userId: targetUserId,
+          points: finalReward,
+          offerName: finalOfferName,
+          status: 'completed',
+          type: 'gemiad_payout',
+          createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        // 🔔 إرسال الإشعار الفوري للمستخدم بالقيمة والاسم الحقيقيين
+        const notificationRef = adminDb.collection('notifications').doc();
+        ts.set(notificationRef, {
+          userId: targetUserId,
+          title: 'Offerwall Reward',
+          message: `You earned +${finalReward.toLocaleString()} MC from GemiAd for completing "${finalOfferName}".`,
+          type: 'earn',
+          read: false,
+          createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
       });
 
-      ts.set(transactionRef, {
-        userId: targetUserId,
-        points: pointsAmount,
-        offerName: finalOfferName,
-        status: 'completed',
-        type: 'gemiad_test_payout',
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
-      });
+      return new NextResponse('Approved', { status: 200 });
+    }
 
-      // 🔔 إرسال الإشعار بالاسم والنقاط
-      const notificationRef = adminDb.collection('notifications').doc();
-      ts.set(notificationRef, {
-        userId: targetUserId,
-        title: 'Offerwall Reward',
-        message: `You earned +${pointsAmount.toLocaleString()} MC from GemiAd for completing "${finalOfferName}".`,
-        type: 'earn',
-        read: false,
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-    });
-
-    console.log(`[GemiAd Success] Credited +${pointsAmount} for "${finalOfferName}"`);
     return new NextResponse('Approved', { status: 200 });
 
   } catch (error: any) {
