@@ -195,7 +195,7 @@ export default function EarnPage() {
     const uid = userData.uid;
     const urls: Record<string, string> = {
       playtime: `https://web.playtimeads.com/index.php?app_id=6d186de0e9e5e8d7&user_id=${uid}`,
-      pubscale: `https://wow.pubscale.com?app_id=18233528user_id=${uid}`,
+      pubscale: `https://wow.pubscale.com?app_id=18233528&user_id=${uid}`,
       gemiad: `https://gemiwall.com/6a253b429b8d7eab85227756/${uid}`,
       revtoo: `https://revtoo.com/offerwall/xol9xws01wsarkpuv7miwdair6ikvu/${uid}`,
       offery: `https://offery.io/offerwall/c9dow9gf6dwikkp48nnlxxynr24ng6/${uid}`,
