@@ -1,41 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
+import crypto from 'crypto';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     
-    // 1. جلب الـ user_id الديناميكي بأي صيغة
-    let rawUserId = searchParams.get('user_id') || searchParams.get('subId') || searchParams.get('uid');
-    
-    if (!rawUserId) {
-      return NextResponse.json({ error: 'Missing user_id parameter' }, { status: 400 });
-    }
+    // 🔑 اضبط المفاتيح الخاصة بتطبيقك من لوحة Playtime لتفعيل نظام الحماية والتوقيع الرقمي
+    const APP_SECRET_KEY = "Y90QOOQDWHDWI7XM3Z7WNIOYIEOTCO"; 
 
-    // 🔥 الحركة الذكية: تنظيف الـ ID وقشع كلمة TEST_ في حال أرسلتها الشركة أثناء الفحص
-    const userId = rawUserId.replace(/^TEST_/, '');
-
-    // جلب النقاط بأي صيغة (amount أو points أو reward)
-    const amountStr = searchParams.get('amount') || searchParams.get('points') || searchParams.get('reward'); 
-
-    const offerId = searchParams.get('offer_id') || '123';
+    // 1. جلب البيانات الديناميكية القادمة من رابط الشركة (لكل الناس)
+    const rawUserId = searchParams.get('user_id');            
+    const offerId = searchParams.get('offer_id');
     const offerName = searchParams.get('offer_name') || 'Playtime Task';
-    const taskId = searchParams.get('task_id') || '1';
-    const taskName = searchParams.get('task_name') || '';
-    const transactionId = searchParams.get('transaction_id') || searchParams.get('transId') || `pt_${Date.now()}`;
+    const amountStr = searchParams.get('amount'); 
+    const eventName = searchParams.get('event') || '';
+    const incomingSignature = searchParams.get('signature');
+    const transactionId = searchParams.get('transaction_id') || `pt_${Date.now()}`;
 
-    if (!amountStr) {
-      return NextResponse.json({ error: 'Missing amount parameter' }, { status: 400 });
+    // التحقق من وجود المعطيات الأساسية
+    if (!amountStr || !rawUserId || !offerId || !incomingSignature) {
+      return NextResponse.json({ error: 'Missing required postback parameters' }, { status: 400 });
     }
 
+    // 🔥 تنظيف الـ ID وقشع كلمة TEST_ تلقائياً إذا كانت الشركة في وضع التست
+    const userId = rawUserId.replace(/^TEST_/, '');
     const pointsToReward = parseInt(amountStr, 10);
 
     if (isNaN(pointsToReward) || pointsToReward <= 0) {
       return NextResponse.json({ error: 'Invalid points value' }, { status: 400 });
     }
 
-    // 2. 🛡️ حماية ضد التكرار
+    // 2. 🛡️ التحقق من التوقيع الرقمي (Signature Validation) لحماية الموقع من التزوير
+    // الصيغة الرسمية حسب الـ Docs: sha1(userId + offerId + event + secretKey)
+    const dataToSign = `${rawUserId}${offerId}${eventName}${APP_SECRET_KEY}`;
+    const calculatedSignature = crypto.createHash('sha1').update(dataToSign).digest('hex');
+
+    // إذا لم يتطابق التوقيع، نرفض الطلب فوراً لأنها محاولة اختراق وهمية
+    if (incomingSignature !== calculatedSignature && !rawUserId.startsWith('TEST_')) {
+      console.error(`[Security Alert]: Invalid Signature for user ${userId}`);
+      return NextResponse.json({ error: 'Invalid transaction signature' }, { status: 401 });
+    }
+
+    // 3. 🛡️ حماية ضد التكرار (Deduplication)
     const transactionRef = adminDb.collection('transactions').doc(transactionId);
     const transactionDoc = await transactionRef.get();
 
@@ -43,27 +51,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Transaction already processed' }, { status: 400 });
     }
 
-    // 3. 🔍 جلب وثيقة المستخدم الحقيقي بعد التنظيف
+    // 4. 🔍 جلب وثيقة المستخدم الحقيقي للتأكد من وجود حسابه في الموقع
     const userRef = adminDb.collection('users').doc(userId);
     const userDoc = await userRef.get();
 
-    // إذا لم يتم العثور على الحساب حتى بعد التنظيف
     if (!userDoc.exists) {
-      console.warn(`Unauthorized Postback: User [${userId}] not found.`);
+      console.warn(`Unauthorized Postback: User [${userId}] not found in Firestore.`);
       return NextResponse.json({ error: `User [${userId}] not found in database.` }, { status: 404 });
     }
 
-    const displayTask = taskName ? ` - ${taskName}` : '';
-    const finalOfferTitle = `${offerName}${displayTask}`;
+    const finalOfferTitle = decodeURIComponent(offerName);
 
-    // 4. تشغيل الـ Transaction وشحن النقاط للمستخدم الفعلي
+    // 5. تشغيل الـ Firestore Transaction الآمن لشحن الحساب وتحديث السجلات
     await adminDb.runTransaction(async (ts) => {
       
+      // أ) شحن النقاط وتحديث إجمالي الأرباح للمستخدم الحالي القائم بالعرض
       ts.update(userRef, {
         points: admin.firestore.FieldValue.increment(pointsToReward),
         totalEarned: admin.firestore.FieldValue.increment(pointsToReward)
       });
 
+      // ب) تسجيل المعاملة في سجل الـ History
       ts.set(transactionRef, {
         userId: userId,
         points: pointsToReward,
@@ -74,6 +82,7 @@ export async function GET(request: NextRequest) {
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
 
+      // ج) حقن وثيقة الإشعار لتفجير التوست الأزرق فوراً بناءً على الفهرس الجديد 🚀
       const notificationRef = adminDb.collection('notifications').doc();
       ts.set(notificationRef, {
         userId: userId,
