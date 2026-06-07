@@ -6,13 +6,14 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     
-    // جلب المتغيرات العادية مثل أي شركة
+    // جلب المتغيرات العادية والطبيعية من الرابط
     let userId = searchParams.get('user_id');            
     const offerId = searchParams.get('offer_id') || '123';
     let offerName = searchParams.get('offer_name') || 'Playtime Task';
-    const amountStr = searchParams.get('amount'); 
+    const amountStr = searchParams.get('amount'); // النقاط القادمة باسم amount
     const taskId = searchParams.get('task_id') || '1';
     const taskName = searchParams.get('task_name') || '';
+    const transactionId = searchParams.get('transaction_id') || `pt_${Date.now()}`;
 
     if (!amountStr || !userId) {
       return NextResponse.json({ error: 'Missing user_id or amount' }, { status: 400 });
@@ -20,10 +21,19 @@ export async function GET(request: NextRequest) {
 
     const pointsToReward = parseInt(amountStr, 10);
 
-    // صنع ID معاملة بسيط للتجربة لمنع التكرار
-    const uniqueTransactionId = `playtime_test_${offerId}_${taskId}_${Date.now().toString().slice(-4)}`;
+    if (isNaN(pointsToReward) || pointsToReward <= 0) {
+      return NextResponse.json({ error: 'Invalid points value' }, { status: 400 });
+    }
 
-    // التحقق من حسابك الفعلي
+    // التحقق من عدم تكرار المعاملة لحماية الموقع
+    const transactionRef = adminDb.collection('transactions').doc(transactionId);
+    const transactionDoc = await transactionRef.get();
+
+    if (transactionDoc.exists) {
+      return NextResponse.json({ error: 'Transaction already processed' }, { status: 400 });
+    }
+
+    // التحقق من حسابك الفعلي لشحن النقاط فيه مباشرة
     let userRef = adminDb.collection('users').doc(userId);
     let userDoc = await userRef.get();
 
@@ -33,27 +43,38 @@ export async function GET(request: NextRequest) {
     }
 
     const displayTask = taskName ? ` - ${taskName}` : '';
+    const finalOfferTitle = `${offerName}${displayTask}`;
 
     await adminDb.runTransaction(async (ts) => {
-      // شحن النقاط مباشرة في حقل points
+      // 1. شحن النقاط مباشرة في حسابك
       ts.update(userRef, {
         points: admin.firestore.FieldValue.increment(pointsToReward),
         totalEarned: admin.firestore.FieldValue.increment(pointsToReward)
       });
 
-      // إضافة إشعار الجرس العادي بالإنجليزية
+      // 2. تسجيل العملية بالسجلات لحماية الواجهة من التعليق
+      ts.set(transactionRef, {
+        userId,
+        points: pointsToReward,
+        offerName: finalOfferTitle,
+        status: 'completed',
+        type: 'playtime_payout',
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      // 3. إضافة إشعار الجرس بالإنجليزية النظيفة
       const notificationRef = adminDb.collection('notifications').doc();
       ts.set(notificationRef, {
         userId,
-        title: 'Playtime Rewards',
-        message: `You received +${pointsToReward} points from Playtime SDK for completing "${offerName}${displayTask}".`,
+        title: 'Points Credited',
+        message: `You received +${pointsToReward} points from Playtime for completing "${finalOfferTitle}" task.`,
         type: 'earn',
         read: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
     });
 
-    return NextResponse.json({ success: true, message: 'Postback processed successfully' }, { status: 200 });
+    return NextResponse.json({ success: true, message: 'Playtime postback processed successfully' }, { status: 200 });
 
   } catch (error: any) {
     console.error('[Playtime Error]:', error);
