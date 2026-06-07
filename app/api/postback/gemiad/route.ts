@@ -4,7 +4,7 @@ import admin from 'firebase-admin';
 import crypto from 'crypto'; // مدمج في Node.js لعمل تشفير SHA-256
 
 // 🚨 توجه إلى Profile Settings في حسابك بـ GemiAd وانسخ الـ Secret Key وضعه هنا
-const GEMIAD_SECRET_KEY = "YOUR_GEMIAD_SECRET_KEY_HERE";
+const GEMIAD_SECRET_KEY = "ae81969a-e6a6-45ba-a443-b1e98aea62d7";
 
 export async function GET(request: NextRequest) {
   try {
