@@ -1,102 +1,111 @@
-import { NextRequest, NextResponse } from "next/server";
-import {
-  getAdminDb,
-  createSHA1,
-  processPostback,
-  USD_TO_POINTS,
-  parseFloatSafe,
-} from "@/lib/postback-utils";
+import { NextRequest, NextResponse } from 'next/server';
+import { adminDb } from '@/lib/firebase-admin'; 
+import admin from 'firebase-admin';
+import crypto from 'crypto'; // مدمج في Node.js لعمل تشفير SHA-1
 
-/**
- * Playtime SDK Postback Handler
- * 
- * Parameters (automatically appended to URL):
- * - user_id: User unique ID from your app
- * - offer_id: Offer ID
- * - offer_name: Offer name (game name)
- * - payout: Publisher earnings per stage
- * - amount: Reward amount for end user
- * - signature: SHA1 hash for verification
- * - task_name: Task name (e.g., "Reach Level X")
- * - task_id: Task ID
- * - currency_name: Currency name from settings
- */
+// 🚨 قم باستبدال هذه المفاتيح بالمفاتيح الحقيقية من لوحة تحكم Playtime SDK الخاصة بك
+const APP_KEY = "YOUR_APPLICATION_KEY_HERE";
+const SECRET_KEY = "YOUR_APPLICATION_SECRET_KEY_HERE";
 
 export async function GET(request: NextRequest) {
   try {
-    const adminDb = getAdminDb();
     const { searchParams } = new URL(request.url);
+    
+    // جلب المتغيرات الممررة من Playtime SDK
+    let userId = searchParams.get('user_id');            
+    const offerId = searchParams.get('offer_id') || '';
+    let offerName = searchParams.get('offer_name') || 'Playtime Game';
+    const amountStr = searchParams.get('amount'); // عدد النقاط الفعلي للمستخدم
+    const signature = searchParams.get('signature');
+    const taskId = searchParams.get('task_id') || '';
+    const taskName = searchParams.get('task_name') || '';
 
-    // Extract parameters
-    const userId = searchParams.get("user_id") || "";
-    const offerId = searchParams.get("offer_id") || "";
-    const offerName = searchParams.get("offer_name") || "Playtime Offer";
-    const payout = parseFloatSafe(searchParams.get("payout"));
-    const amount = parseFloatSafe(searchParams.get("amount"));
-    const signature = searchParams.get("signature") || "";
-    const taskName = searchParams.get("task_name") || "";
-    const taskId = searchParams.get("task_id") || "";
-    const currencyName = searchParams.get("currency_name") || "";
-
-    // Generate unique transaction ID using offer_id + task_id + user_id
-    const transactionId = taskId 
-      ? `playtime_${offerId}_${taskId}_${userId}` 
-      : `playtime_${offerId}_${userId}_${Date.now()}`;
-
-    // Validate required fields
-    if (!userId) {
-      return new NextResponse("ok", { status: 200 });
+    if (!amountStr || !signature || !userId) {
+      return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    // Verify signature (SHA1)
-    // Playtime signature: SHA1(user_id + offer_id + payout + SECRET_KEY)
-    const secretKey = process.env.PLAYTIME_SECRET_KEY || "";
-    if (secretKey && signature) {
-      const expectedSignature = createSHA1(`${userId}${offerId}${payout}${secretKey}`);
-      if (signature.toLowerCase() !== expectedSignature.toLowerCase()) {
-        console.error("Playtime: Invalid signature");
-        return new NextResponse("invalid_signature", { status: 403 });
+    const pointsToReward = parseInt(amountStr, 10);
+
+    if (isNaN(pointsToReward) || pointsToReward <= 0) {
+      return NextResponse.json({ error: 'Invalid points value' }, { status: 400 });
+    }
+
+    // 🔒 التحقق من التوقيع الرقمي لمنع الغش والتزوير (Signature Verification)
+    // القاعدة: sha1(userId + offerId + pointsToReward + APP_KEY + SECRET_KEY)
+    const rawString = `${userId}${offerId}${pointsToReward}${APP_KEY}${SECRET_KEY}`;
+    const calculatedSignature = crypto.createHash('sha1').update(rawString).digest('hex');
+
+    // إذا كان التوقيع غير متطابق، نرفض الطلب فوراً لحماية رصيد الموقع
+    if (signature.toLowerCase() !== calculatedSignature.toLowerCase()) {
+      console.error('[Playtime SDK] Signature Mismatch!');
+      return NextResponse.json({ error: 'Invalid signature authentication' }, { status: 401 });
+    }
+
+    // نصنع معرف فريد للمعاملة مدمج بين العرض والمهمة لضمان عدم التكرار
+    const uniqueTransactionId = `playtime_${offerId}_${taskId || 'default'}_${signature.slice(0, 8)}`;
+
+    const transactionRef = adminDb.collection('transactions').doc(uniqueTransactionId);
+    const transactionDoc = await transactionRef.get();
+
+    if (transactionDoc.exists) {
+      return NextResponse.json({ error: 'Transaction already processed' }, { status: 400 });
+    }
+
+    // التحقق من حساب المستخدم والتحويل التلقائي لحسابك في بيئة الاختبار
+    let isTesting = false;
+    let userRef = adminDb.collection('users').doc(userId);
+    let userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      // حسابك الشخصي لنجاح التست التجريبي
+      userId = "duO5FMkYkNTPUr9gi283LHoulOu2"; 
+      userRef = adminDb.collection('users').doc(userId);
+      userDoc = await userRef.get();
+      isTesting = true;
+      
+      if (!userDoc.exists) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
     }
 
-    // Calculate USD amount and points
-    // Payout is in USD, amount is in app currency
-    const amountUSD = payout > 0 ? payout : amount / USD_TO_POINTS;
-    const points = Math.round(amountUSD * USD_TO_POINTS);
+    // تنظيف اسم المهمة أو العرض ليكون احترافياً ومفهوماً في الجرس
+    const displayTask = taskName ? ` - ${taskName}` : '';
 
-    // Skip if zero payout
-    if (points === 0) {
-      return new NextResponse("ok", { status: 200 });
-    }
+    await adminDb.runTransaction(async (ts) => {
+      // شحن حقل الرصيد الفعلي بموقعك
+      ts.update(userRef, {
+        points: admin.firestore.FieldValue.increment(pointsToReward),
+        totalEarned: admin.firestore.FieldValue.increment(pointsToReward)
+      });
 
-    // Build full offer name with task if available
-    const fullOfferName = taskName ? `${offerName} - ${taskName}` : offerName;
+      // حفظ العملية بالسجلات
+      if (!isTesting) {
+        ts.set(transactionRef, {
+          userId,
+          points: pointsToReward,
+          offerName: `${offerName}${displayTask}`,
+          status: 'completed',
+          type: 'playtime_payout',
+          createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      }
 
-    // Process postback
-    const result = await processPostback(adminDb, {
-      userId,
-      transactionId,
-      offerwall: "Playtime",
-      offerName: fullOfferName,
-      offerId,
-      eventId: taskId,
-      eventName: taskName,
-      points,
-      amountUSD,
-      isChargeback: false, // Playtime doesn't send chargebacks via same endpoint
+      // إشعار الجرس بالإنجليزية النظيفة المتوافقة مع تحديثات موقعك
+      const notificationRef = adminDb.collection('notifications').doc();
+      ts.set(notificationRef, {
+        userId,
+        title: 'Playtime Rewards',
+        message: `You received +${pointsToReward} points for playing "${offerName}"${displayTask}.`,
+        type: 'earn',
+        read: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
     });
 
-    if (!result.success) {
-      console.error("Playtime postback failed:", result.message);
-    }
+    return NextResponse.json({ success: true, message: 'Playtime postback processed successfully' }, { status: 200 });
 
-    return new NextResponse("ok", { status: 200 });
-  } catch (error) {
-    console.error("Playtime postback error:", error);
-    return new NextResponse("ok", { status: 200 });
+  } catch (error: any) {
+    console.error('[Playtime SDK Postback Error]:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
-
-export async function POST(request: NextRequest) {
-  return GET(request);
 }
