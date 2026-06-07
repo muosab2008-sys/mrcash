@@ -4,7 +4,7 @@ import admin from 'firebase-admin';
 import crypto from 'crypto'; 
 
 // 🚨 ضع هنا الـ Secret Key الحقيقي الخاص بك من الـ Profile Settings
-const GEMIAD_SECRET_KEY = "YOUR_SECRET_KEY_HERE";
+const GEMIAD_SECRET_KEY = "ae81969a-e6a6-45ba-a443-b1e98aea62d7";
 
 export async function GET(request: NextRequest) {
   try {
