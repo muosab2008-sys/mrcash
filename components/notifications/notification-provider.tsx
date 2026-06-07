@@ -14,7 +14,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Gift, Bell } from "lucide-react";
+import { CheckCircle2, XCircle, Gift } from "lucide-react";
 
 interface Notification {
   id: string;
@@ -50,7 +50,16 @@ export function useNotifications() {
 // Beautiful and Clean English Toast Notifications
 function showNotificationToast(notification: Notification) {
   const { type, points, amount, message } = notification;
-  const displayPoints = points || amount || 0;
+  
+  // Dynamic extraction to prevent "+0" bug
+  let displayPoints = points || amount || 0;
+
+  if (displayPoints === 0 && message) {
+    const match = message.match(/\+?\d[\d,.]*/);
+    if (match) {
+      displayPoints = parseFloat(match[0].replace(/[+,]/g, '')) || 0;
+    }
+  }
 
   switch (type) {
     case "withdrawal_approved":
@@ -140,33 +149,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [pushPermission, setPushPermission] = useState<NotificationPermission | null>(null);
-  const [hasAskedPermission, setHasAskedPermission] = useState(false);
   const shownNotifications = useRef<Set<string>>(new Set());
 
+  // Check initial browser permission status quietly
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
       setPushPermission(Notification.permission);
-      const asked = localStorage.getItem("notification_permission_asked");
-      setHasAskedPermission(!!asked);
     }
   }, []);
 
-  useEffect(() => {
-    if (
-      typeof window !== "undefined" && 
-      "Notification" in window && 
-      Notification.permission === "default" &&
-      !hasAskedPermission
-    ) {
-      const timer = setTimeout(() => {
-        setHasAskedPermission(true);
-        localStorage.setItem("notification_permission_asked", "true");
-      }, 3000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [hasAskedPermission]);
-
+  // Firestore Real-time Listener for notifications
   useEffect(() => {
     if (!user) {
       setNotifications([]);
@@ -203,6 +195,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, [user]);
 
+  // Request browser push notification context method manually if triggered via settings
   const requestPushPermission = async (): Promise<boolean> => {
     if (typeof window === "undefined" || !("Notification" in window)) {
       return false;
@@ -211,8 +204,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     try {
       const permission = await Notification.requestPermission();
       setPushPermission(permission);
-      localStorage.setItem("notification_permission_asked", "true");
-      setHasAskedPermission(true);
       return permission === "granted";
     } catch {
       return false;
@@ -245,67 +236,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-      
-      {!hasAskedPermission && pushPermission === "default" && (
-        <NotificationPrompt onClose={() => setHasAskedPermission(true)} />
-      )}
     </NotificationContext.Provider>
-  );
-}
-
-function NotificationPrompt({ onClose }: { onClose: () => void }) {
-  const { requestPushPermission } = useNotifications();
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (!isVisible) return null;
-
-  const handleAllow = async () => {
-    await requestPushPermission();
-    localStorage.setItem("notification_permission_asked", "true");
-    onClose();
-  };
-
-  const handleDeny = () => {
-    localStorage.setItem("notification_permission_asked", "true");
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-        <div className="flex flex-col items-center text-center">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center mb-4 animate-pulse">
-            <Bell className="w-8 h-8 text-white" />
-          </div>
-          
-          <h3 className="text-xl font-bold text-foreground mb-2">
-            Enable Push Notifications
-          </h3>
-          <p className="text-sm text-muted-foreground mb-6">
-            Get instant alerts about new offers, instant rewards, and track your withdrawal status live!
-          </p>
-          
-          <div className="flex gap-3 w-full">
-            <button
-              onClick={handleDeny}
-              className="flex-1 px-4 py-3 rounded-xl border border-border text-muted-foreground hover:bg-secondary transition-colors font-medium"
-            >
-              Not Now
-            </button>
-            <button
-              onClick={handleAllow}
-              className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium hover:opacity-90 transition-opacity"
-            >
-              Allow
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
