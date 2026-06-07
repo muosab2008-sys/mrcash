@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     
-    // 🔑 اضبط المفاتيح الخاصة بتطبيقك من لوحة Playtime لتفعيل نظام الحماية والتوقيع الرقمي
+    // 🔑 تم دمج الـ Secret Key الخاص بك بنجاح لتأمين الـ Signature
     const APP_SECRET_KEY = "Y90QOOQDWHDWI7XM3Z7WNIOYIEOTCO"; 
 
     // 1. جلب البيانات الديناميكية القادمة من رابط الشركة (لكل الناس)
