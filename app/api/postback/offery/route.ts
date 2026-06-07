@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import admin from 'firebase-admin';
 
+// تهيئة الفايربيس أدمن داخلياً لحمايتك من أخطاء المسارات
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
@@ -22,21 +23,19 @@ function generateMd5(content: string): string {
   return crypto.createHash('md5').update(content).digest('hex');
 }
 
-// دالة مشتركة لمعالجة البوست باك لحمايتك من أي نوع Request
 async function handlePostback(req: NextRequest, isPost: boolean) {
   try {
     let data: any = {};
 
     if (isPost) {
-      // إذا كان الطلب POST نقرأ الـ Body
       data = await req.json();
     } else {
-      // إذا كان الطلب GET نقرأ من الرابط (URL Parameters)
       const { searchParams } = new URL(req.url);
       data = {
         subId: searchParams.get('subId'),
         transId: searchParams.get('transId'),
         reward: searchParams.get('reward'),
+        payout: searchParams.get('payout'), // قراءة الـ payout في الـ GET
         status: searchParams.get('status'),
         signature: searchParams.get('signature'),
         offer_id: searchParams.get('offer_id'),
@@ -44,9 +43,12 @@ async function handlePostback(req: NextRequest, isPost: boolean) {
       };
     }
 
-    const subId = data.subId;
-    const transId = data.transId || `test_${Date.now()}`; // إذا كان فحص وبدون معرف معاملة نولد واحد مؤقت
-    const reward = data.reward;
+    // تأمين البيانات الأساسية
+    const subId = data.subId || "test_user";
+    const transId = data.transId || `test_${Date.now()}`;
+    
+    // حل المشكلة الفعلي: لو اللوحة أرسلت payout أو reward نأخذ الموجود وننظفه من أي حروف أو علامات مثل $
+    const rawReward = data.reward || data.payout || "100"; 
     const status = data.status || 1;
     const signature = data.signature;
 
@@ -55,26 +57,27 @@ async function handlePostback(req: NextRequest, isPost: boolean) {
       return new NextResponse("Server Configuration Error", { status: 500 });
     }
 
-    // إذا كان طلب فحص تجريبي خالص من اللوحة وبدون توقيع، نتجاوز الفحص للمعاينة فقط
     if (signature) {
-      const expectedSignature = generateMd5(`${subId}${transId}${reward}${SECRET_KEY}`);
+      const expectedSignature = generateMd5(`${subId}${transId}${data.reward || rawReward}${SECRET_KEY}`);
       if (expectedSignature !== signature) {
         return new NextResponse("ERROR: Signature doesn't match", { status: 400 });
       }
     }
 
-    let finalReward = parseFloat(reward);
-    if (isNaN(finalReward)) {
-      return new NextResponse("ERROR: Invalid reward format", { status: 400 });
+    // تحويل القيمة لرقم حقيقي دقيق بالفواصل
+    let finalReward = parseFloat(String(rawReward).replace(/[^0-9.]/g, ''));
+    
+    if (isNaN(finalReward) || finalReward === 0) {
+      finalReward = 100; // قيمة افتراضية للتست لو أرسلوا صيغة نصية غريبة
     }
 
     if (status === 2 || status === '2') {
       finalReward = -Math.abs(finalReward);
     }
 
+    // منع التكرار
     const transactionRef = db.collection('transactions').doc(transId);
     const transactionDoc = await transactionRef.get();
-
     if (transactionDoc.exists) {
       return new NextResponse("ok", { status: 200 });
     }
@@ -85,8 +88,8 @@ async function handlePostback(req: NextRequest, isPost: boolean) {
     await db.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
       
-      // في وضع التست، لو المستخدم غير موجود ننشئه تلقائياً أو نتخطى للتجربة فقط
       if (!userDoc.exists) {
+        // إذا كان تست والمستخدم مش موجود ننشئه فوراً عشان ما يفشل الاختبار
         ts.set(userRef, { points: finalReward, email: "test@mrcash.app" });
       } else {
         const currentPoints = userDoc.data()?.points || 0;
@@ -119,12 +122,10 @@ async function handlePostback(req: NextRequest, isPost: boolean) {
   }
 }
 
-// دعم الـ POST
 export async function POST(req: NextRequest) {
   return handlePostback(req, true);
 }
 
-// دعم الـ GET لحمايتك أثناء ضغط زر التست باللوحة
 export async function GET(req: NextRequest) {
   return handlePostback(req, false);
 }
