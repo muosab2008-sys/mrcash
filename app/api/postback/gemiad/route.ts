@@ -1,110 +1,145 @@
-import { NextRequest, NextResponse } from "next/server";
-import {
-  getAdminDb,
-  createSHA256,
-  processPostback,
-  USD_TO_POINTS,
-  parseFloatSafe,
-} from "@/lib/postback-utils";
+import { NextRequest, NextResponse } from 'next/server';
+import { adminDb } from '@/lib/firebase-admin'; 
+import admin from 'firebase-admin';
+import crypto from 'crypto'; // مدمج في Node.js لعمل تشفير SHA-256
 
-/**
- * GemiAd Postback Handler
- * 
- * Parameters (uses {MACRO} format):
- * - USER_ID: User ID in your system
- * - OFFER_ID: Offer ID
- * - OFFER_NAME: Completed offer name
- * - EVENT_ID: Event ID (for multi-stage offers)
- * - EVENT_NAME: Event name (e.g., "Reached Level 10")
- * - PAYOUT: Total earnings in USD (negative for rejections)
- * - REWARD: App currency reward (negative for rejections)
- * - TXID: Unique transaction ID
- * - STATUS: "completed" or "rejected"
- * - IPADDR: User IP address
- * - SUB1: Additional source ID
- * - SUB2: Secondary source ID
- * - HASH: SHA-256 verification hash
- */
+// 🚨 توجه إلى Profile Settings في حسابك بـ GemiAd وانسخ الـ Secret Key وضعه هنا
+const GEMIAD_SECRET_KEY = "YOUR_GEMIAD_SECRET_KEY_HERE";
 
 export async function GET(request: NextRequest) {
   try {
-    const adminDb = getAdminDb();
     const { searchParams } = new URL(request.url);
+    
+    // جلب المتغيرات المرسلة من سيرفر GemiAd
+    let userId = searchParams.get('userId');            
+    const offerId = searchParams.get('offerId');
+    const offerName = searchParams.get('offerName') || 'GemiAd Offer';
+    const eventId = searchParams.get('eventId') || '';
+    const eventName = searchParams.get('eventName') || '';
+    const payout = searchParams.get('payout') || '0';
+    const reward = searchParams.get('reward'); // النقاط (تكون سالبة في حال الرفض)
+    const txId = searchParams.get('txId'); // المعرف الفريد للمعاملة
+    const status = searchParams.get('status'); // completed أو rejected
+    const hash = searchParams.get('hash');
 
-    // Extract parameters (GemiAd uses uppercase or lowercase)
-    const userId = searchParams.get("USER_ID") || searchParams.get("user_id") || "";
-    const offerId = searchParams.get("OFFER_ID") || searchParams.get("offer_id") || "";
-    const offerName = searchParams.get("OFFER_NAME") || searchParams.get("offer_name") || "GemiAd Offer";
-    const eventId = searchParams.get("EVENT_ID") || searchParams.get("event_id") || "";
-    const eventName = searchParams.get("EVENT_NAME") || searchParams.get("event_name") || "";
-    const payout = parseFloatSafe(searchParams.get("PAYOUT") || searchParams.get("payout"));
-    const reward = parseFloatSafe(searchParams.get("REWARD") || searchParams.get("reward"));
-    const transactionId = searchParams.get("TXID") || searchParams.get("txid") || "";
-    const status = (searchParams.get("STATUS") || searchParams.get("status") || "completed").toLowerCase();
-    const userIp = searchParams.get("IPADDR") || searchParams.get("ipaddr") || searchParams.get("ip") || "";
-    const sub1 = searchParams.get("SUB1") || searchParams.get("sub1") || "";
-    const sub2 = searchParams.get("SUB2") || searchParams.get("sub2") || "";
-    const hash = searchParams.get("HASH") || searchParams.get("hash") || "";
-
-    // Validate required fields
-    if (!userId || !transactionId) {
-      return new NextResponse("ok", { status: 200 });
+    // 1. التحقق من المتغيرات الإلزامية
+    if (!hash || !userId || !offerId || !txId || !reward || !status) {
+      return new NextResponse('Missing required parameters', { status: 400 });
     }
 
-    // Verify signature (SHA-256)
-    // GemiAd signature: SHA256(USER_ID + TXID + PAYOUT + SECRET_KEY)
-    const secretKey = process.env.GEMIAD_SECRET_KEY || "";
-    if (secretKey && hash) {
-      const expectedHash = createSHA256(`${userId}${transactionId}${payout}${secretKey}`);
-      if (hash.toLowerCase() !== expectedHash.toLowerCase()) {
-        console.error("GemiAd: Invalid hash");
-        return new NextResponse("invalid_signature", { status: 403 });
+    // 🔒 2. التحقق من الهوية والتوقيع الرقمي (Hash Verification) لمنع الغش
+    // المعادلة: SHA256(userId + offerId + txId + secretKey)
+    const template = `${userId}${offerId}${txId}${GEMIAD_SECRET_KEY}`;
+    const calculatedHash = crypto.createHash('sha256').update(template).digest('hex');
+
+    if (hash !== calculatedHash) {
+      console.error('[GemiAd] Invalid Hash Signature!');
+      return new NextResponse('Unauthorized', { status: 400 });
+    }
+
+    // معرف المعاملة الفريد لحفظه في الفايربيس ومنع التكرار
+    const transactionId = `gemiad_${txId}`;
+    const transactionRef = adminDb.collection('transactions').doc(transactionId);
+    const transactionDoc = await transactionRef.get();
+
+    const pointsAmount = parseFloat(reward);
+    const displayOfferTitle = eventName ? `${offerName} - ${eventName}` : offerName;
+
+    // 3. معالجة حالة الإضافة الناجحة (Conversion Completed)
+    if (status === 'completed') {
+      // التحقق من أن المعاملة لم تُشحن مسبقاً لحماية السيرفر من التكرار
+      if (transactionDoc.exists) {
+        return new NextResponse('Approved', { status: 200 }); // الرد بـ 200 لمنع إعادة المحاولة
       }
+
+      // التحقق من وجود حسابك الفعلي أو التحويل التلقائي للتست
+      let userRef = adminDb.collection('users').doc(userId);
+      let userDoc = await userRef.get();
+
+      if (!userDoc.exists) {
+        userId = "duO5FMkYkNTPUr9gi283LHoulOu2"; // حسابك الشخصي للتجربة
+        userRef = adminDb.collection('users').doc(userId);
+      }
+
+      // تشغيل ترانزاكشن الفايربيس (إضافة نقاط + حفظ السجل + إشعار جرس)
+      await adminDb.runTransaction(async (ts) => {
+        ts.update(userRef, {
+          points: admin.firestore.FieldValue.increment(pointsAmount),
+          totalEarned: admin.firestore.FieldValue.increment(pointsAmount)
+        });
+
+        ts.set(transactionRef, {
+          userId,
+          points: pointsAmount,
+          payoutUsd: parseFloat(payout),
+          offerName: displayOfferTitle,
+          status: 'completed',
+          type: 'gemiad_payout',
+          createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        const notificationRef = adminDb.collection('notifications').doc();
+        ts.set(notificationRef, {
+          userId,
+          title: 'Offerwall Reward',
+          message: `You earned +${pointsAmount} points from GemiAd for completing "${displayOfferTitle}".`,
+          type: 'earn',
+          read: false,
+          createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      });
+
+      return new NextResponse('Approved', { status: 200 });
+    } 
+    
+    // 4. معالجة حالة الارتجاع والرفض (Reversal / Rejected)
+    else if (status === 'rejected') {
+      // إذا كانت المعاملة قد رفضت مسبقاً وتم خصمها، ننهي العملية بـ 200
+      if (transactionDoc.exists && transactionDoc.data()?.status === 'reversed') {
+        return new NextResponse('Approved', { status: 200 });
+      }
+
+      let userRef = adminDb.collection('users').doc(userId);
+      let userDoc = await userRef.get();
+
+      if (!userDoc.exists) {
+        userId = "duO5FMkYkNTPUr9gi283LHoulOu2";
+        userRef = adminDb.collection('users').doc(userId);
+      }
+
+      // حساب القيمة الموجبة للخصم (الـ reward قادم بالسالب من الشركة)
+      const pointsToDeduct = Math.abs(pointsAmount);
+
+      await adminDb.runTransaction(async (ts) => {
+        ts.update(userRef, {
+          points: admin.firestore.FieldValue.increment(-pointsToDeduct) // خصم النقاط من رصيده الحالي
+        });
+
+        // تحديث حالة السجل المالي إلى reversed بدلاً من حذفه لمراقبة الغش
+        ts.set(transactionRef, {
+          status: 'reversed',
+          reversedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        // إرسال تنبيه أحمر للمستخدم يوضح له خصم النقاط بسبب الرفض
+        const notificationRef = adminDb.collection('notifications').doc();
+        ts.set(notificationRef, {
+          userId,
+          title: 'Reward Reversed',
+          message: `-${pointsToDeduct} points were deducted because the offer "${displayOfferTitle}" was rejected by the advertiser.`,
+          type: 'reversal',
+          read: false,
+          createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      });
+
+      return new NextResponse('Approved', { status: 200 });
     }
 
-    // Determine if chargeback (status = "rejected" or negative payout)
-    const isChargeback = status === "rejected" || payout < 0;
+    return new NextResponse('Unknown status', { status: 400 });
 
-    // Calculate points - use absolute value of payout
-    const amountUSD = Math.abs(payout);
-    const points = Math.round(amountUSD * USD_TO_POINTS);
-
-    // Skip if zero payout
-    if (points === 0) {
-      return new NextResponse("ok", { status: 200 });
-    }
-
-    // Build offer name with event if available
-    const fullOfferName = eventName ? `${offerName} - ${eventName}` : offerName;
-
-    // Process postback
-    const result = await processPostback(adminDb, {
-      userId,
-      transactionId,
-      offerwall: "GemiAd",
-      offerName: fullOfferName,
-      offerId,
-      points,
-      amountUSD,
-      userIp,
-      isChargeback,
-      eventId,
-      eventName,
-      sub1,
-      sub2,
-    });
-
-    if (!result.success) {
-      console.error("GemiAd postback failed:", result.message);
-    }
-
-    return new NextResponse("ok", { status: 200 });
-  } catch (error) {
-    console.error("GemiAd postback error:", error);
-    return new NextResponse("ok", { status: 200 });
+  } catch (error: any) {
+    console.error('[GemiAd Postback Error]:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
-}
-
-export async function POST(request: NextRequest) {
-  return GET(request);
 }
