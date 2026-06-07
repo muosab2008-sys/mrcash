@@ -20,10 +20,13 @@ interface Notification {
   id: string;
   title: string;
   message: string;
-  type: "success" | "info" | "warning" | "error" | "withdrawal_approved" | "withdrawal_rejected" | "offer_completed";
+  // 🔥 تعديل الأنواع لتشمل الـ offer_credit و chargeback القادمة من السيرفر
+  type: "success" | "info" | "warning" | "error" | "withdrawal_approved" | "withdrawal_rejected" | "offer_completed" | "offer_credit" | "chargeback";
   read: boolean;
   points?: number;
-  createdAt: Timestamp;
+  amount?: number; // الحقل المالي المستخدم في كود السيرفر
+  createdAt?: Timestamp;
+  timestamp?: Timestamp; // الحقل الزمني المستخدم في كود السيرفر
 }
 
 interface NotificationContextType {
@@ -45,22 +48,24 @@ export function useNotifications() {
   return context;
 }
 
-// Custom toast components for different notification types
+// مكونات التوست المخصصة الذكية
 function showNotificationToast(notification: Notification) {
-  const { type, points } = notification;
+  const { type, points, amount, message } = notification;
+  // جلب رصيد النقاط الحقيقي سواء كان مخزناً بـ points أو amount
+  const displayPoints = points || amount || 0;
 
   switch (type) {
     case "withdrawal_approved":
       toast.custom(
         (t) => (
-          <div className="flex items-center gap-3 p-4 bg-card border border-green-500/30 rounded-xl shadow-lg max-w-md animate-in slide-in-from-top-2">
+          <div className="flex items-center gap-3 p-4 bg-card border border-green-500/30 rounded-xl shadow-lg max-w-md animate-in slide-in-from-top-2" style={{ direction: 'rtl' }}>
             <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-foreground text-sm">Withdrawal Approved</p>
+            <div className="flex-1 min-w-0 text-right">
+              <p className="font-bold text-foreground text-sm">تم قبول طلب السحب! 🎉</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Your withdrawal request has been approved successfully!
+                تهانينا، تم معالجة وإرسال دفعتك بنجاح.
               </p>
             </div>
             <button 
@@ -78,14 +83,14 @@ function showNotificationToast(notification: Notification) {
     case "withdrawal_rejected":
       toast.custom(
         (t) => (
-          <div className="flex items-center gap-3 p-4 bg-card border border-red-500/30 rounded-xl shadow-lg max-w-md animate-in slide-in-from-top-2">
+          <div className="flex items-center gap-3 p-4 bg-card border border-red-500/30 rounded-xl shadow-lg max-w-md animate-in slide-in-from-top-2" style={{ direction: 'rtl' }}>
             <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
               <XCircle className="w-5 h-5 text-red-500" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-foreground text-sm">Withdrawal Rejected</p>
+            <div className="flex-1 min-w-0 text-right">
+              <p className="font-bold text-foreground text-sm">تم رفض طلب السحب ⚠️</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Your withdrawal was rejected. Please contact support or check the requirements.
+                الرجاء مراجعة الدعم الفني أو التأكد من شروط السحب.
               </p>
             </div>
             <button 
@@ -100,17 +105,19 @@ function showNotificationToast(notification: Notification) {
       );
       break;
 
+    // 🔥 دمج كود المعاملات الحية والـ offer_credit لتعرض التوست الملون الاحترافي فوراً عند شحن البوست باك
     case "offer_completed":
+    case "offer_credit":
       toast.custom(
         (t) => (
-          <div className="flex items-center gap-3 p-4 bg-card border border-primary/30 rounded-xl shadow-lg max-w-md animate-in slide-in-from-top-2">
-            <div className="w-10 h-10 rounded-full brand-gradient flex items-center justify-center shrink-0">
+          <div className="flex items-center gap-3 p-4 bg-card border border-primary/30 rounded-xl shadow-lg max-w-md animate-in slide-in-from-top-2" style={{ direction: 'rtl' }}>
+            <div className="w-10 h-10 rounded-full brand-gradient flex items-center justify-center shrink-0 bg-gradient-to-r from-blue-500 to-indigo-600">
               <Gift className="w-5 h-5 text-white" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-foreground text-sm">Offer Completed!</p>
+            <div className="flex-1 min-w-0 text-right">
+              <p className="font-bold text-foreground text-sm">🎉 كسبت نقاطاً جديدة!</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Congratulations! You earned <span className="text-primary font-bold">{points?.toLocaleString() || 0}</span> points.
+                مبروك! تم إضافة <span className="text-primary font-bold text-blue-500">+{displayPoints.toLocaleString()}</span> نقطة إلى محفظتك.
               </p>
             </div>
             <button 
@@ -126,9 +133,9 @@ function showNotificationToast(notification: Notification) {
       break;
 
     default:
-      // Generic notification
+      // التنبيه العادي الافتراضي لبقية الأنواع
       toast(notification.title, {
-        description: notification.message,
+        description: message || notification.message,
       });
   }
 }
@@ -140,18 +147,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [hasAskedPermission, setHasAskedPermission] = useState(false);
   const shownNotifications = useRef<Set<string>>(new Set());
 
-  // Check initial push notification permission
+  // التحقق من صلاحيات المتصفح للإشعارات المنبثقة
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
       setPushPermission(Notification.permission);
-      
-      // Check if we've already asked
       const asked = localStorage.getItem("notification_permission_asked");
       setHasAskedPermission(!!asked);
     }
   }, []);
 
-  // Auto-prompt for notifications on first visit
+  // توقيت إظهار طلب تفعيل الإشعارات للمشترك الجديد
   useEffect(() => {
     if (
       typeof window !== "undefined" && 
@@ -159,7 +164,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       Notification.permission === "default" &&
       !hasAskedPermission
     ) {
-      // Show prompt after a short delay
       const timer = setTimeout(() => {
         setHasAskedPermission(true);
         localStorage.setItem("notification_permission_asked", "true");
@@ -169,7 +173,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, [hasAskedPermission]);
 
-  // Listen to user notifications from Firestore
+  // 🔥 الاستماع اللحظي الفولاذي لـ Firestore المرتب بحقل الوقت timestamp السليم
   useEffect(() => {
     if (!user) {
       setNotifications([]);
@@ -178,10 +182,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
 
     const notificationsRef = collection(db, "notifications");
+    
+    // الاستعلام المحدث ليرتب بحقل الـ timestamp المتوافق مع كود السيرفر
     const q = query(
       notificationsRef,
       where("userId", "==", user.uid),
-      orderBy("createdAt", "desc")
+      orderBy("timestamp", "desc")
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -190,7 +196,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         ...doc.data(),
       })) as Notification[];
       
-      // Show toast for new unread notifications
+      // إطلاق توست التنبيه الفوري للمستخدم عند نزول إشعار جديد غير مقروء
       notifs.forEach((notif) => {
         if (!notif.read && !shownNotifications.current.has(notif.id)) {
           shownNotifications.current.add(notif.id);
@@ -199,6 +205,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       });
       
       setNotifications(notifs);
+    }, (error) => {
+      console.error("Firestore Listen Notification Error:", error.message);
     });
 
     return () => unsubscribe();
@@ -247,7 +255,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     >
       {children}
       
-      {/* Push notification prompt */}
+      {/* نافذة منبثقة لطلب إذن الإشعارات من المستخدم */}
       {!hasAskedPermission && pushPermission === "default" && (
         <NotificationPrompt onClose={() => setHasAskedPermission(true)} />
       )}
@@ -281,16 +289,15 @@ function NotificationPrompt({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
         <div className="flex flex-col items-center text-center">
-          {/* Bell icon with animation */}
-          <div className="w-16 h-16 rounded-full brand-gradient flex items-center justify-center mb-4 animate-pulse">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center mb-4 animate-pulse">
             <Bell className="w-8 h-8 text-white" />
           </div>
           
           <h3 className="text-xl font-bold text-foreground mb-2">
-            Enable Notifications
+            تفعيل الإشعارات الفورية
           </h3>
           <p className="text-sm text-muted-foreground mb-6">
-            Get notified about new offers, rewards, and when your withdrawal is processed!
+            احصل على تنبيهات فورية عند إكمال العروض، كسب النقاط، ومتابعة حالة طلبات السحب الخاصة بك!
           </p>
           
           <div className="flex gap-3 w-full">
@@ -298,13 +305,13 @@ function NotificationPrompt({ onClose }: { onClose: () => void }) {
               onClick={handleDeny}
               className="flex-1 px-4 py-3 rounded-xl border border-border text-muted-foreground hover:bg-secondary transition-colors font-medium"
             >
-              Not Now
+              ليس الآن
             </button>
             <button
               onClick={handleAllow}
-              className="flex-1 px-4 py-3 rounded-xl brand-gradient text-white font-medium hover:opacity-90 transition-opacity"
+              className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium hover:opacity-90 transition-opacity"
             >
-              Allow
+              سماح
             </button>
           </div>
         </div>
