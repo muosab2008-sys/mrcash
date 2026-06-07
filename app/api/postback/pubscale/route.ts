@@ -1,113 +1,104 @@
-import { NextRequest, NextResponse } from "next/server";
-import {
-  getAdminDb,
-  createSHA256,
-  processPostback,
-  USD_TO_POINTS,
-  parseFloatSafe,
-} from "@/lib/postback-utils";
+import { NextRequest, NextResponse } from 'next/server';
+import { adminDb } from '@/lib/firebase-admin'; 
+import admin from 'firebase-admin';
+import crypto from 'crypto'; // مدمج في Node.js لعمل تشفير MD5
 
-/**
- * PubScale Postback Handler
- * 
- * S2S Callbacks with custom mobile parameters:
- * - app_id: App unique ID (8 digits)
- * - user_id: User unique ID for tracking
- * - idfa: iOS advertising ID (optional)
- * - ga_id: Android advertising ID (optional)
- * - offer_id: Offer ID
- * - offer_name: Offer name
- * - payout: Publisher earnings in USD
- * - reward: User reward amount
- * - transaction_id: Unique transaction ID
- * - signature: SHA256 verification hash
- * - status: Transaction status
- * - ip: User IP address
- * - country: User country
- */
+// 🚨 استبدل هذا بالمفتاح السري الحقيقي (Secret Key) من لوحة تحكم PubScale
+const PUBSCALE_SECRET_KEY = "debb3049-9ccd-48c4-a0ae-38381db057a2";
 
 export async function GET(request: NextRequest) {
   try {
-    const adminDb = getAdminDb();
     const { searchParams } = new URL(request.url);
+    
+    // جلب المتغيرات الأساسية من PubScale
+    let userId = searchParams.get('user_id');            
+    const token = searchParams.get('token'); // المعرف الفريد للمعاملة لمنع التكرار
+    const valueRaw = searchParams.get('value'); // قيمة النقاط
+    const signature = searchParams.get('signature');
+    
+    // متغيرات إضافية اختيارية لتحسين شكل الإشعار والسجلات
+    const offerName = searchParams.get('offer_name') || 'PubScale Task';
+    const goalName = searchParams.get('goal_name') || '';
+    const payoutUsd = searchParams.get('payout_usd') || '0';
 
-    // Extract parameters
-    const appId = searchParams.get("app_id") || "";
-    const userId = searchParams.get("user_id") || "";
-    const idfa = searchParams.get("idfa") || "";
-    const gaId = searchParams.get("ga_id") || searchParams.get("gaid") || "";
-    const offerId = searchParams.get("offer_id") || "";
-    const offerName = searchParams.get("offer_name") || "PubScale Offer";
-    const payout = parseFloatSafe(searchParams.get("payout"));
-    const reward = parseFloatSafe(searchParams.get("reward"));
-    const transactionId = searchParams.get("transaction_id") || searchParams.get("txid") || "";
-    const signature = searchParams.get("signature") || searchParams.get("hash") || "";
-    const status = (searchParams.get("status") || "completed").toLowerCase();
-    const userIp = searchParams.get("ip") || "";
-    const country = searchParams.get("country") || "";
-    const eventName = searchParams.get("event_name") || searchParams.get("goal") || "";
-
-    // Validate required fields
-    if (!userId) {
-      return new NextResponse("ok", { status: 200 });
+    // 1. التحقق من وجود المتغيرات الإلزامية
+    if (!userId || !token || !valueRaw || !signature) {
+      return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    // Generate transaction ID if not provided
-    const txId = transactionId || `pubscale_${offerId}_${userId}_${Date.now()}`;
+    // تحويل النقاط لرقم صحيح لحساب التوقيع الرقمي (كما يطلب التوثيق بالضبط)
+    const pointsToReward = Math.floor(parseFloat(valueRaw));
 
-    // Verify signature (SHA256) if provided
-    // PubScale signature: SHA256(user_id + transaction_id + payout + SECRET_KEY)
-    const secretKey = process.env.PUBSCALE_SECRET_KEY || "";
-    if (secretKey && signature) {
-      const expectedSignature = createSHA256(`${userId}${txId}${payout}${secretKey}`);
-      if (signature.toLowerCase() !== expectedSignature.toLowerCase()) {
-        console.error("PubScale: Invalid signature");
-        return new NextResponse("invalid_signature", { status: 403 });
-      }
+    if (isNaN(pointsToReward) || pointsToReward <= 0) {
+      return NextResponse.json({ error: 'Invalid reward value' }, { status: 400 });
     }
 
-    // Determine if chargeback
-    const isChargeback = status === "rejected" || status === "reversed" || status === "chargeback";
+    // 🔒 2. التحقق من التوقيع الرقمي (Hash Validation) لمنع الغش
+    // الصيغة المطلوبة: secret_key.user_id.points.token
+    const template = `${PUBSCALE_SECRET_KEY}.${userId}.${pointsToReward}.${token}`;
+    const calculatedSignature = crypto.createHash('md5').update(template).digest('hex');
 
-    // Calculate USD amount and points
-    // Payout is in USD, reward is in app currency
-    const amountUSD = payout > 0 ? payout : reward / USD_TO_POINTS;
-    const points = Math.round(amountUSD * USD_TO_POINTS);
-
-    // Skip if zero payout
-    if (points === 0) {
-      return new NextResponse("ok", { status: 200 });
+    if (signature.toLowerCase() !== calculatedSignature.toLowerCase()) {
+      console.error('[PubScale] Signature Mismatch!');
+      return NextResponse.json({ error: 'Invalid hash signature' }, { status: 401 });
     }
 
-    // Build full offer name with event if available
-    const fullOfferName = eventName ? `${offerName} - ${eventName}` : offerName;
+    // 3. التحقق من عدم تكرار العملية باستخدام الـ Token الفريد لمنع الثغرات
+    const transactionId = `pubscale_${token}`;
+    const transactionRef = adminDb.collection('transactions').doc(transactionId);
+    const transactionDoc = await transactionRef.get();
 
-    // Process postback
-    const result = await processPostback(adminDb, {
-      userId,
-      transactionId: txId,
-      offerwall: "PubScale",
-      offerName: fullOfferName,
-      offerId,
-      eventName,
-      points,
-      amountUSD,
-      userIp,
-      country,
-      isChargeback,
+    if (transactionDoc.exists) {
+      return NextResponse.json({ error: 'Transaction already processed' }, { status: 400 });
+    }
+
+    // 4. التحقق من وجود حسابك الفعلي أو التحويل التلقائي للتجربة
+    let userRef = adminDb.collection('users').doc(userId);
+    let userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      userId = "duO5FMkYkNTPUr9gi283LHoulOu2"; // حسابك الشخصي للتست
+      userRef = adminDb.collection('users').doc(userId);
+    }
+
+    // تنسيق اسم العرض مع المهمة الفرعية إن وجدت
+    const displayGoal = goalName ? ` - ${goalName}` : '';
+    const finalOfferTitle = `${offerName}${displayGoal}`;
+
+    // 5. تشغيل العملية في قاعدة البيانات (شحن النقاط + سجلات + إشعار الجرس)
+    await adminDb.runTransaction(async (ts) => {
+      ts.update(userRef, {
+        points: admin.firestore.FieldValue.increment(pointsToReward),
+        totalEarned: admin.firestore.FieldValue.increment(pointsToReward)
+      });
+
+      // حفظ المعاملة بالسجلات المالية للموقع
+      ts.set(transactionRef, {
+        userId,
+        points: pointsToReward,
+        payoutUsd: parseFloat(payoutUsd),
+        offerName: finalOfferTitle,
+        status: 'completed',
+        type: 'pubscale_payout',
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      // إشعار جرس إنجليزي مرتب يظهر للمستخدم فوراً
+      const notificationRef = adminDb.collection('notifications').doc();
+      ts.set(notificationRef, {
+        userId,
+        title: 'Offerwall Reward',
+        message: `You received +${pointsToReward} points from PubScale for completing "${finalOfferTitle}".`,
+        type: 'earn',
+        read: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
     });
 
-    if (!result.success) {
-      console.error("PubScale postback failed:", result.message);
-    }
+    return NextResponse.json({ success: true, message: 'PubScale postback processed successfully' }, { status: 200 });
 
-    return new NextResponse("ok", { status: 200 });
-  } catch (error) {
-    console.error("PubScale postback error:", error);
-    return new NextResponse("ok", { status: 200 });
+  } catch (error: any) {
+    console.error('[PubScale Postback Error]:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
-
-export async function POST(request: NextRequest) {
-  return GET(request);
 }
