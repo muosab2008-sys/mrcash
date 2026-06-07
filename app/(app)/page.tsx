@@ -193,10 +193,9 @@ export default function EarnPage() {
       playtime: `https://web.playtimeads.com/index.php?app_id=6d186de0e9e5e8d7&user_id=${uid}`,
       pubscale: `https://wow.pubscale.com?app_id=18233528&user_id=${uid}`,
       gemiad: `https://gemiwall.com/6a253b429b8d7eab85227756/${uid}`,
-      offery: `https://offery.io/offerwall/c9dow9gf6dwikkp48nnlxxynr24ng6/${uid}`,
+      offery: `https://offery.io/offerwall/wxmtheoaq6qgk8262kuarqbpqu8fe7/${uid}`,
       adtogame: `https://adtowall.com/7683/${uid}`,
       pixylabs: `https://offerwall.pixylabs.co/230?uid=${uid}`,
-      adlexy: `https://adlexy.com/offerwall/7czsknu4bdnqutvkilmntorwwr0s2s/${uid}`,
       taskwall: `https://wall.taskwall.io/?app_id=e723adebdbab293255deefe5fe401b43&userid=${uid}`,
       flexwall: `https://flexwall.net/iframe?app_id=412&user_id=${uid}`,
     };
