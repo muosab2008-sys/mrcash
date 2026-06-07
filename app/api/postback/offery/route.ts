@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import admin from 'firebase-admin';
 
-// 1. تهيئة الـ Firebase Admin داخلياً لحمايتك من أخطاء مسارات الملفات
+// 1. Initialize Firebase Admin internally
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
@@ -19,12 +19,12 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// دالة لتوليد الهاش وتأمين البوست باك
+// Helper function to generate MD5 hash for postback validation
 function generateMd5(content: string): string {
   return crypto.createHash('md5').update(content).digest('hex');
 }
 
-// 2. معالج استخراج البيانات الذكي (يدعم Form-Data لـ Offery ويدعم الـ GET للتست والروابط المباشرة)
+// 2. Smart data parser supporting both Form-Data and URL Search Params
 async function parsePostbackData(req: NextRequest) {
   const urlParams = new URL(req.url).searchParams;
   let bodyParams: any = {};
@@ -56,11 +56,11 @@ async function parsePostbackData(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    // جلب البيانات المستخرجة بالكامل
+    // Extract parsed postback data
     const data = await parsePostbackData(req);
 
     const subId = data.subId;
-    // حل مشكلة تكرار التست: توليد معرف فريد تلقائياً إذا أرسلت اللوحة معرّفاً فارغاً لتظهر لك النتائج دائماً
+    // Generate a unique test ID if the dashboard sends an empty transaction ID
     const transId = data.transId && data.transId !== "undefined" && data.transId !== "" 
       ? data.transId 
       : `test_${Date.now()}`;
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     const status = data.status || 1;
     const signature = data.signature;
 
-    // التحقق من وجود المتغيرات الأساسية لمعالجة النقاط
+    // Validate required parameters
     if (!subId || (!reward && !data.payout)) {
       console.warn("Offery Postback: Missing required parameters", data);
       return new NextResponse("ERROR: Missing Parameters", { status: 400 });
@@ -81,8 +81,7 @@ export async function POST(req: NextRequest) {
       return new NextResponse("Server Configuration Error", { status: 500 });
     }
 
-    // 3. التحقق الأمني من الـ Signature المتوافق مع التوثيق
-    // إذا كان الطلب تجريبياً خالصاً بدون توقيع، يتم تجاوزه لإتمام الفحص بنجاح
+    // 3. Security Check: Validate Signature
     if (signature && signature !== "undefined" && signature !== "null" && signature !== "") {
       const expectedSignature = generateMd5(`${subId}${transId}${reward}${SECRET_KEY}`);
       if (expectedSignature !== signature) {
@@ -91,28 +90,28 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4. تنظيف ومعالجة رصيد النقاط (Float)
+    // 4. Clean and parse points reward
     let finalReward = parseFloat(String(reward).replace(/[^0-9.]/g, ''));
     
-    // إذا لم يرسل السيرفر نقاطاً صافية (مثل وضع التست بناءً على الـ Payout)، نقوم بالحسبة مباشرة
+    // Fallback calculation based on payout if pure points reward is missing (e.g. Test Mode)
     if (isNaN(finalReward)) {
       const payoutVal = parseFloat(String(data.payout).replace(/[^0-9.]/g, '')) || 0.005;
-      finalReward = payoutVal * 2000; // الحسبة المباشرة بناءً على سعر الصرف الخاص بك (2000 نقطة لكل 1$)
+      finalReward = payoutVal * 2000; // Rate exchange: 2000 points per $1
     }
 
-    // التعامل مع عمليات رد الأموال (Chargebacks)
+    // Handle Chargebacks / Refunds
     if (status === 2 || status === '2') {
       finalReward = -Math.abs(finalReward);
     }
 
-    // 5. استخراج اسم العرض بذكاء (إذا كان فارغاً في التست يكتب نصاً احترافياً بدلاً من undefined)
+    // 5. English-only intelligent offer name resolution
     const offerName = data.offer_name && data.offer_name !== "undefined" && data.offer_name !== "" 
       ? data.offer_name 
-      : "إكمال عرض متميز (Offery)";
+      : "Premium Offer (Offery)";
 
     const transactionRef = db.collection('transactions').doc(transId);
     
-    // منع تكرار شحن نفس العملية (إلا إذا كانت عملية تست تبدأ بـ test_ للسماح لك بالتكرار)
+    // Deduplication filter (allows continuous test requests starting with 'test_')
     if (!transId.startsWith('test_')) {
       const transactionDoc = await transactionRef.get();
       if (transactionDoc.exists) {
@@ -121,21 +120,21 @@ export async function POST(req: NextRequest) {
     }
 
     const userRef = db.collection('users').doc(subId);
-    const notificationRef = db.collection('notifications').doc(); // توليد معرف إشعار فريد تلقائياً
+    const notificationRef = db.collection('notifications').doc(); // Auto-generates a unique notification document ID
 
-    // 6. تشغيل الـ Firestore Transaction لشحن النقاط والإشعارات دفعة واحدة بأمان
+    // 6. Firestore Atomicity Transaction for processing balance and English logs simultaneously
     await db.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
       
       if (!userDoc.exists) {
-        // إذا كان حساب الفحص غير موجود، ننشئه تلقائياً لمنع فشل طلب اللوحة
+        // Auto-create missing test profile to ensure dashboard requests don't drop
         ts.set(userRef, { points: finalReward, email: "test_user@mrcash.app", createdAt: new Date() });
       } else {
         const currentPoints = userDoc.data()?.points || 0;
         ts.update(userRef, { points: currentPoints + finalReward });
       }
 
-      // أ) حفظ المعاملة في سجل الـ History
+      // A) Register Transaction History Log
       ts.set(transactionRef, {
         userId: subId,
         amount: finalReward,
@@ -146,19 +145,20 @@ export async function POST(req: NextRequest) {
         status: 'completed'
       });
 
-      // ب) حفظ وثيقة الإشعار بالصياغة الصحيحة والكاملة ليقرأها الـ Front-end
+      // B) Inject English Real-time Notification Document
       ts.set(notificationRef, {
         userId: subId,
-        title: finalReward > 0 ? "🎉 تهانينا! كسبت نقاطاً جديدة" : "⚠️ تنبيه: سحب نقاط",
+        title: finalReward > 0 ? "🎉 Points Credited!" : "⚠️ Points Deducted",
         message: finalReward > 0 
-          ? `تم شحن حسابك بـ ${finalReward} نقطة بنجاح مقابل إكمال: [ ${offerName} ].`
-          : `تم خصم ${Math.abs(finalReward)} نقطة بسبب إلغاء العرض.`,
+          ? `Your account has been credited with +${finalReward} points for completing: [ ${offerName} ].`
+          : `Your account was deducted by ${Math.abs(finalReward)} points due to offer cancellation.`,
+        type: finalReward > 0 ? "offer_credit" : "chargeback", // Matches Client-side Toast Switch
         read: false,
-        timestamp: admin.firestore.FieldValue.serverTimestamp() // طابع زمني دقيق للترتيب
+        timestamp: admin.firestore.FieldValue.serverTimestamp() // Accurate real-time syncing field
       });
     });
 
-    // 7. الرد بكلمة النجاح المطلوبة رسمياً في التوثيق
+    // 7. Standard status return code for postback acceptance
     return new NextResponse("ok", { status: 200 });
 
   } catch (error: any) {
@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// دعم الـ GET لحمايتك الشاملة وتسهيل الفحص المباشر
+// GET support handler for visual parsing and dashboard diagnostics
 export async function GET(req: NextRequest) {
   return POST(req);
 }
