@@ -6,15 +6,16 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     
-    // جلب المتغيرات العادية والطبيعية من الرابط
-    let userId = searchParams.get('user_id');            
+    // 1. جلب الـ user_id الديناميكي القادم من رابط الشركة مباشرة
+    const userId = searchParams.get('user_id');            
     const offerId = searchParams.get('offer_id') || '123';
-    let offerName = searchParams.get('offer_name') || 'Playtime Task';
-    const amountStr = searchParams.get('amount'); // النقاط القادمة باسم amount
+    const offerName = searchParams.get('offer_name') || 'Playtime Task';
+    const amountStr = searchParams.get('amount'); 
     const taskId = searchParams.get('task_id') || '1';
     const taskName = searchParams.get('task_name') || '';
     const transactionId = searchParams.get('transaction_id') || `pt_${Date.now()}`;
 
+    // التحقق من وجود المعطيات الأساسية للطلب
     if (!amountStr || !userId) {
       return NextResponse.json({ error: 'Missing user_id or amount' }, { status: 400 });
     }
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid points value' }, { status: 400 });
     }
 
-    // التحقق من عدم تكرار المعاملة لحماية الموقع
+    // 2. التحقق من عدم تكرار المعاملة (حماية ضد الـ Replay Attacks)
     const transactionRef = adminDb.collection('transactions').doc(transactionId);
     const transactionDoc = await transactionRef.get();
 
@@ -33,47 +34,49 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Transaction already processed' }, { status: 400 });
     }
 
-    // التحقق من حسابك الفعلي لشحن النقاط فيه مباشرة
-    let userRef = adminDb.collection('users').doc(userId);
-    let userDoc = await userRef.get();
+    // 3. 🛡️ جلب وثيقة المستخدم الحقيقي من الفايربيس شريطة وجوده فعلياً
+    const userRef = adminDb.collection('users').doc(userId);
+    const userDoc = await userRef.get();
 
+    // 🛑 حماية فولاذية: إذا كان الـ user_id وهمي أو غير موجود، نرفض الطلب فوراً ونمنع اختراق النقاط
     if (!userDoc.exists) {
-      userId = "duO5FMkYkNTPUr9gi283LHoulOu2"; 
-      userRef = adminDb.collection('users').doc(userId);
+      console.warn(`Unauthorized Postback: User ${userId} does not exist in Database.`);
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const displayTask = taskName ? ` - ${taskName}` : '';
     const finalOfferTitle = `${offerName}${displayTask}`;
 
+    // 4. تشغيل الـ Transaction الآمن لشحن حساب المستخدم الفعلي القائم بالعملية
     await adminDb.runTransaction(async (ts) => {
-      // 1. شحن النقاط مباشرة في حسابك
+      // شحن النقاط في حساب هذا المستخدم بالظبط
       ts.update(userRef, {
         points: admin.firestore.FieldValue.increment(pointsToReward),
         totalEarned: admin.firestore.FieldValue.increment(pointsToReward)
       });
 
-      // 2. تسجيل العملية بالسجلات لحماية الواجهة من التعليق
+      // تسجيل العملية في السجلات باسمه
       ts.set(transactionRef, {
-        userId,
+        userId: userId,
         points: pointsToReward,
-        amount: pointsToReward, // مضاف للتوافق الشامل
+        amount: pointsToReward, 
         offerName: finalOfferTitle,
         status: 'completed',
-        type: 'offer_credit', // موحد مع النظام الجديد
+        type: 'offer_credit', 
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      // 3. إضافة إشعار الجرس بالإنجليزية النظيفة المتوافقة مع الـ Index الجديد 🔥
+      // إرسال الإشعار والتوست لحسابه هو مباشرة بناءً على الفهرس الجديد 🚀
       const notificationRef = adminDb.collection('notifications').doc();
       ts.set(notificationRef, {
-        userId,
+        userId: userId,
         title: '🎉 Points Credited!',
         message: `Your account has been credited with +${pointsToReward} points for completing: [ ${finalOfferTitle} ].`,
-        type: 'offer_credit', // 🔥 تم التعديل ليفجر التوست الأزرق فوراً
-        points: pointsToReward, // تمرير صريح للنقاط
-        amount: pointsToReward, // تمرير إضافي احتياطي للتوست
+        type: 'offer_credit', 
+        points: pointsToReward, 
+        amount: pointsToReward, 
         read: false,
-        timestamp: admin.firestore.FieldValue.serverTimestamp() // 🔥 الحقل السحري المتوافق مع الفهرس الجديد
+        timestamp: admin.firestore.FieldValue.serverTimestamp() 
       });
     });
 
