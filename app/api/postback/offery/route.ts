@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
     // 5. English-only intelligent offer name resolution
     const offerName = data.offer_name && data.offer_name !== "undefined" && data.offer_name !== "" 
       ? data.offer_name 
-      : "Premium Offer (Offery)";
+      : "Premium Offer";
 
     const transactionRef = db.collection('transactions').doc(transId);
     
@@ -140,18 +140,18 @@ export async function POST(req: NextRequest) {
         amount: finalReward,
         type: finalReward > 0 ? 'offer_credit' : 'chargeback',
         offerId: data.offer_id || 'test_id',
-        offerName: offerName,
+        offerName: `${offerName} (Offery)`,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         status: 'completed'
       });
 
-      // B) Inject English Real-time Notification Document
+      // B) Inject English Real-time Notification Document (تم إضافة اسم الشركة هنا)
       ts.set(notificationRef, {
         userId: subId,
         title: finalReward > 0 ? "🎉 Points Credited!" : "⚠️ Points Deducted",
         message: finalReward > 0 
-          ? `Your account has been credited with +${finalReward} points for completing: [ ${offerName} ].`
-          : `Your account was deducted by ${Math.abs(finalReward)} points due to offer cancellation.`,
+          ? `Your account has been credited with +${finalReward} points for completing: [ ${offerName} ] from Offery.`
+          : `Your account was deducted by ${Math.abs(finalReward)} points due to offer cancellation from Offery.`,
         type: finalReward > 0 ? "offer_credit" : "chargeback", // Matches Client-side Toast Switch
         read: false,
         timestamp: admin.firestore.FieldValue.serverTimestamp() // Accurate real-time syncing field
