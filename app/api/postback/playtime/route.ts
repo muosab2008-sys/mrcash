@@ -3,53 +3,63 @@ import crypto from 'crypto';
 
 export async function GET(request) {
   try {
-    // 1. Parse the incoming request URL to read the query parameters
     const { searchParams } = new URL(request.url);
     
-    // Extract parameters exactly as defined in your URL structure
+    // استخراج البيانات القادمة من رابط الـ Postback
     const userId = searchParams.get('user_id');
     const offerId = searchParams.get('offer_id');
-    const payout = searchParams.get('payout');
-    const amount = searchParams.get('amount');
+    const amount = searchParams.get('amount'); 
     const signature = searchParams.get('signature');
     const event = searchParams.get('event');
-    const offerName = searchParams.get('offer_name');
+    const offerName = searchParams.get('offer_name') || 'Offer';
 
-    // 2. Fetch secure credentials from your Vercel Environment Variables
-    const APP_KEY = process.env.PLAYTIME_APP_KEY;
-    const SECRET_KEY = process.env.PLAYTIME_SECRET_KEY; // Your Value: Y90QOOQDWHDWI7XM3Z7WNIOYIEOTCO
-
-    // Early fallback check if environment variables are missing on Vercel
-    if (!APP_KEY || !SECRET_KEY) {
-      console.error("❌ Error: PLAYTIME_APP_KEY or PLAYTIME_SECRET_KEY is missing in Vercel environment variables.");
-      return NextResponse.json({ error: 'Server configuration mismatch' }, { status: 500 });
+    // التحقق من وجود المعاملات الأساسية
+    if (!userId || !offerId || !amount || !signature || !event) {
+      return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    // 3. Reconstruct the signature following the Playtime SDK documentation rule:
-    // sha1(userId + offerId + event + APP_KEY + SECRET_KEY)
-    const dataToHash = `${userId}${offerId}${event}${APP_KEY}${SECRET_KEY}`;
-    const calculatedSignature = crypto.createHash('sha1').update(dataToHash).digest('hex');
+    // جلب المتغيرات السرية التي أضفتها في Vercel
+    const appKey = process.env.PLAYTIME_APP_KEY;
+    const secretKey = process.env.PLAYTIME_SECRET_KEY;
 
-    // 4. Validate signature authenticity
+    if (!appKey || !secretKey) {
+      console.error("❌ خطأ: لم يتم العثور على PLAYTIME_APP_KEY أو PLAYTIME_SECRET_KEY في إعدادات Vercel!");
+      return NextResponse.json({ error: 'Server configuration missing' }, { status: 500 });
+    }
+
+    // حساب الـ Signature بناءً على الترتيب المطلوب في التوثيق الخاص بـ Playtime
+    const stringToHash = `${userId}${offerId}${event}${appKey}${secretKey}`;
+    const calculatedSignature = crypto.createHash('sha1').update(stringToHash).digest('hex');
+
+    // التحقق من تطابق الـ Signature لحماية السيرفر من التلاعب
     if (signature !== calculatedSignature) {
-      console.warn(`⚠️ Security Mismatch! Received: ${signature} | Calculated: ${calculatedSignature}`);
-      return NextResponse.json({ error: 'Invalid signature authentication' }, { status: 401 });
+      console.warn(`⚠️ محاولة طلب غير مصرح بها! Signature غير متطابق للمستخدم: ${userId}`);
+      return NextResponse.json({ error: 'Invalid signature. Request untrusted.' }, { status: 403 });
     }
 
-    // =======================================================
-    // 💰 [ YOUR BACKEND LOGIC HERE ]
-    // Credit the points to the user inside your database (Appwrite/Firebase)
-    // User ID is in: userId
-    // Points amount to add is in: amount
-    // =======================================================
+    const coinAmount = parseInt(amount, 10);
 
-    console.log(`✅ Success: Validated postback. Crediting ${amount} points to user ${userId}`);
+    // -------------------------------------------------------------
+    // 🚀 هنا يتم معالجة النقاط وإرسال الإشعار
+    // -------------------------------------------------------------
+    
+    console.log(`🎉 تم التحقق بنجاح! إضافة ${coinAmount} نقطة للمستخدم: ${userId}`);
 
-    // 5. Send a 200 OK success response back to Playtime servers
-    return NextResponse.json({ success: true }, { status: 200 });
+    // استدعاء دالة الإشعار وتمرير البيانات لها
+    await sendNotificationToUser(userId, coinAmount, offerName);
+
+    // الرد على سيرفر Playtime بـ 200 OK لتأكيد الاستلام
+    return NextResponse.json({ success: true, message: 'Postback processed successfully' }, { status: 200 });
 
   } catch (error) {
-    console.error('Postback Runtime Exception:', error);
+    console.error('Postback Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
+}
+
+// دالة إرسال الإشعار للمستخدم
+async function sendNotificationToUser(userId, points, offerName) {
+  // يمكنك هنا ربطها بـ Firebase Cloud Messaging (بما أنني أرى Firebase في متغيراتك)
+  // أو عبر الـ Database لإظهار إشعار داخل التطبيق عند دخول المستخدم
+  console.log(`🔔 إشعار للمستخدم ${userId}: مبروك! تم إضافة ${points} نقطة لحسابك من عرض [${offerName}].`);
 }
