@@ -1,105 +1,55 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin'; 
-import admin from 'firebase-admin';
+import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
-export async function GET(request: NextRequest) {
+export async function GET(request) {
   try {
+    // 1. Parse the incoming request URL to read the query parameters
     const { searchParams } = new URL(request.url);
     
-    // 🔑 تم دمج الـ Secret Key الخاص بك بنجاح لتأمين الـ Signature
-    const APP_SECRET_KEY = "Y90QOOQDWHDWI7XM3Z7WNIOYIEOTCO"; 
-
-    // 1. جلب البيانات الديناميكية القادمة من رابط الشركة (لكل الناس)
-    const rawUserId = searchParams.get('user_id');            
+    // Extract parameters exactly as defined in your URL structure
+    const userId = searchParams.get('user_id');
     const offerId = searchParams.get('offer_id');
-    const offerName = searchParams.get('offer_name') || 'Playtime Task';
-    const amountStr = searchParams.get('amount'); 
-    const eventName = searchParams.get('event') || '';
-    const incomingSignature = searchParams.get('signature');
-    const transactionId = searchParams.get('transaction_id') || `pt_${Date.now()}`;
+    const payout = searchParams.get('payout');
+    const amount = searchParams.get('amount');
+    const signature = searchParams.get('signature');
+    const event = searchParams.get('event');
+    const offerName = searchParams.get('offer_name');
 
-    // التحقق من وجود المعطيات الأساسية
-    if (!amountStr || !rawUserId || !offerId || !incomingSignature) {
-      return NextResponse.json({ error: 'Missing required postback parameters' }, { status: 400 });
+    // 2. Fetch secure credentials from your Vercel Environment Variables
+    const APP_KEY = process.env.PLAYTIME_APP_KEY;
+    const SECRET_KEY = process.env.PLAYTIME_SECRET_KEY; // Your Value: Y90QOOQDWHDWI7XM3Z7WNIOYIEOTCO
+
+    // Early fallback check if environment variables are missing on Vercel
+    if (!APP_KEY || !SECRET_KEY) {
+      console.error("❌ Error: PLAYTIME_APP_KEY or PLAYTIME_SECRET_KEY is missing in Vercel environment variables.");
+      return NextResponse.json({ error: 'Server configuration mismatch' }, { status: 500 });
     }
 
-    // 🔥 تنظيف الـ ID وقشع كلمة TEST_ تلقائياً إذا كانت الشركة في وضع التست
-    const userId = rawUserId.replace(/^TEST_/, '');
-    const pointsToReward = parseInt(amountStr, 10);
+    // 3. Reconstruct the signature following the Playtime SDK documentation rule:
+    // sha1(userId + offerId + event + APP_KEY + SECRET_KEY)
+    const dataToHash = `${userId}${offerId}${event}${APP_KEY}${SECRET_KEY}`;
+    const calculatedSignature = crypto.createHash('sha1').update(dataToHash).digest('hex');
 
-    if (isNaN(pointsToReward) || pointsToReward <= 0) {
-      return NextResponse.json({ error: 'Invalid points value' }, { status: 400 });
+    // 4. Validate signature authenticity
+    if (signature !== calculatedSignature) {
+      console.warn(`⚠️ Security Mismatch! Received: ${signature} | Calculated: ${calculatedSignature}`);
+      return NextResponse.json({ error: 'Invalid signature authentication' }, { status: 401 });
     }
 
-    // 2. 🛡️ التحقق من التوقيع الرقمي (Signature Validation) لحماية الموقع من التزوير
-    // الصيغة الرسمية حسب الـ Docs: sha1(userId + offerId + event + secretKey)
-    const dataToSign = `${rawUserId}${offerId}${eventName}${APP_SECRET_KEY}`;
-    const calculatedSignature = crypto.createHash('sha1').update(dataToSign).digest('hex');
+    // =======================================================
+    // 💰 [ YOUR BACKEND LOGIC HERE ]
+    // Credit the points to the user inside your database (Appwrite/Firebase)
+    // User ID is in: userId
+    // Points amount to add is in: amount
+    // =======================================================
 
-    // إذا لم يتطابق التوقيع، نرفض الطلب فوراً لأنها محاولة اختراق وهمية
-    if (incomingSignature !== calculatedSignature && !rawUserId.startsWith('TEST_')) {
-      console.error(`[Security Alert]: Invalid Signature for user ${userId}`);
-      return NextResponse.json({ error: 'Invalid transaction signature' }, { status: 401 });
-    }
+    console.log(`✅ Success: Validated postback. Crediting ${amount} points to user ${userId}`);
 
-    // 3. 🛡️ حماية ضد التكرار (Deduplication)
-    const transactionRef = adminDb.collection('transactions').doc(transactionId);
-    const transactionDoc = await transactionRef.get();
+    // 5. Send a 200 OK success response back to Playtime servers
+    return NextResponse.json({ success: true }, { status: 200 });
 
-    if (transactionDoc.exists) {
-      return NextResponse.json({ error: 'Transaction already processed' }, { status: 400 });
-    }
-
-    // 4. 🔍 جلب وثيقة المستخدم الحقيقي للتأكد من وجود حسابه في الموقع
-    const userRef = adminDb.collection('users').doc(userId);
-    const userDoc = await userRef.get();
-
-    if (!userDoc.exists) {
-      console.warn(`Unauthorized Postback: User [${userId}] not found in Firestore.`);
-      return NextResponse.json({ error: `User [${userId}] not found in database.` }, { status: 404 });
-    }
-
-    const finalOfferTitle = decodeURIComponent(offerName);
-
-    // 5. تشغيل الـ Firestore Transaction الآمن لشحن الحساب وتحديث السجلات
-    await adminDb.runTransaction(async (ts) => {
-      
-      // أ) شحن النقاط وتحديث إجمالي الأرباح للمستخدم الحالي القائم بالعرض
-      ts.update(userRef, {
-        points: admin.firestore.FieldValue.increment(pointsToReward),
-        totalEarned: admin.firestore.FieldValue.increment(pointsToReward)
-      });
-
-      // ب) تسجيل المعاملة في سجل الـ History
-      ts.set(transactionRef, {
-        userId: userId,
-        points: pointsToReward,
-        amount: pointsToReward, 
-        offerName: finalOfferTitle,
-        status: 'completed',
-        type: 'offer_credit', 
-        timestamp: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // ج) حقن وثيقة الإشعار لتفجير التوست الأزرق فوراً بناءً على الفهرس الجديد 🚀
-      const notificationRef = adminDb.collection('notifications').doc();
-      ts.set(notificationRef, {
-        userId: userId,
-        title: '🎉 Points Credited!',
-        message: `Your account has been credited with +${pointsToReward} points for completing: [ ${finalOfferTitle} ].`,
-        type: 'offer_credit', 
-        points: pointsToReward, 
-        amount: pointsToReward, 
-        read: false,
-        timestamp: admin.firestore.FieldValue.serverTimestamp() 
-      });
-    });
-
-    return NextResponse.json({ success: true, message: 'Playtime postback processed successfully' }, { status: 200 });
-
-  } catch (error: any) {
-    console.error('[Playtime Critical Error]:', error.message);
+  } catch (error) {
+    console.error('Postback Runtime Exception:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
