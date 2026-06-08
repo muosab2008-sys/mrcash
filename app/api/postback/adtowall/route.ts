@@ -1,100 +1,105 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin'; 
+import { NextResponse } from 'next/server';
 import admin from 'firebase-admin';
 
-const ALLOWED_IP = '64.226.124.135';
+// دالة آمنة لتهيئة الفايربيز وتجنب التكرار والمشاكل على سيرفر Vercel
+function initFirebase() {
+  if (!admin.apps.length) {
+    try {
+      let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+      if (!privateKey) throw new Error("FIREBASE_PRIVATE_KEY is missing");
+      privateKey = privateKey.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
 
-export async function GET(request: NextRequest) {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: privateKey,
+        }),
+      });
+      console.log("🎯 Firebase Admin Initialized for Adtowall");
+    } catch (error) {
+      console.error('❌ Firebase Admin Init Error:', error.message);
+      throw error;
+    }
+  }
+  return admin.firestore();
+}
+
+export async function GET(request) {
   try {
+    // 1. تأمين المسار عبر حظر أي IP غير تابع لشركة Adtowall (IP Whitelisting)
+    // نتحقق من الـ IP من خلال الـ Headers الممررة من Vercel
     const forwardedFor = request.headers.get('x-forwarded-for');
-    const clientIp = forwardedFor ? forwardedFor.split(',')[0].trim() : request.ip;
-
-    if (clientIp !== ALLOWED_IP) {
-      return NextResponse.json({ error: 'Unauthorized IP access' }, { status: 401 });
+    const clientIp = forwardedFor ? forwardedFor.split(',')[0].trim() : '';
+    
+    const ALLOWED_IP = "64.226.124.135"; // الـ IP الرسمي المحدد في ملف الشركة
+    
+    // ملاحظة: يمكنك تعطيل هذا التحقق مؤقتاً أثناء الفحص الشخصي، وتفعيله عند الإطلاق الفعلي
+    if (clientIp !== ALLOWED_IP && process.env.NODE_ENV === 'production') {
+      console.warn(`⚠️ محاولة طلب غير مصرح بها من IP غريب: ${clientIp}`);
+      return NextResponse.json({ error: 'Unauthorized IP address' }, { status: 403 });
     }
 
+    const db = initFirebase();
     const { searchParams } = new URL(request.url);
     
-    const payoutUsd = searchParams.get('payout_usd');      
-    const pointsStr = searchParams.get('points');          
-    let userId = searchParams.get('user_id');            
-    let offerName = searchParams.get('offer_name') || 'Adtowall Task';
-    const transactionId = searchParams.get('transaction_id');
+    // 2. استخراج البيانات القادمة من رابط Adtowall
+    const rawUserId = searchParams.get('user_id'); 
+    const points = searchParams.get('points'); // عدد النقاط المحسوبة تلقائياً بناءً على عملتك
+    const offerId = searchParams.get('offer_id');
+    const offerName = searchParams.get('offer_name') || 'عرض جديد (Adtowall)';
 
-    // تنظيف اسم العرض تماماً
-    if (offerName.includes('[WW]') || offerName.toLowerCase().includes('www')) {
-      offerName = 'Adtowall Task';
-    }
-
-    if (!pointsStr || !transactionId) {
+    if (!rawUserId || !points || !offerId) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    const pointsToReward = parseInt(pointsStr, 10);
+    // 3. تنظيف الـ userId في حال أرسلوا بادئة للتجربة
+    let userId = rawUserId;
+    if (userId.startsWith('TEST_')) {
+      userId = userId.replace('TEST_', '');
+    }
 
-    if (isNaN(pointsToReward) || pointsToReward <= 0) {
+    const coinAmount = parseFloat(points);
+    if (isNaN(coinAmount) || coinAmount <= 0) {
       return NextResponse.json({ error: 'Invalid points value' }, { status: 400 });
     }
 
-    const transactionRef = adminDb.collection('transactions').doc(transactionId);
-    const transactionDoc = await transactionRef.get();
-
-    if (transactionDoc.exists) {
-      return NextResponse.json({ error: 'Transaction already processed' }, { status: 400 });
-    }
-
-    // التحقق من الحساب والتحويل الاحتياطي لحسابك الشخصي
-    let isTesting = false;
-    let userRef = adminDb.collection('users').doc(userId || 'none');
-    let userDoc = await userRef.get();
-
-    if (!userDoc.exists) {
-      userId = "NOsDSAtYfMTAM4fcrOhBxpD5Rau1"; 
-      userRef = adminDb.collection('users').doc(userId);
-      userDoc = await userRef.get();
-      isTesting = true; // نعم، نحن في وضع الفحص التجريبي لحسابك
+    // 4. تحديث Firestore بالنقاط والإشعارات باللغة العربية لـ MrCash
+    const userRef = db.collection('users').doc(userId);
+    
+    await db.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
       
       if (!userDoc.exists) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        throw new Error('UserNotFound');
       }
-    }
 
-    await adminDb.runTransaction(async (ts) => {
-      // تحديث حقول الرصيد مباشرة
-      ts.update(userRef, {
-        points: admin.firestore.FieldValue.increment(pointsToReward),
-        totalEarned: admin.firestore.FieldValue.increment(pointsToReward)
+      // تحديث النقاط وإجمالي الأرباح للمستخدم
+      transaction.update(userRef, {
+        points: admin.firestore.FieldValue.increment(coinAmount),
+        totalEarned: admin.firestore.FieldValue.increment(coinAmount)
       });
 
-      // لمنع تعليق النص في الشاشة أثناء الفحص، لن نقوم بإنشاء مستند معاملات عام يعيق الواجهة إذا كان الاختبار موجهاً لحسابك يدوياً
-      if (!isTesting) {
-        ts.set(transactionRef, {
-          userId,
-          points: pointsToReward,
-          payoutUsd: parseFloat(payoutUsd || '0'),
-          offerName,
-          status: 'completed',
-          type: 'offerwall',
-          createdAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-      }
-
-      // إضافة إشعار الجرس الأنيق والغير مقروء (يظهر رقم 1 فوق الجرس تلقائياً)
-      const notificationRef = adminDb.collection('notifications').doc();
-      ts.set(notificationRef, {
-        userId,
-        title: 'Points Credited',
-        message: `You received +${pointsToReward} points from Adtowall for completing "${offerName}" task.`,
-        type: 'earn',
-        read: false,
+      // إضافة إشعار باللغة العربية داخل تطبيق MrCash
+      const notificationRef = db.collection('notifications').doc();
+      transaction.set(notificationRef, {
+        uid: userId,
+        title: '🎉 تهانينا! نقاط جديدة في رصيدك',
+        message: `لقد ربحت بنجاح ${coinAmount} نقطة إضافية من خلال إكمال: (${offerName}) عبر جدار عروض Adtowall.`,
+        type: 'reward',
+        isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
     });
 
-    return NextResponse.json({ success: true, message: 'Postback completed' }, { status: 200 });
+    console.log(`✅ Success (Adtowall): Points and notification added for ${userId}`);
+    return NextResponse.json({ success: true, message: 'Adtowall Postback processed successfully' }, { status: 200 });
 
-  } catch (error: any) {
-    console.error('[Adtowall Postback Error]:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  } catch (error) {
+    console.error('❌ Adtowall Error:', error.message);
+    if (error.message === 'UserNotFound') {
+      return NextResponse.json({ error: 'User not found in Firestore' }, { status: 404 });
+    }
+    return NextResponse.json({ error: 'Internal Error', details: error.message }, { status: 500 });
   }
 }
