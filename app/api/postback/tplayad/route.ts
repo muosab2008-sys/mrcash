@@ -24,16 +24,14 @@ function generateMd5(content: string): string {
   return crypto.createHash('md5').update(content).digest('hex');
 }
 
-// 2. مستخرج البيانات الذكي يدعم قراءة المعاملات سواء كـ URL Params أو Form-Data أو JSON
+// 2. مستخرج البيانات المطور يدعم قراءة كافة المسميات المحتملة أثناء التست أو الإنتاج
 async function parsePostbackData(req: NextRequest) {
   const urlParams = new URL(req.url).searchParams;
   let bodyParams: any = {};
 
   try {
     const formData = await req.formData();
-    formData.forEach((value, key) => {
-      bodyParams[key] = value;
-    });
+    formData.forEach((value, key) => { bodyParams[key] = value; });
   } catch (e) {
     try {
       bodyParams = await req.json();
@@ -42,10 +40,17 @@ async function parsePostbackData(req: NextRequest) {
     }
   }
 
+  // حل مشكلة مسميات اللوحة في التست (تستقبل subId أو user_id أو userId أو uid)
+  const subId = urlParams.get('subId') || urlParams.get('user_id') || urlParams.get('userId') || urlParams.get('uid') ||
+                bodyParams.subId || bodyParams.user_id || bodyParams.userId || bodyParams.uid;
+
+  // حل مشكلة النقاط (تستقبل reward أو amount)
+  const reward = urlParams.get('reward') || urlParams.get('amount') || bodyParams.reward || bodyParams.amount;
+
   return {
-    subId: bodyParams.subId || urlParams.get('subId'),
-    transId: bodyParams.transId || urlParams.get('transId'),
-    reward: bodyParams.reward || urlParams.get('reward'),
+    subId,
+    transId: bodyParams.transId || urlParams.get('transId') || bodyParams.transaction_id || urlParams.get('transaction_id'),
+    reward,
     payout: bodyParams.payout || urlParams.get('payout'),
     status: bodyParams.status || urlParams.get('status'),
     signature: bodyParams.signature || urlParams.get('signature'),
@@ -74,18 +79,15 @@ export async function POST(req: NextRequest) {
       return new NextResponse("ERROR: Missing Parameters", { status: 400 });
     }
 
-    const SECRET_KEY = process.env.TPLAYAD_SECRET_KEY;
-    if (!SECRET_KEY) {
-      console.error("Missing TPLAYAD_SECRET_KEY in Environment Variables");
-      return new NextResponse("Server Configuration Error", { status: 500 });
-    }
+    // هنا قمنا بوضع المفتاح السري المأخوذ من صورتك مباشرة كقيمة احتياطية في حال لم يقرأ من Vercel
+    const SECRET_KEY = process.env.TPLAYAD_SECRET_KEY || "Fw8Nb1Nv6Bc6Fq3"; 
 
-    // 3. التحقق الأمني: مطابقة الـ Signature للتأكد أن الطلب من سيرفر Tplayad حصرياً
+    // 3. التحقق الأمني: مطابقة الـ Signature لضمان أمان العمليات وتمرير الفحص بنجاح
     // Formula: md5(subId + transId + reward + secret)
     if (signature && signature !== "undefined" && signature !== "null" && signature !== "") {
       const expectedSignature = generateMd5(`${subId}${transId}${reward}${SECRET_KEY}`);
       if (expectedSignature !== signature) {
-        console.warn(`Security Warning: Signature mismatch from Tplayad for transId: ${transId}`);
+        console.warn(`Security Warning: Signature mismatch from Tplayad. Expected: ${expectedSignature}, Received: ${signature}`);
         return new NextResponse("ERROR: Signature doesn't match", { status: 400 });
       }
     }
