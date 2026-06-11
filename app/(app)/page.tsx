@@ -199,7 +199,7 @@ export default function EarnPage() {
       pixylabs: `https://offerwall.pixylabs.co/230?uid=${uid}`,
       taskwall: `https://wall.taskwall.io/?app_id=e723adebdbab293255deefe5fe401b43&userid=${uid}`,
       flexwall: `https://flexwall.net/iframe?app_id=412&user_id=${uid}`,
-      tplayad:  `https://tplayad.com/offer/Br9Dd7/{USER_ID}`,
+      tplayad: `https://tplayad.com/offer/Br9Dd7/${uid}`,
     };
     return urls[wall.id] || wall.url;
   };
