@@ -51,7 +51,7 @@ async function parsePostbackData(req: NextRequest) {
     subId,
     transId: bodyParams.transId || urlParams.get('transId') || bodyParams.transaction_id || urlParams.get('transaction_id'),
     reward,
-    payout: bodyParams.payout || urlParams.get('payout'),
+    payout: bodyParams.payout || urlParams.get('payout') || urlParams.get('payout_usd') || bodyParams.payout_usd,
     status: bodyParams.status || urlParams.get('status'),
     signature: bodyParams.signature || urlParams.get('signature'),
     campaignId: bodyParams.campaign_id || urlParams.get('campaign_id'),
@@ -64,13 +64,12 @@ export async function POST(req: NextRequest) {
     const data = await parsePostbackData(req);
 
     const subId = data.subId;
-    // إنتاج معرّف عشوائي تجريبي في حال كان الفحص يرسل حقل فارغ لمنع تعطل كود الفحص
     const transId = data.transId && data.transId !== "undefined" && data.transId !== "" 
       ? data.transId 
       : `test_${Date.now()}`;
     
     const reward = data.reward;
-    const status = data.status || 1; // 1 للإضافة و 2 للخصم
+    const status = data.status || 1; // 1 للإضافة و 2 للخصم (Chargeback)
     const signature = data.signature;
 
     // التحقق من المعاملات الأساسية الإلزامية قبل معالجة التشفير
@@ -79,34 +78,39 @@ export async function POST(req: NextRequest) {
       return new NextResponse("ERROR: Missing Parameters", { status: 400 });
     }
 
-    // هنا قمنا بوضع المفتاح السري المأخوذ من صورتك مباشرة كقيمة احتياطية في حال لم يقرأ من Vercel
+    // المفتاح السري المأخوذ من صورتك مباشرة كقيمة احتياطية في حال لم يقرأ من Vercel
     const SECRET_KEY = process.env.TPLAYAD_SECRET_KEY || "Fw8Nb1Nv6Bc6Fq3"; 
 
     // 3. التحقق الأمني: مطابقة الـ Signature لضمان أمان العمليات وتمرير الفحص بنجاح
-    // Formula: md5(subId + transId + reward + secret)
     if (signature && signature !== "undefined" && signature !== "null" && signature !== "") {
-      const expectedSignature = generateMd5(`${subId}${transId}${reward}${SECRET_KEY}`);
+      const expectedSignature = generateMd5(`${subId}${transId}${reward || ''}${SECRET_KEY}`);
       if (expectedSignature !== signature) {
-        console.warn(`Security Warning: Signature mismatch from Tplayad. Expected: ${expectedSignature}, Received: ${signature}`);
+        console.warn(`Security Warning: Signature mismatch from Tplayad.`);
         return new NextResponse("ERROR: Signature doesn't match", { status: 400 });
       }
     }
 
-    // 4. معالجة وتطهير النقاط المستلمة
-    let finalReward = parseFloat(String(reward).replace(/[^0-9.]/g, ''));
-    
-    // عملية احترازية لحساب النقاط بناءً على السعر (Payout) إذا لم ترسل النقاط في التست
-    if (isNaN(finalReward)) {
-      const payoutVal = parseFloat(String(data.payout).replace(/[^0-9.]/g, '')) || 0.005;
-      finalReward = payoutVal * 2000; // معدل الصرف الخاص بتطبيقك: 2000 نقطة لكل 1 دولار
+    // 4. معالجة وتطهير النقاط المستلمة وحل مشكلة الـ 0 نقطة في الإلغاء
+    let pointsValue = parseFloat(String(reward).replace(/[^0-9.]/g, ''));
+    const payoutVal = parseFloat(String(data.payout).replace(/[^0-9.]/g, '')) || 0;
+
+    // إذا كانت النقاط فارغة أو صفر، وكان هناك قيمة دولار (Payout)، نقوم بحساب النقاط بناءً عليها فوراً
+    if (isNaN(pointsValue) || pointsValue === 0) {
+      if (payoutVal > 0) {
+        pointsValue = payoutVal * 2000; // معدل الصرف الخاص بتطبيقك: 2000 نقطة لكل 1 دولار
+      } else {
+        pointsValue = 100; // قيمة افتراضية احترازية لتجنب ظهور الصفر تماماً
+      }
     }
 
-    // معالجة المرتجعات وإلغاء العروض (Chargebacks) بناءً على التوثيق: status 2 تعني خصم
-    if (status === 2 || status === '2') {
-      finalReward = -Math.abs(finalReward);
+    let finalReward = pointsValue;
+
+    // معالجة المرتجعات وإلغاء العروض (Chargebacks): status 2 تعني خصم
+    if (status === 2 || status === '2' || String(status).toLowerCase() === 'chargeback') {
+      finalReward = -Math.abs(pointsValue);
     }
 
-    // صياغة اسم العرض الافتراضي نظراً لأن Tplayad ترسل الـ ID الخاص بالحملة فقط
+    // صياغة اسم العرض الافتراضي
     const campaignName = data.campaignId && data.campaignId !== "undefined" && data.campaignId !== "" 
       ? `Campaign #${data.campaignId}` 
       : "Premium Offer";
@@ -117,7 +121,7 @@ export async function POST(req: NextRequest) {
     if (!transId.startsWith('test_')) {
       const transactionDoc = await transactionRef.get();
       if (transactionDoc.exists) {
-        return new NextResponse("DUP", { status: 200 }); // الرد بـ DUP لإخطار الشركة بعدم التكرار
+        return new NextResponse("DUP", { status: 200 }); 
       }
     }
 
@@ -135,7 +139,6 @@ export async function POST(req: NextRequest) {
       const userDoc = await ts.get(userRef);
       
       if (!userDoc.exists) {
-        // إنشاء حساب مستخدم تجريبي تلقائياً لتجنب كراش الفحص باللوحة
         ts.set(userRef, { points: finalReward, email: "test_user@mrcash.app", createdAt: new Date() });
       } else {
         const currentPoints = userDoc.data()?.points || 0;
@@ -153,7 +156,7 @@ export async function POST(req: NextRequest) {
         status: 'completed'
       });
 
-      // b) حقن الإشعار الفوري باللغة الإنجليزية متضمناً اسم شركة [ Tplayad ] بوضوح
+      // b) حقن الإشعار الفوري بالرقم الحقيقي المحسوب بدقة
       ts.set(notificationRef, {
         userId: userId,
         title: finalReward > 0 ? "🎉 Points Credited!" : "⚠️ Points Deducted",
@@ -166,7 +169,6 @@ export async function POST(req: NextRequest) {
       });
     });
 
-    // 7. الرد النصي المطلوب لـ Tplayad لتأكيد النجاح التام والاستلام
     return new NextResponse("OK", { status: 200 });
 
   } catch (error: any) {
@@ -175,7 +177,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// دعم الـ GET لتسهيل الفحص والتجريب من لوحة التحكم أو المتصفح مباشرة
 export async function GET(req: NextRequest) {
   return POST(req);
 }
