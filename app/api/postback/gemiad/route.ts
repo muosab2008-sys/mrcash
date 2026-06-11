@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import admin from 'firebase-admin';
 
-// 1. تهيئة الفايربيز لحساب الـ Admin وتجنب مشاكل سيرفر Vercel
+// تهيئة الفايربيز لحساب الـ Admin وتجنب مشاكل سيرفر Vercel
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
@@ -19,21 +19,18 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// دالة لحساب تشفير SHA-256 المطلوبة من GemiAd
 function calculateSHA256Hash(data: string): string {
   return crypto.createHash('sha256').update(data).digest('hex');
 }
 
-// 2. مستخرج البيانات الذكي لـ GemiAd يدعم الـ GET والـ POST والـ Form-Data
+// دالة فحص المعاملات بشكل ذكي ومرن للغاية لحل مشكلة الحروف الكبيرة والصغيرة
 async function parseGemiAdData(req: NextRequest) {
   const urlParams = new URL(req.url).searchParams;
   let bodyParams: any = {};
 
   try {
     const formData = await req.formData();
-    formData.forEach((value, key) => {
-      bodyParams[key] = value;
-    });
+    formData.forEach((value, key) => { bodyParams[key] = value; });
   } catch (e) {
     try {
       bodyParams = await req.json();
@@ -42,49 +39,45 @@ async function parseGemiAdData(req: NextRequest) {
     }
   }
 
-  // دعم قراءة المعاملات بكلتا الحالتين (حروف كبيرة أو صغيرة لضمان عدم السقوط)
+  // جلب المعاملات مع فحص جميع الاحتمالات (userId أو userid أو user_id) لضمان الاستلام
   return {
-    userId: bodyParams.userId || urlParams.get('userId'),
-    offerId: bodyParams.offerId || urlParams.get('offerId'),
-    offerName: bodyParams.offerName || urlParams.get('offerName'),
-    eventId: bodyParams.eventId || urlParams.get('eventId'),
-    eventName: bodyParams.eventName || urlParams.get('eventName'),
-    payout: bodyParams.payout || urlParams.get('payout'),
-    reward: bodyParams.reward || urlParams.get('reward'),
-    txId: bodyParams.txId || urlParams.get('txId') || bodyParams.txid || urlParams.get('txid'),
-    status: bodyParams.status || urlParams.get('status'),
-    ip: bodyParams.ip || urlParams.get('ip'),
-    sub1: bodyParams.sub1 || urlParams.get('sub1'),
-    sub2: bodyParams.sub2 || urlParams.get('sub2'),
-    hash: bodyParams.hash || urlParams.get('hash'),
+    userId: urlParams.get('userId') || urlParams.get('userid') || urlParams.get('user_id') || bodyParams.userId || bodyParams.userid || bodyParams.user_id,
+    offerId: urlParams.get('offerId') || urlParams.get('offerid') || urlParams.get('offer_id') || bodyParams.offerId || bodyParams.offerid || bodyParams.offer_id,
+    offerName: urlParams.get('offerName') || urlParams.get('offername') || urlParams.get('offer_name') || bodyParams.offerName || bodyParams.offername || bodyParams.offer_name,
+    eventId: urlParams.get('eventId') || urlParams.get('eventid') || bodyParams.eventId || bodyParams.eventid,
+    eventName: urlParams.get('eventName') || urlParams.get('eventname') || bodyParams.eventName || bodyParams.eventname,
+    payout: urlParams.get('payout') || bodyParams.payout,
+    reward: urlParams.get('reward') || bodyParams.reward,
+    txId: urlParams.get('txId') || urlParams.get('txid') || urlParams.get('transaction_id') || bodyParams.txId || bodyParams.txid || bodyParams.transaction_id,
+    status: urlParams.get('status') || bodyParams.status,
+    hash: urlParams.get('hash') || bodyParams.hash,
   };
 }
 
 export async function POST(req: NextRequest) {
   try {
-    // 3. حماية الـ IP (IP Whitelisting) المحددة من الشركة لزيادة الأمان
+    // التحقق من الـ IP لضمان الأمان من سيرفر GemiAd
     const forwardedFor = req.headers.get('x-forwarded-for');
     const clientIp = forwardedFor ? forwardedFor.split(',')[0].trim() : '';
-    const ALLOWED_IP = "64.226.92.208"; // الـ IP الرسمي لـ GemiAd
+    const ALLOWED_IP = "64.226.92.208";
 
     if (clientIp !== ALLOWED_IP && process.env.NODE_ENV === 'production') {
       console.warn(`Security Warning: Unauthorized IP attempts to access GemiAd postback: ${clientIp}`);
       return new NextResponse("Unauthorized IP", { status: 403 });
     }
 
-    // استخراج وتجهيز البيانات المرسلة من الدالة الذكية
     const data = await parseGemiAdData(req);
 
     const rawUserId = data.userId;
     const offerId = data.offerId;
     const txId = data.txId;
     const reward = data.reward;
-    const status = data.status; // completed أو rejected
+    const status = data.status;
     const hash = data.hash;
 
-    // التحقق من وجود المعاملات الأساسية الإلزامية لتجنب كراش السيرفر
+    // التحقق من المعاملات الأساسية المطلوبة لإتمام العملية والتشفير
     if (!hash || !rawUserId || !offerId || !txId) {
-      console.warn("GemiAd Postback: Missing required parameters", data);
+      console.warn("GemiAd Postback: Missing required parameters in parsed data", data);
       return new NextResponse("ERROR: Missing Parameters", { status: 400 });
     }
 
@@ -94,64 +87,55 @@ export async function POST(req: NextRequest) {
       return new NextResponse("Server Configuration Error", { status: 500 });
     }
 
-    // 4. التحقق الأمني الفعلي من الـ Hash بناءً على توثيق GemiAd
-    // Formula: SHA256(userId + offerId + txId + secretKey)
+    // التحقق من الـ Hash (تأكيد الأمان)
     const expectedHash = calculateSHA256Hash(`${rawUserId}${offerId}${txId}${SECRET_KEY}`);
     if (hash !== expectedHash) {
-      console.warn(`Security Warning: Hash mismatch from GemiAd for txId: ${txId}`);
+      console.warn(`Security Warning: Hash mismatch for txId: ${txId}. Expected: ${expectedHash}, Received: ${hash}`);
       return new NextResponse("ERROR: Signature doesn't match", { status: 400 });
     }
 
-    // تنظيف الـ userId في حال أرسلت لوحة الشركة كلمة TEST_ قبل الـ UID
+    // تنظيف الـ userId من علامة الفحص TEST_ إن وجدت
     let userId = rawUserId;
     if (userId.startsWith('TEST_')) {
       userId = userId.replace('TEST_', '');
     }
 
-    // 5. معالجة وتطهير النقاط (الموجبة والسالبة للمرتجعات)
     let finalReward = parseFloat(String(reward).replace(/[^0-9.-]/g, ''));
-    
     if (isNaN(finalReward)) {
       const payoutVal = parseFloat(String(data.payout).replace(/[^0-9.-]/g, '')) || 0;
-      finalReward = payoutVal * 2000; // 2000 نقطة لكل دولار كاحتياط
+      finalReward = payoutVal * 2000;
     }
 
-    // التعامل مع الـ Reversals (إذا تم إلغاء أو رفض العرض من لوحتهم)
     if (status === 'rejected') {
       finalReward = -Math.abs(finalReward);
     }
 
-    // صياغة اسم العرض بدقة للـ Log والإشعار
     const offerName = data.offerName && data.offerName !== "undefined" && data.offerName !== "" 
       ? data.offerName 
       : "Premium Offer";
 
     const transactionRef = db.collection('transactions').doc(txId);
     
-    // فلتر منع تكرار العمليات (Deduplication)
     if (!txId.startsWith('test_') && status !== 'rejected') {
       const transactionDoc = await transactionRef.get();
       if (transactionDoc.exists) {
-        return new NextResponse("Approved", { status: 200 }); // مضافة مسبقاً، نرد بالقبول فوراً
+        return new NextResponse("Approved", { status: 200 });
       }
     }
 
     const userRef = db.collection('users').doc(userId);
     const notificationRef = db.collection('notifications').doc();
 
-    // 6. معاملة Firestore الموحدة (Transaction) لتحديث رصيد MrCash وهيكلة الإشعارات
     await db.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
       
       if (!userDoc.exists) {
-        // إنشاء مستخدم تست تلقائياً في بيئة الفحص لمنع تعطل زر الإرسال التجريبي
         ts.set(userRef, { points: finalReward, email: "test_user@mrcash.app", createdAt: new Date() });
       } else {
         const currentPoints = userDoc.data()?.points || 0;
         ts.update(userRef, { points: currentPoints + finalReward });
       }
 
-      // أ) تسجيل سجل العملية في الـ history لقاعدة بياناتك
       ts.set(transactionRef, {
         userId: userId,
         amount: finalReward,
@@ -162,7 +146,6 @@ export async function POST(req: NextRequest) {
         status: status === 'rejected' ? 'reversed' : 'completed'
       });
 
-      // ب) إرسال الإشعار باللغة الإنجليزية متضمناً اسم الشركة [ GemiAd ] بوضوح
       ts.set(notificationRef, {
         userId: userId,
         title: finalReward > 0 ? "🎉 Points Credited!" : "⚠️ Points Deducted",
@@ -175,7 +158,6 @@ export async function POST(req: NextRequest) {
       });
     });
 
-    // 7. الرد النصي المطلوب لـ GemiAd لتأكيد النجاح الفوري
     return new NextResponse("Approved", { status: 200 });
 
   } catch (error: any) {
@@ -184,7 +166,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// دعم الـ GET لتسهيل الفحص والتكامل عبر لوحة تحكم الشركاء
 export async function GET(req: NextRequest) {
   return POST(req);
 }
