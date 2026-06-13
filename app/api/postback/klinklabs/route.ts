@@ -17,7 +17,6 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// مستخرج البيانات الحقيقي والديناميكي
 async function parsePostbackData(req: NextRequest) {
   const urlParams = new URL(req.url).searchParams;
   let bodyParams: any = {};
@@ -31,7 +30,6 @@ async function parsePostbackData(req: NextRequest) {
     bodyParams = {};
   }
 
-  // قراءة المتغيرات الحقيقية المرسلة ديناميكياً من رابط العرض
   return {
     userId: urlParams.get('userId') || urlParams.get('user_id') || bodyParams.userId || bodyParams.user_id,
     payout: urlParams.get('payout') || bodyParams.payout,
@@ -45,7 +43,6 @@ async function parsePostbackData(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    // جلب وتصفية الـ IPs الأمنية لـ KlinkLabs
     const forwardHeader = req.headers.get('x-forwarded-for');
     const clientIp = forwardHeader ? forwardHeader.split(',')[0].trim() : '';
     const ALLOWED_IPS = ["34.118.33.53", "138.68.125.171", "64.226.93.56"];
@@ -61,37 +58,33 @@ export async function POST(req: NextRequest) {
     const status = data.status || 'completed'; 
     const eventType = data.eventType || 'conversion'; 
 
-    // إذا لم يرسل السيرفر الـ userId (وهذا يحدث فقط في الفحص التلقائي الأعمى للشركة)، نرد بـ OK فوراً ليمر التست بنجاح دون تخريب قاعدة البيانات
     if (!userId) {
       return new NextResponse("OK", { status: 200 });
     }
 
-    // --- 💰 الحسبة الرياضية الديناميكية الحقيقية 100% ---
-    // الكود يقرأ قيمة الـ payout المرسلة من الشركة للعرض (مثال: 1.25 دولار)
     const rawPayout = parseFloat(String(data.payout).replace(/[^0-9.-]/g, '')) || 0;
     const absolutePayout = Math.abs(rawPayout);
     
-    // حساب النقاط بناءً على قيمة العرض الفعلية وعشوائيته: قيمة الربح × 2000 نقطة لكل دولار
-    let calculatedPoints = Math.round(absolutePayout * 2000); 
+    // --- 🎯 الحسبة الجديدة والدقيقة بناءً على طلبك: 1000 نقطة لكل 1 دولار ---
+    let calculatedPoints = Math.round(absolutePayout * 1000); 
 
-    // حماية برمجة احترازية: إذا أكمل المستخدم عرضاً حقيقياً وكانت قيمته صفر بالخطأ، نمنحه 50 نقطة كحد أدنى بدلاً من صفر
+    // حماية احترازية للعروض الحقيقية الصفرية
     if (calculatedPoints === 0 && !transId.includes('test')) {
-      calculatedPoints = 50; 
+      calculatedPoints = 25; 
     } else if (calculatedPoints === 0) {
-      calculatedPoints = 500; // قيمة تظهر فقط في الفحص التجريبي للوحة التحكم
+      calculatedPoints = 500; // نقاط ثابتة تظهر فقط عند عمل فحص تجريبي بقيمة 0$ في لوحة التحكم
     }
 
     let finalReward = calculatedPoints;
 
-    // التعامل الصارم مع حالات المرتجعات والخصومات (Chargebacks)
+    // معالجة الخصومات والمرتجعات (Chargebacks)
     if (eventType === 'chargeback' || status === 'cancelled' || rawPayout < 0) {
-      finalReward = -Math.abs(calculatedPoints); // خصم نفس قيمة النقاط الحقيقية المكتسبة بالسالب
+      finalReward = -Math.abs(calculatedPoints); 
     }
 
     const offerName = data.offerName || "Premium Offer";
     const transactionRef = db.collection('transactions').doc(transId);
 
-    // منع تكرار احتساب نقاط نفس العرض للمستخدم (Deduplication)
     const transactionDoc = await transactionRef.get();
     if (transactionDoc.exists) {
       return new NextResponse("DUP", { status: 200 });
@@ -105,19 +98,16 @@ export async function POST(req: NextRequest) {
     const userRef = db.collection('users').doc(cleanUserId);
     const notificationRef = db.collection('notifications').doc();
 
-    // معالجة تحديث رصيد الفايربيز بشكل فوري وديناميكي
     await db.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
       
       if (!userDoc.exists) {
-        // إذا كان المستخدم جديداً تماماً أو حساب فحص من الشركة
         ts.set(userRef, { points: finalReward, email: `${cleanUserId}@mrcash.app`, createdAt: new Date() });
       } else {
         const currentPoints = userDoc.data()?.points || 0;
         ts.update(userRef, { points: currentPoints + finalReward });
       }
 
-      // تسجيل سجل العملية الحقيقي بقيمته الديناميكية في جدول الـ Transactions
       ts.set(transactionRef, {
         userId: cleanUserId,
         amount: finalReward,
@@ -128,7 +118,6 @@ export async function POST(req: NextRequest) {
         status: 'completed'
       });
 
-      // إرسال الإشعار للموقع بالنقاط الحقيقية العشوائية التي كسبها من العرض
       ts.set(notificationRef, {
         userId: cleanUserId,
         title: finalReward > 0 ? "🎉 Points Credited!" : "⚠️ Points Deducted",
