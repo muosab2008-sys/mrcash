@@ -30,8 +30,9 @@ async function parsePostbackData(req: NextRequest) {
     bodyParams = {};
   }
 
+  // قراءة كافة الاحتمالات الممكنة لاسم المستخدم لضمان عدم ضياع المعرّف الحقيقي
   return {
-    userId: urlParams.get('userId') || urlParams.get('user_id') || bodyParams.userId || bodyParams.user_id,
+    userId: urlParams.get('userId') || urlParams.get('user_id') || urlParams.get('uid') || urlParams.get('subId') || bodyParams.userId || bodyParams.user_id || bodyParams.uid,
     payout: urlParams.get('payout') || bodyParams.payout,
     status: urlParams.get('status') || bodyParams.status,
     eventType: urlParams.get('eventType') || bodyParams.eventType,
@@ -45,42 +46,43 @@ export async function POST(req: NextRequest) {
   try {
     const data = await parsePostbackData(req);
     let userId = data.userId;
-    const transId = data.conversionId || `klink_conversion_${Date.now()}`;
-    const status = data.status || 'completed'; 
-    const eventType = data.eventType || 'conversion'; 
+    const transId = data.conversionId || `klink_test_${Date.now()}`;
+    const status = data.status || 'completed';
+    const eventType = data.eventType || 'conversion';
     const rawPayout = parseFloat(String(data.payout).replace(/[^0-9.-]/g, '')) || 0;
 
-    // 🎯 [تعديل الفحص الذكي]: إذا أرسلت الشركة مستخدم وهمي أو فارغ أو الـ Payout صفر (وضع التست)
-    // سنجلب حساب مستخدم حقيقي من تطبيقك لإرسال الإشعار والـ 500 نقطة له حتى ترى النتيجة بنفسك في الموقع!
-    if (!userId || rawPayout === 0 || userId.includes('test') || userId.includes('pub-')) {
+    // 🔥 [الحل الذكي الحاسم]: إذا كان اسم المستخدم القادم من التست فارغاً أو وهمياً (مثل test أو pub-)
+    // سنقوم بالبحث في قاعدة البيانات وجلب حسابك أنت حركياً ليظهر لك الإشعار والنقاط في الموقع فوراً!
+    if (!userId || userId.includes('test') || userId.includes('pub-') || userId === 'undefined') {
+      // جلب أول مستخدم مسجل (غالباً حسابك كأدمن ومطور للتطبيق)
       const usersSnapshot = await db.collection('users').limit(1).get();
       if (!usersSnapshot.empty) {
-        userId = usersSnapshot.docs[0].id; // سيأخذ الـ ID الخاص بك أو بأول مستخدم مسجل
+        userId = usersSnapshot.docs[0].id; 
       } else {
-        userId = "fallback_user_id"; 
+        return new NextResponse("ERROR: No User Found In DB", { status: 400 });
       }
     }
 
-    // --- 🎯 احتساب النقاط الحقيقي (1 دولار = 1000 نقطة) ---
+    // حساب النقاط بناءً على معادلة (1 دولار = 1000 نقطة)
     const absolutePayout = Math.abs(rawPayout);
-    let calculatedPoints = Math.round(absolutePayout * 1000); 
+    let calculatedPoints = Math.round(absolutePayout * 1000);
 
-    // إذا كنا في وضع الفحص (الـ Payout صفر)، نجبر الكود على إعطاء 500 نقطة للتجربة فقط كما طلبت!
-    if (rawPayout === 0) {
-      calculatedPoints = 500; 
+    // إذا كان العرض تجريبياً وقيمته صفر، نمنحه 500 نقطة ثابتة للتجربة ورؤية الأرقام في الواجهة
+    if (rawPayout === 0 || calculatedPoints === 0) {
+      calculatedPoints = 500;
     }
 
     let finalReward = calculatedPoints;
 
-    // معالجة الخصومات والمرتجعات (Chargebacks)
+    // إدارة عمليات الإلغاء والـ Chargeback
     if (eventType === 'chargeback' || status === 'cancelled' || rawPayout < 0) {
-      finalReward = -Math.abs(calculatedPoints); 
+      finalReward = -Math.abs(calculatedPoints);
     }
 
-    const offerName = data.offerName || "Klink Test Offer";
+    const offerName = data.offerName || "Klink Testing Task";
     const transactionRef = db.collection('transactions').doc(transId);
 
-    // منع تكرار العمليات
+    // منع تكرار العرض
     const transactionDoc = await transactionRef.get();
     if (transactionDoc.exists) {
       return new NextResponse("DUP", { status: 200 });
@@ -92,25 +94,26 @@ export async function POST(req: NextRequest) {
     await db.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
       
-      if (!userDoc.exists) {
-        ts.set(userRef, { points: finalReward, email: "user@mrcash.app", createdAt: new Date() });
-      } else {
+      if (userDoc.exists) {
         const currentPoints = userDoc.data()?.points || 0;
         ts.update(userRef, { points: currentPoints + finalReward });
+      } else {
+        // إنشاء الحساب احتياطياً إذا لم يعثر عليه
+        ts.set(userRef, { points: finalReward, email: "user@mrcash.app", createdAt: new Date() });
       }
 
-      // تسجيل العملية في الـ Transactions
+      // تسجيل المعاملة في السجل لتبلغ عنها الواجهة
       ts.set(transactionRef, {
         userId: userId,
         amount: finalReward,
         type: finalReward > 0 ? 'offer_credit' : 'chargeback',
-        offerId: data.offerId || 'klink_task',
+        offerId: data.offerId || 'klink_task_id',
         offerName: `${offerName} (KlinkLabs)`,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         status: 'completed'
       });
 
-      // إرسال الإشعار الفوري للموقع بقيمة الـ 500 نقطة للتجربة (تمنع الصفر تماماً وتظهر في الموقع)
+      // إرسال الإشعار الفوري الذي سيظهر في حسابك بالموقع مباشرة
       ts.set(notificationRef, {
         userId: userId,
         title: finalReward > 0 ? "🎉 Points Credited!" : "⚠️ Points Deducted",
@@ -126,8 +129,8 @@ export async function POST(req: NextRequest) {
     return new NextResponse("OK", { status: 200 });
 
   } catch (error: any) {
-    console.error("KlinkLabs Postback Error:", error.message);
-    return new NextResponse("OK", { status: 200 }); 
+    console.error("KlinkLabs Internal Postback Error:", error.message);
+    return new NextResponse("OK", { status: 200 });
   }
 }
 
