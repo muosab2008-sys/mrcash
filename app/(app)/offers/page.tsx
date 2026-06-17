@@ -63,13 +63,16 @@ export default function OffersPage() {
   const [votes, setVotes] = useState<Record<string, OfferVotes>>({});
   const [votingOfferId, setVotingOfferId] = useState<string | null>(null);
 
-  // 1. 🚀 جلب العروض من السيرفر الموحد الجديد بأمان ومنع الـ 404
+  // 1. 🚀 جلب العروض من السيرفر الموحد وتمرير الـ userId لمنع الـ المصفوفة الفارغة
   useEffect(() => {
     async function fetchOffers() {
       setLoading(true);
       try {
-        // نطلب السيرفر الموحد ونحدد الـ provider اللي نبيه (مثلاً: notik)
-        const response = await fetch('api/offers');
+        // نأخذ الـ uid الفعلي للمستخدم وإذا لم يتواجد نضع قيمة افتراضية
+        const currentUid = user ? user.uid : "demo-user-1";
+        
+        // تمرير الـ userId بشكل Query Parameter للسيرفر
+        const response = await fetch(`/api/offers?provider=notik&userId=${currentUid}`);
         
         if (!response.ok) {
           throw new Error(`Server returned status: ${response.status}`);
@@ -77,7 +80,6 @@ export default function OffersPage() {
 
         const result = await response.json();
         
-        // بما أن السيرفر صار يغسل البيانات ويرجعها جاهزة، نضعها في الستيت فوراً!
         if (result && result.status === "success" && Array.isArray(result.data)) {
           setOffers(result.data);
         } else {
@@ -92,9 +94,9 @@ export default function OffersPage() {
     }
 
     fetchOffers();
-  }, []);
+  }, [user]); // تم إضافة user هنا لضمان تجديد العروض فور تسجيل الدخول الحقيقي
 
-  // 2. 🛡️ جلب التصويتات بشكل آمن ومحسن لتقليل الـ Reads في Firestore
+  // 2. 🛡️ جلب التصويتات من Firestore
   useEffect(() => {
     if (offers.length === 0) return;
 
@@ -131,7 +133,7 @@ export default function OffersPage() {
     fetchAllVotes();
   }, [offers, user]);
 
-  // 3. دالة معالجة فتح العروض وحقن الـ UID الحقيقي ديناميكياً لكل الشركات 🔥
+  // 3. دالة معالجة فتح العروض وحقن الـ UID الحقيقي ديناميكياً
   const handleStartOffer = useCallback((baseUrl: string) => {
     if (!user) {
       alert("Please log in first to earn points!");
@@ -140,17 +142,14 @@ export default function OffersPage() {
 
     let finalUrl = baseUrl;
 
-    // أ) إذا كان الرابط مجهز بـ Placeholder مثل أنظمة ClickWall [USER_ID]
     if (finalUrl.includes("[USER_ID]")) {
       finalUrl = finalUrl.replace("[USER_ID]", user.uid);
     } 
-    // ب) إذا كان الرابط يحتوي على صيغ أخرى أو يحتاج إضافة البارامتر كـ Query string
     else if (!finalUrl.includes("user_id=") && !finalUrl.includes("subId=")) {
       const separator = finalUrl.includes("?") ? "&" : "?";
       finalUrl = `${finalUrl}${separator}user_id=${user.uid}`;
     }
 
-    // فتح العرض في نافذة جديدة بأمان لتتبع المستخدم
     window.open(finalUrl, "_blank");
   }, [user]);
 
@@ -215,7 +214,7 @@ export default function OffersPage() {
     }
   }, [user]);
 
-  // Optimized filtering and sorting with useMemo
+  // Optimized filtering and sorting
   const filteredOffers = useMemo(() => {
     return offers
       .filter((offer) => {
