@@ -63,38 +63,58 @@ export default function OffersPage() {
   const [votes, setVotes] = useState<Record<string, OfferVotes>>({});
   const [votingOfferId, setVotingOfferId] = useState<string | null>(null);
 
-  // 1. 🚀 جلب العروض من السيرفر الموحد وتمرير الـ userId لمنع الـ المصفوفة الفارغة
+  // 1. 🌐 جلب البيانات مباشرة من متصفح المستخدم إلى سيرفر Notik
   useEffect(() => {
-    async function fetchOffers() {
+    async function fetchOffersDirectly() {
       setLoading(true);
       try {
-        // نأخذ الـ uid الفعلي للمستخدم وإذا لم يتواجد نضع قيمة افتراضية
+        // نأخذ الـ uid الفعلي للمستخدم وإذا لم يتواجد نضع قيمة افتراضية للزوار
         const currentUid = user ? user.uid : "demo-user-1";
         
-        // تمرير الـ userId بشكل Query Parameter للسيرفر
-        const response = await fetch(`/api/offers?provider=notik&userId=${currentUid}`);
+        // بناء رابط Notik المباشر مع الـ Parameters الخاصة بك
+        const notikUrl = new URL("https://notik.me/api/v1/live-campaigns-for-user");
+        notikUrl.searchParams.append("api_key", "NofGnODVnHB3werypR5PRKx5ew8fTbB4");
+        notikUrl.searchParams.append("pub_id", "Yog41D");
+        notikUrl.searchParams.append("app_id", "psPQDvAS3y");
+        notikUrl.searchParams.append("user_id", currentUid);
+        notikUrl.searchParams.append("duration", "30d");
+
+        const response = await fetch(notikUrl.toString());
         
         if (!response.ok) {
-          throw new Error(`Server returned status: ${response.status}`);
+          throw new Error(`Notik returned status: ${response.status}`);
         }
 
         const result = await response.json();
         
-        if (result && result.status === "success" && Array.isArray(result.data)) {
-          setOffers(result.data);
+        // قراءة العروض حسب هيكلة Notik (تكون داخل campaigns أو data)
+        const campaigns = result.campaigns || result.data || [];
+        
+        if (Array.isArray(campaigns)) {
+          const formattedOffers = campaigns.map((campaign: any) => ({
+            id: String(campaign.id || campaign.campaign_id),
+            name: campaign.name || campaign.title,
+            description: campaign.description || campaign.action || "Complete this offer to earn MC",
+            provider: "Notik",
+            payout: Number(campaign.payout) || 0,
+            mcPoints: Number(campaign.payout_custom) || Number(campaign.points) || 0,
+            image: campaign.image_url || campaign.icon_url || "/placeholder.svg",
+            url: campaign.url || campaign.click_url,
+          }));
+          setOffers(formattedOffers);
         } else {
           setOffers([]);
         }
       } catch (error) {
-        console.error("Error fetching offers from unified API:", error);
+        console.error("Error fetching directly from Notik API:", error);
         setOffers([]);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchOffers();
-  }, [user]); // تم إضافة user هنا لضمان تجديد العروض فور تسجيل الدخول الحقيقي
+    fetchOffersDirectly();
+  }, [user]); // يتحدث تلقائياً فور تسجيل الدخول للتحول من التست لليوزر الحقيقي
 
   // 2. 🛡️ جلب التصويتات من Firestore
   useEffect(() => {
