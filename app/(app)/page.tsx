@@ -46,7 +46,7 @@ const defaultOfferwalls: Offerwall[] = [
   { id: "tplayad", name: "Tplayad", description: "Complete high-paying offers and premium tasks with Flex Wall", logoUrl: "https://mistcash.co/assets/images/networks/68b3359a3c6e5.png", avgPoints: 2200, isActive: true, url: "#", color: "#6366f1", likes: 29, dislikes: 6, isHot: false },
     { id: "klink", name: "klink", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://assets.klink.finance/klink/klinklabs/klink-labs-dark.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
   { id: "clickwall", name: "clickwall", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/69fb3a0a5bce7.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
-  { id: "notik", name: "Notik", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/69fb3a0a5bce7.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
+  { id: "notik", name: "Notik", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/690b3e0d553c7.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
 ];
 
 interface VoteData {
@@ -205,7 +205,7 @@ export default function EarnPage() {
       tplayad: `https://tplayad.com/offer/Br9Dd7/${uid}`,
       klink: `https://offerwall.klinkfinance.com/wall?pub_id=a8d01294-6455-411d-8f03-cc1d716c241d&user_id=${uid}`,
       clickwall: `https://clickwall.net/app/iframe/10656/${uid}`,
-      notik: `https://notik.me/coins?api_key=NofGnODVnHB3werypR5PRKx5ew8fTbB4&pub_id=Yog41D&app_id=psPQDvAS3y&user_id=${user.uid}`,
+      notik: `https://notik.me/coins?api_key=NofGnODVnHB3werypR5PRKx5ew8fTbB4&pub_id=Yog41D&app_id=psPQDvAS3y&user_id=${uid}`,
     };
     return urls[wall.id] || wall.url;
   };
