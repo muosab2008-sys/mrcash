@@ -36,9 +36,6 @@ import {
   TrendingUp
 } from "lucide-react";
 
-// Convert USD to MC Points (Rate: $1 = 1000 MC)
-const usdToMCPoints = (usd: number): number => Math.round(usd * 1000);
-
 interface Offer {
   id: string;
   name: string;
@@ -66,32 +63,29 @@ export default function OffersPage() {
   const [votes, setVotes] = useState<Record<string, OfferVotes>>({});
   const [votingOfferId, setVotingOfferId] = useState<string | null>(null);
 
-  // 1. Fetch offers from /api/offery
+  // 1. 🚀 جلب العروض من السيرفر الموحد الجديد بأمان ومنع الـ 404
   useEffect(() => {
     async function fetchOffers() {
       setLoading(true);
       try {
-        const response = await fetch('/api/offery');
+        // نطلب السيرفر الموحد ونحدد الـ provider اللي نبيه (مثلاً: notik)
+        const response = await fetch('/api/offers?provider=notik');
+        
+        if (!response.ok) {
+          throw new Error(`Server returned status: ${response.status}`);
+        }
+
         const result = await response.json();
         
+        // بما أن السيرفر صار يغسل البيانات ويرجعها جاهزة، نضعها في الستيت فوراً!
         if (result && result.status === "success" && Array.isArray(result.data)) {
-          const fetchedOffers: Offer[] = result.data.map((item: any) => {
-            const payoutUSD = parseFloat(item.payout?.reward || item.payout || 0);
-            return {
-              id: String(item.offer?.id || item.id || Math.random()),
-              name: item.offer?.name || item.name || "Offer",
-              description: item.offer?.description || item.description || "",
-              provider: item.provider || "Offery",
-              payout: payoutUSD,
-              mcPoints: usdToMCPoints(payoutUSD),
-              image: item.offer?.image || item.image || "",
-              url: item.url || item.offer?.click_url || item.offer?.url || "#",
-            };
-          });
-          setOffers(fetchedOffers);
+          setOffers(result.data);
+        } else {
+          setOffers([]);
         }
       } catch (error) {
-        console.error("Error fetching offers:", error);
+        console.error("Error fetching offers from unified API:", error);
+        setOffers([]);
       } finally {
         setLoading(false);
       }
@@ -201,7 +195,6 @@ export default function OffersPage() {
         }
       }
 
-      // تحديث اللوكال ستيت فوراً ليشعر المستخدم بالسرعة
       setVotes((prev) => {
         const current = prev[offerId] || { likes: 0, dislikes: 0, userVote: null };
         const isSelected = current.userVote === voteType;
@@ -371,7 +364,6 @@ export default function OffersPage() {
                           {isVoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ThumbsDown className="h-4 w-4 mr-1" />{offerVotes.dislikes}</>}
                         </Button>
 
-                        {/* 🔥 تم تغيير التوجيه هنا لتشغيل الدالة الذكية وحقن الـ UID */}
                         <Button 
                           className="rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold px-5 shadow-lg"
                           onClick={() => handleStartOffer(offer.url)}
