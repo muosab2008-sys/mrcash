@@ -1,43 +1,54 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
+
+// دالة موحدة لتحويل الأرباح بالدولار إلى نقاط موقعك (معدل: $1 = 1000 نقطة)
+const usdToMCPoints = (usd: number): number => Math.round(usd * 1000);
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  
-  const mode = searchParams.get("mode");
-  const oobCode = searchParams.get("oobCode");
+  const provider = searchParams.get('provider'); // لقط اسم الشركة المطلوبة من الرابط
 
-  // جلب رابط الموقع الأساسي ديناميكياً لضمان الاستقرار على Vercel
-  const baseUrl = request.nextUrl.origin;
-  let redirectPath = "/login";
+  try {
+    // --------------------------------------------------------
+    // 1. شركة Notik (مثال جاهز ومقفل لو حبيت تسحب عروضهم عبر الـ API)
+    // --------------------------------------------------------
+    if (provider === 'notik') {
+      const API_KEY = process.env.NOTIK_API_KEY;
+      const PUB_ID = "Yog41D";
+      const APP_ID = "psPQDvAS3y";
+      
+      const response = await fetch(`https://notik.me/api/v1/live-campaigns-for-user?api_key=${API_KEY}&pub_id=${PUB_ID}&app_id=${APP_ID}&user_id=demo-user-1`, { next: { revalidate: 300 } });
+      if (!response.ok) throw new Error('Failed to fetch from Notik');
 
-  if (!oobCode || !mode) {
-    return NextResponse.redirect(new URL(redirectPath, baseUrl));
+      const result = await response.json();
+      const rawOffers = result.data || [];
+
+      // غسيل وتنظيف داتا Notik لتطابق الهيكل الموحد لموقعك بالملي
+      const cleanOffers = rawOffers.map((item: any) => ({
+        id: `notik_${item.offer_id}`,
+        name: item.name,
+        description: item.description1 || "Complete this trending offer",
+        provider: "Notik",
+        payout: parseFloat(item.payout || 0),
+        mcPoints: usdToMCPoints(parseFloat(item.payout || 0)),
+        image: item.image_url || "/placeholder.svg",
+        url: item.click_url || "#"
+      }));
+
+      return NextResponse.json({ status: "success", count: cleanOffers.length, data: cleanOffers });
+    }
+
+    // --------------------------------------------------------
+    // 💡 مستقبلاً: هنا تضيف الشركات الجديدة اللي تبي تربطها بنفس الطريقة تماماً 👇
+    // --------------------------------------------------------
+    // if (provider === 'clickwall') {
+    //   // كود جلب وتنظيف عروض شركة ClickWall بنفس الهيكل
+    // }
+
+    // لو المستخدم طلب شركة مو موجودة أو ممسوحة
+    return NextResponse.json({ status: "error", message: "Provider not found or disabled", data: [] }, { status: 400 });
+
+  } catch (error: any) {
+    console.error(`[API Offers Error for ${provider}]:`, error.message);
+    return NextResponse.json({ status: "error", message: "Could not load offers", data: [] }, { status: 500 });
   }
-
-  switch (mode) {
-    case "resetPassword":
-      // تأكد من المسار: إذا كانت الصفحة داخل مجلد auth اجعلها: `/auth/reset-password`
-      redirectPath = `/reset-password?oobCode=${oobCode}&mode=${mode}`;
-      break;
-    
-    case "verifyEmail":
-      redirectPath = `/verify-email?oobCode=${oobCode}&mode=${mode}`;
-      break;
-    
-    case "recoverEmail":
-      redirectPath = `/recover-email?oobCode=${oobCode}&mode=${mode}`;
-      break;
-    
-    default:
-      redirectPath = "/login";
-  }
-
-  // استخدام استجابة توجيه صريحة ومباشرة تمنع الكاش
-  const response = NextResponse.redirect(new URL(redirectPath, baseUrl));
-  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-  return response;
-}
-
-export async function POST(request: NextRequest) {
-  return GET(request);
 }
