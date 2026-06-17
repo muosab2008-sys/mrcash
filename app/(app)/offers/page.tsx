@@ -69,7 +69,7 @@ export default function OffersPage() {
       setLoading(true);
       try {
         // نطلب السيرفر الموحد ونحدد الـ provider اللي نبيه (مثلاً: notik)
-        const response = await fetch('/api/offers?provider=notik');
+        const response = await fetch('/api/offers');
         
         if (!response.ok) {
           throw new Error(`Server returned status: ${response.status}`);
