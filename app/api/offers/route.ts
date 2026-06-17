@@ -1,17 +1,24 @@
 import { NextResponse } from "next/server";
+import { headers } from "next/headers";
 
-// 1. دالة جلب العروض مع تمرير الـ userId الممرر ديناميكياً
-async function fetchNotik(userId: string) {
+// 1. دالة جلب العروض مع تمرير بيانات الزائر الحقيقي (IP و User-Agent)
+async function fetchNotik(userId: string, userIp: string, userAgent: string) {
   try {
-    // الرابط الرسمي الجديد بناءً على التوثيق مع تمرير الـ user_id الإجباري
     const url = `https://notik.me/api/v1/live-campaigns-for-user?api_key=NofGnODVnHB3werypR5PRKx5ew8fTbB4&pub_id=Yog41D&app_id=psPQDvAS3y&user_id=${userId}&duration=30d&page=1`;
     
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url, {
+      method: "GET",
+      cache: "no-store",
+      headers: {
+        // 🔥 السر هنا: نخدع Notik ونخبرها أن الطلب قادم من متصفح المستخدم وليس من السيرفر
+        "X-Forwarded-For": userIp,
+        "User-Agent": userAgent,
+      }
+    });
+
     if (!res.ok) return [];
     
     const json = await res.json();
-    
-    // بناءً على التوثيق، العروض تكون داخل json.data مباشرة
     const campaigns = json.data || [];
     
     return campaigns.map((item: any) => ({
@@ -20,9 +27,9 @@ async function fetchNotik(userId: string) {
       description: item.description1 || item.description2 || "Complete this offer to earn MC",
       provider: "Notik",
       payout: parseFloat(item.payout),
-      mcPoints: Math.round(parseFloat(item.payout) * 1000), // تحويل الـ Payout لنقاط موقعك
+      mcPoints: Math.round(parseFloat(item.payout) * 1000), 
       image: item.image_url,
-      url: item.click_url, // الرابط جاهز للاستخدام الفوري ولا يحتاج تعديل
+      url: item.click_url, 
     }));
   } catch (e) {
     console.error("Error fetching Notik campaigns:", e);
@@ -35,26 +42,32 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const provider = searchParams.get("provider");
-    
-    // 💡 نأخذ الـ userId المرسل من الفرونت إند، وإذا لم يوجد نضع قيمة افتراضية حتى لا يفشل الطلب
     const userId = searchParams.get("userId") || "demo-user-1";
 
+    // 🌐 التقاط الـ IP والـ User-Agent الحقيقيين للمستخدم المتصفح الآن
+    const reqHeaders = await headers();
+    
+    // جلب الـ IP (يتعامل مع صيغ Vercel المختلفة للـ IP)
+    const forwardedFor = reqHeaders.get("x-forwarded-for");
+    const userIp = forwardedFor ? forwardedFor.split(',')[0].trim() : "1.1.1.1"; 
+    
+    // جلب نوع المتصفح والجهاز
+    const userAgent = reqHeaders.get("user-agent") || "";
+
     if (provider === "notik") {
-      const notikOffers = await fetchNotik(userId);
+      const notikOffers = await fetchNotik(userId, userIp, userAgent);
       return NextResponse.json({ status: "success", data: notikOffers });
     }
 
-    // الوضع الافتراضي (دمج كل الشركات)
+    // دمج الشركات
     const results = await Promise.allSettled([
-      fetchNotik(userId),
-      // هنا تضيف الشركات الأخرى مستقبلاً وتمرر لها الـ userId إن تطلب الأمر
+      fetchNotik(userId, userIp, userAgent),
     ]);
 
     const allOffers = results.flatMap((result) =>
       result.status === "fulfilled" ? result.value : []
     );
 
-    // ترتيب العروض من الأعلى نقاطاً للأقل
     allOffers.sort((a, b) => b.mcPoints - a.mcPoints);
 
     return NextResponse.json({
