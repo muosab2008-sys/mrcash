@@ -3,40 +3,52 @@
 import { useEffect } from 'react';
 
 interface NotikWidgetProps {
-  userId: string; // 🔥 نمرر الـ UID الحقيقي للمستخدم هنا ديناميكياً
+  userId: string; // الـ UID الحقيقي للمستخدم ممرر ديناميكياً من الصفحة الأساسية
 }
 
 export default function NotikWidget({ userId }: NotikWidgetProps) {
   useEffect(() => {
-    // 1. تحميل السكريبت الخاص بـ Notik تلقائياً عند فتح الصفحة
+    // 1. تحميل السكربت الرسمي والحديث لـ Notik المذكور في التوثيق الجديد
     const script = document.createElement('script');
-    script.src = 'https://notik.me/js/widget.js'; // رابط السكريبت الرسمي من Notik
+    script.type = 'module';
+    script.src = 'https://notik.me/widgets/v1/notik-live-feed.js?v=1.5';
     script.async = true;
     document.body.appendChild(script);
 
     return () => {
-      // تنظيف السكريبت عند إغلاق الصفحة
+      // تنظيف المتصفح عند الخروج من الصفحة
       document.body.removeChild(script);
     };
   }, []);
 
   return (
-    <div className="w-full my-6 p-4 bg-gray-900 rounded-xl shadow-lg text-white">
-      <h2 className="text-xl font-bold mb-4 text-center">🔥 Trending Offers (Notik)</h2>
+    <div className="w-full my-6 p-4 backdrop-blur-xl bg-background/40 border border-white/10 rounded-2xl shadow-lg text-white">
       
-      {/* 2. 🔥 الـ Div السحري اللي Notik بتقرأ منه البيانات وتطبع جواته العروض */}
-      <div 
-        className="notik-live-widget"
-        data-api-key="NofGnODVnHB3werypR5PRKx5ew8fTbB4" // الـ API Key حقك المكتوب بالتوثيق
-        data-pub-id="Yog41D"                             // الـ Publisher ID حقك
-        data-app-id="psPQDvAS3y"                         // الـ App ID حق Mr.Cash
-        data-user-id={userId}                            // 🚀 هنا يمر الـ UID حق أي مستخدم يدخل الموقع تلقائياً!
-        data-layout="grid"                               // شكل العرض (grid, vertical, horizontal)
-        data-title="Earn MC Points Now"
+      {/* 2. 🔥 استدعاء الـ Web Component الرسمي الجديد المتوافق مع توثيق Notik لعام 2026 */}
+      <notik-live-feed
+        api-key="NofGnODVnHB3werypR5PRKx5ew8fTbB4"
+        pub-id="Yog41D"
+        app-id="psPQDvAS3y"
+        user-id={userId}
+        layout="grid"
+        duration="30d"
+        theme="dark"                // تفعيل الوضع الداكن ليتناسب مع موقعك
+        primary-color="#117572"     // لون الأزرار والنقاط ليتماشى مع الهوية
+        card-bg="#121212"           // خلفية الكروت غامقة
+        border-color="#262626"      // حدود الكروت
       >
-        {/* رسالة مؤقتة تظهر حتى يتم تحميل العروض */}
         <p className="text-center text-gray-400 animate-pulse">Loading amazing offers...</p>
-      </div>
+      </notik-live-feed>
+
     </div>
   );
+}
+
+// إعلان التايب لـ TypeScript لتجنب الأخطاء أثناء بناء المشروع (Build)
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'notik-live-feed': any;
+    }
+  }
 }
