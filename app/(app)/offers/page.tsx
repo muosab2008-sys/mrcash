@@ -8,8 +8,9 @@ import {
   getDoc, 
   setDoc, 
   updateDoc, 
-  increment, 
-  onSnapshot 
+  increment,
+  collection,
+  getDocs
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
@@ -34,6 +35,7 @@ import {
   Loader2,
   TrendingUp
 } from "lucide-react";
+
 // Convert USD to MC Points (Rate: $1 = 1000 MC)
 const usdToMCPoints = (usd: number): number => Math.round(usd * 1000);
 
@@ -64,7 +66,7 @@ export default function OffersPage() {
   const [votes, setVotes] = useState<Record<string, OfferVotes>>({});
   const [votingOfferId, setVotingOfferId] = useState<string | null>(null);
 
-  // Fetch offers from /api/offery
+  // 1. Fetch offers from /api/offery
   useEffect(() => {
     async function fetchOffers() {
       setLoading(true);
@@ -79,11 +81,11 @@ export default function OffersPage() {
               id: String(item.offer?.id || item.id || Math.random()),
               name: item.offer?.name || item.name || "Offer",
               description: item.offer?.description || item.description || "",
-              provider: "Offery",
+              provider: item.provider || "Offery",
               payout: payoutUSD,
               mcPoints: usdToMCPoints(payoutUSD),
               image: item.offer?.image || item.image || "",
-              url: item.url || item.offer?.url || "#",
+              url: item.url || item.offer?.click_url || item.offer?.url || "#",
             };
           });
           setOffers(fetchedOffers);
@@ -98,55 +100,65 @@ export default function OffersPage() {
     fetchOffers();
   }, []);
 
-  // Subscribe to votes from Firebase Firestore (offerwalls collection)
+  // 2. 🛡️ جلب التصويتات بشكل آمن ومحسن لتقليل الـ Reads في Firestore
   useEffect(() => {
     if (offers.length === 0) return;
 
-    const unsubscribes: (() => void)[] = [];
+    async function fetchAllVotes() {
+      try {
+        const querySnapshot = await getDocs(collection(db, "offerwalls"));
+        const fetchedVotes: Record<string, OfferVotes> = {};
 
-    offers.forEach((offer) => {
-      const docRef = doc(db, "offerwalls", offer.id);
-      
-      const unsubscribe = onSnapshot(docRef, async (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data();
+        for (const document of querySnapshot.docs) {
+          const data = document.data();
           let userVote: "like" | "dislike" | null = null;
-          
+
           if (user) {
-            const userVoteRef = doc(db, "offerwalls", offer.id, "votes", user.uid);
+            const userVoteRef = doc(db, "offerwalls", document.id, "votes", user.uid);
             const userVoteSnap = await getDoc(userVoteRef);
             if (userVoteSnap.exists()) {
               userVote = userVoteSnap.data().type;
             }
           }
-          
-          setVotes((prev) => ({
-            ...prev,
-            [offer.id]: {
-              likes: data.likes || 0,
-              dislikes: data.dislikes || 0,
-              userVote,
-            },
-          }));
-        } else {
-          setVotes((prev) => ({
-            ...prev,
-            [offer.id]: {
-              likes: 0,
-              dislikes: 0,
-              userVote: null,
-            },
-          }));
-        }
-      });
-      
-      unsubscribes.push(unsubscribe);
-    });
 
-    return () => {
-      unsubscribes.forEach((unsub) => unsub());
-    };
+          fetchedVotes[document.id] = {
+            likes: data.likes || 0,
+            dislikes: data.dislikes || 0,
+            userVote,
+          };
+        }
+
+        setVotes(fetchedVotes);
+      } catch (error) {
+        console.error("Error fetching votes:", error);
+      }
+    }
+
+    fetchAllVotes();
   }, [offers, user]);
+
+  // 3. دالة معالجة فتح العروض وحقن الـ UID الحقيقي ديناميكياً لكل الشركات 🔥
+  const handleStartOffer = useCallback((baseUrl: string) => {
+    if (!user) {
+      alert("Please log in first to earn points!");
+      return;
+    }
+
+    let finalUrl = baseUrl;
+
+    // أ) إذا كان الرابط مجهز بـ Placeholder مثل أنظمة ClickWall [USER_ID]
+    if (finalUrl.includes("[USER_ID]")) {
+      finalUrl = finalUrl.replace("[USER_ID]", user.uid);
+    } 
+    // ب) إذا كان الرابط يحتوي على صيغ أخرى أو يحتاج إضافة البارامتر كـ Query string
+    else if (!finalUrl.includes("user_id=") && !finalUrl.includes("subId=")) {
+      const separator = finalUrl.includes("?") ? "&" : "?";
+      finalUrl = `${finalUrl}${separator}user_id=${user.uid}`;
+    }
+
+    // فتح العرض في نافذة جديدة بأمان لتتبع المستخدم
+    window.open(finalUrl, "_blank");
+  }, [user]);
 
   // Handle vote (like/dislike)
   const handleVote = useCallback(async (offerId: string, voteType: "like" | "dislike") => {
@@ -161,17 +173,13 @@ export default function OffersPage() {
       const offerSnap = await getDoc(offerRef);
       const userVoteSnap = await getDoc(userVoteRef);
       
-      const currentVote = votes[offerId];
-      
       if (!offerSnap.exists()) {
-        // Create offer document if it doesn't exist
         await setDoc(offerRef, {
           likes: voteType === "like" ? 1 : 0,
           dislikes: voteType === "dislike" ? 1 : 0,
         });
         await setDoc(userVoteRef, { type: voteType, timestamp: new Date() });
       } else if (!userVoteSnap.exists()) {
-        // User hasn't voted yet
         await updateDoc(offerRef, {
           [voteType === "like" ? "likes" : "dislikes"]: increment(1),
         });
@@ -180,13 +188,11 @@ export default function OffersPage() {
         const existingVote = userVoteSnap.data().type;
         
         if (existingVote === voteType) {
-          // Remove vote
           await updateDoc(offerRef, {
             [voteType === "like" ? "likes" : "dislikes"]: increment(-1),
           });
           await setDoc(userVoteRef, { type: null, timestamp: new Date() });
         } else {
-          // Change vote
           await updateDoc(offerRef, {
             [existingVote === "like" ? "likes" : "dislikes"]: increment(-1),
             [voteType === "like" ? "likes" : "dislikes"]: increment(1),
@@ -194,21 +200,36 @@ export default function OffersPage() {
           await setDoc(userVoteRef, { type: voteType, timestamp: new Date() });
         }
       }
+
+      // تحديث اللوكال ستيت فوراً ليشعر المستخدم بالسرعة
+      setVotes((prev) => {
+        const current = prev[offerId] || { likes: 0, dislikes: 0, userVote: null };
+        const isSelected = current.userVote === voteType;
+        return {
+          ...prev,
+          [offerId]: {
+            likes: voteType === "like" ? (isSelected ? current.likes - 1 : current.likes + 1) : (current.userVote === "like" ? current.likes - 1 : current.likes),
+            dislikes: voteType === "dislike" ? (isSelected ? current.dislikes - 1 : current.dislikes + 1) : (current.userVote === "dislike" ? current.dislikes - 1 : current.dislikes),
+            userVote: isSelected ? null : voteType
+          }
+        };
+      });
+
     } catch (error) {
       console.error("Error voting:", error);
     } finally {
       setVotingOfferId(null);
     }
-  }, [user, votes]);
+  }, [user]);
 
   // Optimized filtering and sorting with useMemo
   const filteredOffers = useMemo(() => {
     return offers
       .filter((offer) => {
-        const matchesSearch =
+        return (
           offer.name.toLowerCase().includes(search.toLowerCase()) ||
-          offer.description.toLowerCase().includes(search.toLowerCase());
-        return matchesSearch;
+          offer.description.toLowerCase().includes(search.toLowerCase())
+        );
       })
       .sort((a, b) => {
         if (sortBy === "points-high") return b.mcPoints - a.mcPoints;
@@ -223,7 +244,7 @@ export default function OffersPage() {
   }, [offers, search, sortBy, votes]);
 
   return (
-    <div className="min-h-screen space-y-6 p-4 sm:p-6">
+    <div className="min-h-screen space-y-6 p-4 sm:p-6 text-white">
         {/* Header */}
         <div className="text-center sm:text-left">
           <h1 className="text-2xl sm:text-3xl font-bold text-white">
@@ -234,10 +255,9 @@ export default function OffersPage() {
           </p>
         </div>
 
-        {/* Filters - Glassmorphism */}
+        {/* Filters */}
         <div className="backdrop-blur-xl bg-background/40 border border-white/10 rounded-2xl p-4 sm:p-5 shadow-xl">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-            {/* Search */}
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40" />
               <Input
@@ -248,7 +268,6 @@ export default function OffersPage() {
               />
             </div>
 
-            {/* Sort */}
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-full lg:w-48 h-12 rounded-xl bg-white/5 border-white/10 text-white">
                 <SelectValue placeholder="Sort by" />
@@ -261,27 +280,18 @@ export default function OffersPage() {
               </SelectContent>
             </Select>
 
-            {/* View Mode Toggle */}
             <div className="flex rounded-xl border border-white/10 overflow-hidden bg-white/5">
               <Button
                 variant="ghost"
                 onClick={() => setViewMode("grid")}
-                className={`px-4 h-12 rounded-none ${
-                  viewMode === "grid" 
-                    ? "bg-primary/20 text-primary" 
-                    : "text-white/50 hover:text-white hover:bg-white/5"
-                }`}
+                className={`px-4 h-12 rounded-none ${viewMode === "grid" ? "bg-primary/20 text-primary" : "text-white/50"}`}
               >
                 <LayoutGrid className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => setViewMode("list")}
-                className={`px-4 h-12 rounded-none ${
-                  viewMode === "list" 
-                    ? "bg-primary/20 text-primary" 
-                    : "text-white/50 hover:text-white hover:bg-white/5"
-                }`}
+                className={`px-4 h-12 rounded-none ${viewMode === "list" ? "bg-primary/20 text-primary" : "text-white/50"}`}
               >
                 <List className="h-4 w-4" />
               </Button>
@@ -297,49 +307,33 @@ export default function OffersPage() {
           </span>
         </div>
 
-        {/* Offers Grid/List */}
+        {/* Offers Render */}
         {loading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div 
-                key={i} 
-                className="h-56 backdrop-blur-md bg-white/5 border border-white/10 animate-pulse rounded-2xl" 
-              />
+              <div key={i} className="h-56 backdrop-blur-md bg-white/5 border border-white/10 animate-pulse rounded-2xl" />
             ))}
           </div>
         ) : filteredOffers.length === 0 ? (
           <div className="backdrop-blur-xl bg-background/40 border border-white/10 rounded-2xl p-12 text-center">
             <p className="text-white/50 text-lg">No offers found</p>
-            <p className="text-white/30 text-sm mt-2">Try adjusting your search</p>
           </div>
         ) : (
-          <div className={
-            viewMode === "grid" 
-              ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3" 
-              : "space-y-4"
-          }>
+          <div className={viewMode === "grid" ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3" : "space-y-4"}>
             {filteredOffers.map((offer) => {
               const offerVotes = votes[offer.id] || { likes: 0, dislikes: 0, userVote: null };
               const isVoting = votingOfferId === offer.id;
               
               return (
-                <Card 
-                  key={offer.id} 
-                  className="backdrop-blur-xl bg-background/40 border border-white/10 rounded-2xl hover:border-primary/40 hover:bg-background/50 transition-all duration-300 group overflow-hidden"
-                >
+                <Card key={offer.id} className="backdrop-blur-xl bg-background/40 border border-white/10 rounded-2xl hover:border-primary/40 transition-all duration-300 group overflow-hidden">
                   <CardContent className={`p-5 flex ${viewMode === "list" ? "flex-row items-center gap-6" : "flex-col"} h-full`}>
-                    {/* Offer Image & Info */}
+                    
                     <div className={`flex items-center gap-4 ${viewMode === "list" ? "flex-1" : "mb-4"}`}>
-                      <div className="relative">
-                        <img 
-                          src={offer.image || "/placeholder.svg"} 
-                          alt={offer.name}
-                          className="w-14 h-14 rounded-xl object-cover border border-white/10 bg-white/5" 
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/placeholder.svg";
-                          }}
-                        />
-                      </div>
+                      <img 
+                        src={offer.image || "/placeholder.svg"} 
+                        alt={offer.name}
+                        className="w-14 h-14 rounded-xl object-cover border border-white/10 bg-white/5" 
+                      />
                       <div className="flex-1 min-w-0">
                         <h3 className="text-white font-semibold text-base line-clamp-1 group-hover:text-primary transition-colors">
                           {offer.name}
@@ -348,79 +342,46 @@ export default function OffersPage() {
                       </div>
                     </div>
 
-                    {/* Description */}
                     {viewMode === "grid" && (
                       <p className="text-white/50 text-sm line-clamp-2 mb-4 flex-grow">
                         {offer.description || "Complete this offer to earn MC"}
                       </p>
                     )}
 
-                    {/* Points & Actions */}
-                    <div className={`flex items-center ${viewMode === "list" ? "gap-6" : "justify-between mt-auto"}`}>
-                      {/* Points Display */}
+                    <div className={`flex items-center w-full ${viewMode === "list" ? "justify-end gap-6" : "justify-between mt-auto"}`}>
                       <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/20 border border-amber-500/30 flex items-center justify-center">
-                          <Coins className="h-5 w-5 text-amber-400" />
-                        </div>
-                        <div>
-                          <span className="text-white font-bold text-lg">{offer.mcPoints.toLocaleString()}</span>
-                          <span className="text-xs text-white/40 ml-1">MC</span>
-                        </div>
+                        <Coins className="h-5 w-5 text-amber-400" />
+                        <span className="text-white font-bold text-lg">{offer.mcPoints.toLocaleString()}</span>
                       </div>
 
-                      {/* Like/Dislike Buttons */}
                       <div className="flex items-center gap-2">
                         <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={!user || isVoting}
+                          variant="ghost" size="sm" disabled={!user || isVoting}
                           onClick={() => handleVote(offer.id, "like")}
-                          className={`h-9 px-3 rounded-lg transition-all ${
-                            offerVotes.userVote === "like"
-                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                              : "bg-white/5 text-white/50 hover:text-emerald-400 hover:bg-emerald-500/10 border border-transparent"
-                          }`}
+                          className={`h-9 px-3 rounded-lg ${offerVotes.userVote === "like" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-white/5 text-white/50"}`}
                         >
-                          {isVoting ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <>
-                              <ThumbsUp className="h-4 w-4 mr-1" />
-                              <span className="text-xs">{offerVotes.likes}</span>
-                            </>
-                          )}
+                          {isVoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ThumbsUp className="h-4 w-4 mr-1" />{offerVotes.likes}</>}
                         </Button>
+                        
                         <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={!user || isVoting}
+                          variant="ghost" size="sm" disabled={!user || isVoting}
                           onClick={() => handleVote(offer.id, "dislike")}
-                          className={`h-9 px-3 rounded-lg transition-all ${
-                            offerVotes.userVote === "dislike"
-                              ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                              : "bg-white/5 text-white/50 hover:text-red-400 hover:bg-red-500/10 border border-transparent"
-                          }`}
+                          className={`h-9 px-3 rounded-lg ${offerVotes.userVote === "dislike" ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-white/5 text-white/50"}`}
                         >
-                          {isVoting ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <>
-                              <ThumbsDown className="h-4 w-4 mr-1" />
-                              <span className="text-xs">{offerVotes.dislikes}</span>
-                            </>
-                          )}
+                          {isVoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ThumbsDown className="h-4 w-4 mr-1" />{offerVotes.dislikes}</>}
+                        </Button>
+
+                        {/* 🔥 تم تغيير التوجيه هنا لتشغيل الدالة الذكية وحقن الـ UID */}
+                        <Button 
+                          className="rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold px-5 shadow-lg"
+                          onClick={() => handleStartOffer(offer.url)}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Start
                         </Button>
                       </div>
-
-                      {/* Start Offer Button */}
-                      <Button 
-                        className="rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold px-5 shadow-lg shadow-primary/20"
-                        onClick={() => window.open(offer.url, "_blank")}
-                      >
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Start
-                      </Button>
                     </div>
+
                   </CardContent>
                 </Card>
               );
