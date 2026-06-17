@@ -1,77 +1,63 @@
-import { NextRequest, NextResponse } from "next/server";
-import {
-  getAdminDb,
-  processPostback,
-  USD_TO_POINTS,
-  parseFloatSafe,
-} from "@/lib/postback-utils";
+import { NextResponse } from 'next/server';
+// استورد إعدادات قاعدة البيانات الخاصة بك (مثال لـ Firebase أو Appwrite أو Prisma)
+// import { db } from '@/lib/db'; 
 
-/**
- * Flex Wall Postback Handler
- * 
- * Parameters (uses {macro} format):
- * - user_id: User unique ID in your platform
- * - offer_name: Completed offer name
- * - amount: Currency amount to add to user
- * - payout: Publisher earnings in USD
- * - user_ip: User IP address
- * - tixid: Unique conversion ID from Flex Wall
- */
-
-export async function GET(request: NextRequest) {
+export async function GET(request) {
   try {
-    const adminDb = getAdminDb();
     const { searchParams } = new URL(request.url);
 
-    // Extract parameters
-    const userId = searchParams.get("user_id") || "";
-    const offerName = searchParams.get("offer_name") || "FlexWall Offer";
-    const amount = parseFloatSafe(searchParams.get("amount"));
-    const payout = parseFloatSafe(searchParams.get("payout"));
-    const userIp = searchParams.get("user_ip") || searchParams.get("ip") || "";
-    const transactionId = searchParams.get("tixid") || searchParams.get("transaction_id") || "";
+    // استقبال البيانات المرسلة من ClickWall
+    const userId = searchParams.get('user_id');
+    const amount = parseInt(searchParams.get('amount'), 10);
+    const payout = parseFloat(searchParams.get('payout')); // القيمة بالدولار الأمريكي
+    const offerName = searchParams.get('offer_name');
+    const txid = searchParams.get('txid'); // المعرف الفريد للمعاملة لمنع التكرار
+    const userIp = searchParams.get('user_ip');
 
-    // Validate required fields
-    if (!userId) {
-      return new NextResponse("ok", { status: 200 });
+    // 1. التحقق من وجود البيانات الأساسية
+    if (!userId || !amount || !txid) {
+      return new NextResponse('Missing required parameters', { status: 400 });
     }
 
-    // Generate transaction ID if not provided
-    const txId = transactionId || `flexwall_${userId}_${Date.now()}`;
-
-    // Calculate USD amount and points
-    // Payout is in USD, amount is in app currency
-    const amountUSD = payout > 0 ? payout : amount / USD_TO_POINTS;
-    const points = Math.round(amountUSD * USD_TO_POINTS);
-
-    // Skip if zero payout
-    if (points === 0) {
-      return new NextResponse("ok", { status: 200 });
+    // 2. خطوة هامة جداً: تحقق في قاعدة بياناتك إن كان الـ txid قد تم تنفيذه مسبقاً لمنع تكرار إضافة النقاط
+    /* 
+    const isDuplicate = await db.tracker.findUnique({ where: { txid } });
+    if (isDuplicate) {
+      return new NextResponse('OK', { status: 200 }); // نرد بـ OK حتى لا تستمر المنصة في المحاولة
     }
+    */
 
-    // Process postback
-    const result = await processPostback(adminDb, {
-      userId,
-      transactionId: txId,
-      offerwall: "FlexWall",
-      offerName,
-      points,
-      amountUSD,
-      userIp,
-      isChargeback: false, // FlexWall doesn't send chargebacks via same endpoint
+    // 3. تحديث نقاط المستخدم في قاعدة البيانات وإضافة سجل العملية (Tracker)
+    // مثال منطقي للتحديث:
+    /*
+    await db.$transaction([
+      db.user.update({
+        where: { id: userId },
+        data: { points: { increment: amount } }
+      }),
+      db.tracker.create({
+        data: {
+          userId,
+          points: amount,
+          type: `ClickWall: ${offerName} - IP: ${userIp}`,
+          txid,
+          payout
+        }
+      })
+    ]);
+    */
+
+    console.log(`Successfully credited ${amount} points to user: ${userId} for transaction: ${txid}`);
+
+    // 4. الرد المطلوب من ClickWall لإغلاق المعاملة بنجاح
+    return new NextResponse('OK', {
+      status: 200,
+      headers: { 'Content-Type': 'text/plain' },
     });
 
-    if (!result.success) {
-      console.error("FlexWall postback failed:", result.message);
-    }
-
-    return new NextResponse("ok", { status: 200 });
   } catch (error) {
-    console.error("FlexWall postback error:", error);
-    return new NextResponse("ok", { status: 200 });
+    console.error('ClickWall Postback Error:', error);
+    // نرد بـ 500 في حال حدوث خطأ بالسيرفر لكي تحاول المنصة إرسال الـ Postback لاحقاً ولا تضيع نقاط المستخدم
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
-}
-
-export async function POST(request: NextRequest) {
-  return GET(request);
 }
