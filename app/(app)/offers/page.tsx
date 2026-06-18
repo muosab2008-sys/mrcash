@@ -50,7 +50,7 @@ import {
 
 interface OfferTask {
   taskName: string;
-  points: number;
+  points: any; // نتركها تستقبل أي صيغة رقمية أو نصية قادمة
 }
 
 interface Offer {
@@ -59,7 +59,7 @@ interface Offer {
   description: string;
   provider: string;
   payout: number;
-  mcPoints: number;
+  mcPoints: any; // نتركها خام بدون إجبار على صيغة معينة
   image?: string;
   url: string;
   steps?: string[];
@@ -109,8 +109,8 @@ export default function OffersPage() {
             const offerId = campaign.campaign_id || campaign.id || `notik-offer-${index}`;
             const realPayout = Number(campaign.payout) || 0;
 
-            // 🎯 هنا التعديل المطلوب: نأخذ الرقم القادم من الشركة مباشرة بدون أي ضرب أو قسمة أو شروط
-            const companyPoints = campaign.points ? Number(campaign.points) : realPayout;
+            // نأخذ القيمة كما هي تماماً من الشركة بدون لمسها
+            const companyPoints = campaign.points !== undefined ? campaign.points : realPayout;
 
             let extractedSteps: string[] = [];
             if (campaign.steps && Array.isArray(campaign.steps)) {
@@ -119,17 +119,16 @@ export default function OffersPage() {
               extractedSteps = [campaign.action];
             }
 
-            // جلب تفاصيل المهام الإضافية ونقاطها كما هي من الشركة مباشرة بدون تعديل
             let parsedTasks: OfferTask[] = [];
             if (campaign.events && Array.isArray(campaign.events)) {
               parsedTasks = campaign.events.map((ev: any) => ({
                 taskName: ev.event_name || ev.description || ev.name,
-                points: ev.points ? Number(ev.points) : 0
+                points: ev.points !== undefined ? ev.points : 0
               }));
             } else if (campaign.requirements_items && Array.isArray(campaign.requirements_items)) {
               parsedTasks = campaign.requirements_items.map((item: any) => ({
                 taskName: item.taskName || item.description || "Task Requirement",
-                points: item.points ? Number(item.points) : 0
+                points: item.points !== undefined ? item.points : 0
               }));
             }
 
@@ -286,8 +285,10 @@ export default function OffersPage() {
                offer.description.toLowerCase().includes(search.toLowerCase());
       })
       .sort((a, b) => {
-        if (sortBy === "points-high") return b.mcPoints - a.mcPoints;
-        if (sortBy === "points-low") return a.mcPoints - b.mcPoints;
+        const pointsA = Number(a.mcPoints) || 0;
+        const pointsB = Number(b.mcPoints) || 0;
+        if (sortBy === "points-high") return pointsB - pointsA;
+        if (sortBy === "points-low") return pointsA - pointsB;
         if (sortBy === "popular") {
           const aLikes = votes[a.id]?.likes || 0;
           const bLikes = votes[b.id]?.likes || 0;
@@ -376,7 +377,8 @@ export default function OffersPage() {
                   <div className={`flex items-center w-full ${viewMode === "list" ? "justify-end gap-6" : "justify-between mt-auto"}`}>
                     <div className="flex items-center gap-2">
                       <img src="/coin.png" alt="MC Coin" className="h-5 w-5 object-contain" />
-                      <span className="text-white font-black text-lg">{offer.mcPoints.toLocaleString()}</span>
+                      {/* 🎯 هنا تم حذف toLocaleString لتعرض الرقم جامد بدون أي فواصل نهائياً */}
+                      <span className="text-white font-black text-lg">{offer.mcPoints}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="sm" disabled={!user || isVoting} onClick={(e) => handleVote(offer.id, "like", e)} className={`h-9 px-3 rounded-lg ${offerVotes.userVote === "like" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-white/5 text-white/50"}`}>
@@ -424,8 +426,9 @@ export default function OffersPage() {
                     {selectedOffer.multiTasks.map((task, idx) => (
                       <div key={idx} className="flex items-center justify-between p-3 bg-black/40 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
                         <span className="text-sm text-white/80 font-medium">{task.taskName}</span>
+                        {/* 🎯 تم حذف التنسيق هنا أيضاً لعرض نقاط المهام الفرعية خام */}
                         <span className="text-emerald-400 font-bold text-xs flex items-center gap-1 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">
-                          +{task.points.toLocaleString()} MC
+                          +{task.points} MC
                         </span>
                       </div>
                     ))}
@@ -458,7 +461,8 @@ export default function OffersPage() {
                   <span className="text-xs text-white/40">Total Max Reward:</span>
                   <div className="flex items-center gap-1.5">
                     <img src="/coin.png" alt="MC Coin" className="h-5 w-5 object-contain" />
-                    <span className="text-lg font-black text-primary">{selectedOffer.mcPoints.toLocaleString()}</span>
+                    {/* 🎯 تم حذف التنسيق هنا أيضاً في الـ Modal */}
+                    <span className="text-lg font-black text-primary">{selectedOffer.mcPoints}</span>
                   </div>
                 </div>
                 <Button className="flex-1 max-w-xs h-12 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-bold shadow-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity" onClick={() => handleStartOffer(selectedOffer.url)}><ExternalLink className="h-4 w-4" />Earn Reward Now</Button>
