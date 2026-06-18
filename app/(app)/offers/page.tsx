@@ -32,7 +32,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription mixin
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { 
   ExternalLink, 
@@ -301,9 +301,6 @@ export default function OffersPage() {
   return (
     <div className="min-h-screen space-y-6 p-4 sm:p-6 text-white selection:bg-primary/30">
         
-      {/* 1. تم حذف شريط الـ Live User Completions تماماً من هنا */}
-      {/* 2. تم حذف شريط تصفية الأجهزة (All, Android, iOS, Desktop) تماماً من هنا */}
-
       {/* Header */}
       <div className="text-center sm:text-left">
         <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Available Offers</h1>
