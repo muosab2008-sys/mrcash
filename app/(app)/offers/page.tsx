@@ -79,13 +79,15 @@ export default function OffersPage() {
   const [votingOfferId, setVotingOfferId] = useState<string | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
 
-  // 1. Fetch data safely from local Proxy Endpoint
+  // جلب البيانات المباشر مع النقاط العشوائية وحذف الأشرطة الزائدة
   useEffect(() => {
     async function fetchOffers() {
       setLoading(true);
       try {
         const currentUid = user ? user.uid : "demo-user-1";
-        const response = await fetch(`/api/offers?user_id=${currentUid}`);
+        
+        // ⚠️ ضع مفتاح Notik الخاص بك هنا بدلاً من كلمة YOUR_NOTIK_API_KEY_HERE
+        const response = await fetch(`https://notik.me/api/v2/coingate/campaigns?api_key=YOUR_NOTIK_API_KEY_HERE&user_id=${currentUid}`);
         if (!response.ok) throw new Error("Failed to fetch campaigns");
 
         const result = await response.json();
@@ -96,7 +98,7 @@ export default function OffersPage() {
             const offerId = campaign.campaign_id || campaign.id || `notik-offer-${index}`;
             const realPayout = Number(campaign.payout) || 0;
 
-            // 🎲 توليد نقاط عشوائية تماماً بدلاً من أرقام الـ API الحقيقية للشركة
+            // 🎲 توليد نقاط عشوائية تماماً تظهر للمستخدم بدلاً من أرقام الشركة
             const randomPoints = Math.floor(Math.random() * (15000 - 500 + 1)) + 500;
 
             let extractedSteps: string[] = [];
@@ -121,7 +123,7 @@ export default function OffersPage() {
 
             return {
               id: String(offerId),
-              name: campaign.name || campaign.title || "Unnumbered Offer",
+              name: campaign.name || campaign.title || "Offer",
               description: campaign.description || campaign.action || "Complete the required actions inside the offer.",
               provider: "Notik",
               payout: realPayout,
@@ -143,7 +145,7 @@ export default function OffersPage() {
           setOffers([]);
         }
       } catch (error) {
-        console.error("Error processing operations setup:", error);
+        console.error("Error fetching operations:", error);
         setOffers([]);
       } finally {
         setLoading(false);
@@ -153,7 +155,7 @@ export default function OffersPage() {
     fetchOffers();
   }, [user]);
 
-  // 2. Load and merge community votes safely
+  // Load community votes
   useEffect(() => {
     let isMounted = true;
     async function fetchAllVotes() {
@@ -288,16 +290,13 @@ export default function OffersPage() {
   return (
     <div className="min-h-screen space-y-6 p-4 sm:p-6 text-white selection:bg-primary/30">
         
-      {/* 1. تم إزالة شريط الـ Live User Completions تماماً من هنا */}
-      {/* 2. تم إزالة شريط تصنيفات الأجهزة (Android/iOS) تماماً */}
-
       {/* Header */}
       <div className="text-center sm:text-left">
         <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Available Offers</h1>
         <p className="text-white/50 text-sm mt-1">Complete offers and earn MC instantly</p>
       </div>
 
-      {/* Filters & Search - يظهر بشكل طبيعي ومستقر */}
+      {/* Filters & Search */}
       <div className="backdrop-blur-xl bg-background/40 border border-white/10 rounded-2xl p-4 shadow-xl">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
           <div className="relative flex-1">
