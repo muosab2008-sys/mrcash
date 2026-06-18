@@ -14,11 +14,11 @@ export async function POST(request: NextRequest) {
 
 async function handleTaskWallPostback(request: NextRequest) {
   try {
-    // 1. قراءة البيانات القادمة من رابط الـ URL مباشرة (Query Parameters)
+    // 1. قراءة المعالم القادمة من الـ URL مباشرة (Query Parameters)
     const { searchParams } = new URL(request.url);
     const rawData = Object.fromEntries(searchParams.entries());
 
-    // 2. مسك المتغيرات بحروفها الصغيرة طبقاً لتوثيق TaskWall الرسمي بالملي
+    // 2. مسك المتغيرات بحروفها الصغيرة طبقاً لتوثيق TaskWall الرسمي المرفق
     let userId = rawData.userid;
     let userAmountRaw = rawData.user_amount;
     let offerName = rawData.offer_name || 'TaskWall Offer';
@@ -26,7 +26,7 @@ async function handleTaskWallPostback(request: NextRequest) {
     let payoutRaw = rawData.payout || '0';
     let dateParam = rawData.date || `tw_${Date.now()}`;
 
-    // 3. 🎯 نظام كشف الفحص والتست لتوجيه الإشعار لحسابك الفعلي بـ MrCash
+    // 3. 🎯 نظام كشف حالات التيست والفحص لتوجيه الإشعار والنقاط لحسابك الشخصي
     const isTestRequest = 
       !userId || 
       userId === "user-pub-001" || 
@@ -34,8 +34,8 @@ async function handleTaskWallPostback(request: NextRequest) {
       String(userId).toLowerCase().includes('test');
 
     if (isTestRequest) {
-      userId = "QpBIsti1UVOyrnkYvYVxemWupQy1"; // حسابك الشخصي للتجربة الحية
-      userAmountRaw = userAmountRaw && !userAmountRaw.includes('{') ? userAmountRaw : "120"; // شحن 120 نقطة تجريبية
+      userId = "QpBIsti1UVOyrnkYvYVxemWupQy1"; // معرّف حسابك الفعلي بـ MrCash
+      userAmountRaw = userAmountRaw && !userAmountRaw.includes('{') ? userAmountRaw : "150"; // منحه 150 نقطة تجريبية
       offerName = offerName && !offerName.includes('{') ? offerName : "TaskWall Reward Test";
     }
 
@@ -43,13 +43,13 @@ async function handleTaskWallPostback(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    // تحويل رصيد العملة إلى قيمة رقمية
+    // تحويل رصيد النقاط (user_amount) إلى قيمة رقمية
     let pointsToReward = parseFloat(userAmountRaw);
     if (isNaN(pointsToReward)) {
       pointsToReward = 0;
     }
 
-    // منع تكرار المعاملات الحية للاعبين (أما التست فيمر دائماً لتطمئن)
+    // منع تكرار المعاملات الحية للمستخدمين (أما التيست فيمر دائماً للمعاينة)
     const transactionId = `taskwall_${userId}_${dateParam}`;
     const transactionRef = adminDb.collection('transactions').doc(transactionId);
     
@@ -63,7 +63,7 @@ async function handleTaskWallPostback(request: NextRequest) {
     const userRef = adminDb.collection('users').doc(userId);
     const notificationRef = adminDb.collection('notifications').doc();
 
-    // 4. 🔥 تشغيل العملية التبادلية في الفايربيس وشحن حقول العملة والتنبيه بالإنجليزية 🔥
+    // 4. 🔥 تشغيل العملية التبادلية في الفايربيس لشحن حقول العملة وجرس التنبيه بالإنجليزية 🔥
     await adminDb.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
       
@@ -96,7 +96,7 @@ async function handleTaskWallPostback(request: NextRequest) {
         });
       }
 
-      // أ) تدوين الفاتورة بجدول العمليات للمراجعة
+      // أ) تدوين الفاتورة بجدول العمليات للمراجعة المالية والشفافية
       ts.set(transactionRef, {
         userId: userId,
         amount: pointsToReward,
@@ -110,7 +110,7 @@ async function handleTaskWallPostback(request: NextRequest) {
         status: 'completed'
       });
 
-      // ب) صياغة جرس التنبيه باللغة الإنجليزية بالكامل داخل التطبيق
+      // ب) صياغة جرس التنبيه باللغة الإنجليزية بالكامل داخل تطبيق MrCash
       ts.set(notificationRef, {
         userId: userId,
         title: "🎉 Points Credited!",
