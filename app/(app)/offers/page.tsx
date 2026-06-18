@@ -1,5 +1,8 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @next/next/no-img-element */
+
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -73,10 +76,8 @@ export default function OffersPage() {
   const [votes, setVotes] = useState<Record<string, OfferVotes>>({});
   const [votingOfferId, setVotingOfferId] = useState<string | null>(null);
 
-  // حالة لحفظ العرض المحدد الذي سيظهر في الـ Modal
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
 
-  // 1. 🌐 جلب البيانات وتخطي ليميت الـ 20 عرض بجلب كل الصفحات (Pagination)
   useEffect(() => {
     async function fetchOffersDirectly() {
       setLoading(true);
@@ -86,7 +87,6 @@ export default function OffersPage() {
         let currentPage = 1;
         let hasMore = true;
 
-        // حلقة لجلب العروض من كل الصفحات المتاحة حتى تنتهي
         while (hasMore && currentPage <= 10) {
           const notikUrl = new URL("https://notik.me/api/v1/live-campaigns-for-user");
           notikUrl.searchParams.append("api_key", "NofGnODVnHB3werypR5PRKx5ew8fTbB4");
@@ -94,7 +94,7 @@ export default function OffersPage() {
           notikUrl.searchParams.append("app_id", "psPQDvAS3y");
           notikUrl.searchParams.append("user_id", currentUid);
           notikUrl.searchParams.append("duration", "30d");
-          notikUrl.searchParams.append("limit", "100"); // الحد الأقصى للصفحة الواحدة
+          notikUrl.searchParams.append("limit", "100"); 
           notikUrl.searchParams.append("page", String(currentPage));
 
           const response = await fetch(notikUrl.toString());
@@ -107,7 +107,6 @@ export default function OffersPage() {
           if (Array.isArray(campaigns) && campaigns.length > 0) {
             allCampaigns = [...allCampaigns, ...campaigns];
             
-            // إذا رجع أقل من 20 عرض، معناه هذي آخر صفحة
             if (campaigns.length < 20) {
               hasMore = false;
             } else {
@@ -127,10 +126,8 @@ export default function OffersPage() {
               extractedSteps = [campaign.action];
             }
 
-            // محاولة جلب النقاط الحقيقية (بناءً على Payout إذا كانت Payout Custom وهمية من المنصة)
             const realPayout = Number(campaign.payout) || 0;
             const customPoints = Number(campaign.payout_custom);
-            // الاعتماد على التحويل المنطقي للنقاط إذا كانت النقاط المخصصة تبدو مبالغاً فيها
             const finalPoints = customPoints > 0 && customPoints < 1000000 
                 ? customPoints 
                 : Math.round(realPayout * 1000);
@@ -149,7 +146,6 @@ export default function OffersPage() {
             };
           });
 
-          // إزالة العروض المكررة برمجياً لضمان نظافة البيانات
           const uniqueOffers = formattedOffers.filter(
             (offer, index, self) => self.findIndex((o) => o.id === offer.id) === index
           );
@@ -169,7 +165,6 @@ export default function OffersPage() {
     fetchOffersDirectly();
   }, [user]);
 
-  // 2. 🛡️ جلب التصويتات من Firestore
   useEffect(() => {
     if (offers.length === 0) return;
 
@@ -206,7 +201,6 @@ export default function OffersPage() {
     fetchAllVotes();
   }, [offers, user]);
 
-  // 3. دالة معالجة فتح العروض وحقن الـ UID الحقيقي ديناميكياً
   const handleStartOffer = useCallback((baseUrl: string) => {
     if (!user) {
       alert("Please log in first to earn points!");
@@ -226,9 +220,8 @@ export default function OffersPage() {
     window.open(finalUrl, "_blank");
   }, [user]);
 
-  // Handle vote (like/dislike)
   const handleVote = useCallback(async (offerId: string, voteType: "like" | "dislike", e: React.MouseEvent) => {
-    e.stopPropagation(); // منع فتح الـ Modal عند النقر على زر التصويت
+    e.stopPropagation();
     if (!user) return;
     
     setVotingOfferId(offerId);
@@ -288,7 +281,6 @@ export default function OffersPage() {
     }
   }, [user]);
 
-  // Optimized filtering and sorting
   const filteredOffers = useMemo(() => {
     return offers
       .filter((offer) => {
@@ -311,7 +303,6 @@ export default function OffersPage() {
 
   return (
     <div className="min-h-screen space-y-6 p-4 sm:p-6 text-white">
-        {/* Header */}
         <div className="text-center sm:text-left">
           <h1 className="text-2xl sm:text-3xl font-bold text-white">
             Available Offers
@@ -321,7 +312,6 @@ export default function OffersPage() {
           </p>
         </div>
 
-        {/* Filters */}
         <div className="backdrop-blur-xl bg-background/40 border border-white/10 rounded-2xl p-4 sm:p-5 shadow-xl">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
             <div className="relative flex-1">
@@ -365,7 +355,6 @@ export default function OffersPage() {
           </div>
         </div>
 
-        {/* Stats Bar */}
         <div className="flex items-center gap-4 text-sm text-white/60">
           <span className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-emerald-400" />
@@ -373,7 +362,6 @@ export default function OffersPage() {
           </span>
         </div>
 
-        {/* Offers Render */}
         {loading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -393,7 +381,7 @@ export default function OffersPage() {
               return (
                 <Card 
                   key={offer.id} 
-                  onClick={() => setSelectedOffer(offer)} // فتح الـ Modal عند الضغط على الكرت
+                  onClick={() => setSelectedOffer(offer)}
                   className="backdrop-blur-xl bg-background/40 border border-white/10 rounded-2xl hover:border-primary/40 transition-all duration-300 group overflow-hidden cursor-pointer"
                 >
                   <CardContent className={`p-5 flex ${viewMode === "list" ? "flex-row items-center gap-6" : "flex-col"} h-full`}>
@@ -420,7 +408,6 @@ export default function OffersPage() {
 
                     <div className={`flex items-center w-full ${viewMode === "list" ? "justify-end gap-6" : "justify-between mt-auto"}`}>
                       <div className="flex items-center gap-2">
-                        {/* 🪙 تم استخدام صورة الكوين المخصصة هنا */}
                         <img src="/coin.png" alt="MC Coin" className="h-5 w-5 object-contain" />
                         <span className="text-white font-bold text-lg">{offer.mcPoints.toLocaleString()}</span>
                       </div>
@@ -429,4 +416,117 @@ export default function OffersPage() {
                         <Button
                           variant="ghost" size="sm" disabled={!user || isVoting}
                           onClick={(e) => handleVote(offer.id, "like", e)}
-                          className={`h-9 px-3 rounded-lg ${offerVotes.userVote === "like" ? "bg-emerald-500/20 text-
+                          className={`h-9 px-3 rounded-lg ${offerVotes.userVote === "like" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-white/5 text-white/50"}`}
+                        >
+                          {isVoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ThumbsUp className="h-4 w-4 mr-1" />{offerVotes.likes}</>}
+                        </Button>
+                        
+                        <Button
+                          variant="ghost" size="sm" disabled={!user || isVoting}
+                          onClick={(e) => handleVote(offer.id, "dislike", e)}
+                          className={`h-9 px-3 rounded-lg ${offerVotes.userVote === "dislike" ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-white/5 text-white/50"}`}
+                        >
+                          {isVoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ThumbsDown className="h-4 w-4 mr-1" />{offerVotes.dislikes}</>}
+                        </Button>
+
+                        <Button 
+                          className="rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold px-5 shadow-lg"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartOffer(offer.url);
+                          }}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Start
+                        </Button>
+                      </div>
+                    </div>
+
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        <Dialog open={!!selectedOffer} onOpenChange={(open) => !open && setSelectedOffer(null)}>
+          <DialogContent className="bg-[#0b0b0c] border border-white/10 text-white max-w-xl rounded-2xl p-6 backdrop-blur-2xl">
+            {selectedOffer && (
+              <>
+                <DialogHeader className="flex flex-row items-center gap-4 text-left">
+                  <img 
+                    src={selectedOffer.image || "/placeholder.svg"} 
+                    alt={selectedOffer.name} 
+                    className="w-16 h-16 rounded-2xl object-cover border border-white/10"
+                  />
+                  <div className="space-y-1">
+                    <DialogTitle className="text-xl font-bold text-white">{selectedOffer.name}</DialogTitle>
+                    <DialogDescription className="text-sm text-white/40 flex items-center gap-1">
+                      Provided by <span className="text-primary font-medium">{selectedOffer.provider}</span>
+                    </DialogDescription>
+                  </div>
+                </DialogHeader>
+
+                <hr className="border-white/10 my-2" />
+
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-white/70 flex items-center gap-2">
+                    <Info className="h-4 w-4 text-primary" /> Description
+                  </h4>
+                  <p className="text-sm text-white/60 bg-white/5 p-3 rounded-xl border border-white/5 leading-relaxed">
+                    {selectedOffer.description}
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-white/70 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" /> Steps & Rewards
+                  </h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {selectedOffer.steps?.map((step, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <span className="w-5 h-5 flex items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold mt-0.5">
+                            {idx + 1}
+                          </span>
+                          <p className="text-sm text-white/80 max-w-[340px]">{step}</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5">
+                          <img src="/coin.png" alt="MC Coin" className="h-4 w-4 object-contain" />
+                          <span className="text-sm font-bold text-white">{selectedOffer.mcPoints.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-white/70">Requirements</h4>
+                  <p className="text-xs text-white/40 italic pl-2 border-l-2 border-primary/40">
+                    {selectedOffer.requirements}
+                  </p>
+                </div>
+
+                <div className="pt-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-white/40">Total Reward:</span>
+                    <div className="flex items-center gap-1.5">
+                      <img src="/coin.png" alt="MC Coin" className="h-5 w-5 object-contain" />
+                      <span className="text-lg font-black text-primary">{selectedOffer.mcPoints.toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <Button 
+                    className="flex-1 max-w-xs h-12 rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-bold shadow-lg flex items-center justify-center gap-2"
+                    onClick={() => handleStartOffer(selectedOffer.url)}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Earn Reward Now
+                  </Button>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+    </div>
+  );
+}
