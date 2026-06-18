@@ -1,25 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
+// 🔥 استيراد الـ db الأصلي والمربوط بمشروعك مباشرة من ملف الـ firebase-admin الخاص بك 🔥
+import { db } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
 
 export const dynamic = 'force-dynamic';
-
-// 1. تهيئة Firebase Admin داخلياً
-if (!admin.apps.length) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      }),
-    });
-  } catch (error: any) {
-    console.error('Firebase Admin Initialization Error:', error.message);
-  }
-}
-
-const db = admin.firestore();
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,46 +18,46 @@ export async function POST(req: NextRequest) {
       try { bodyParams = await req.json(); } catch (jsError) { bodyParams = {}; }
     }
 
-    // 🎯 جلب المعرّف الفريد (UID) من أي متغير محتمل ترسله الشركة أو الرابط
+    // جلب معرف المستخدم الفريد (UID) من أي مسمى محتمل
     const firebase_uid = urlParams.get('user_id') || bodyParams.user_id || 
                          urlParams.get('uid') || bodyParams.uid || 
                          urlParams.get('subId') || bodyParams.subId;
 
-    // توليد رقم معاملة تلقائي فريد لضمان عدم حدوث تكرار أو رفض أثناء الاختبار
+    // توليد رقم معاملة فريد تلقائي لتفادي ثغرة التكرار أو مشاكل الفحص
     const txn_id = urlParams.get('txn_id') || bodyParams.txn_id || "notik_trx_" + Date.now();
     
-    // جلب النقاط؛ إذا لم تكن موجودة نضع 5000 نقطة افتراضية للاختبار الفوري
+    // حساب النقاط؛ إذا فتحت الرابط بنفسك ولم تجد نقاط، سيضع 5000 نقطة تلقائياً للاختبار
     const amountRaw = urlParams.get('amount') || bodyParams.amount || 
                       urlParams.get('payout') || bodyParams.payout || 
                       urlParams.get('reward') || bodyParams.reward;
     
     let finalReward = amountRaw ? Math.floor(Number(amountRaw)) : 5000;
 
-    // إذا لم يجد الكود المعرف الفريد الخاص بالفايربيس يخرج فوراً لمنع الأخطاء
     if (!firebase_uid) {
       console.warn("⚠️ Notik Postback: Missing Firebase UID");
       return new NextResponse("ok", { status: 200 });
     }
 
+    // الإشارة للجداول باستخدام الـ db القادم من ملف lib الخاص بك
     const userRef = db.collection('users').doc(firebase_uid);
     const transactionRef = db.collection('transactions').doc(txn_id);
     const notificationRef = db.collection('notifications').doc();
 
     const offerName = urlParams.get('offer_name') || bodyParams.offer_name || "Notik Task";
 
-    // 🔥 الشحن المباشر داخل الفايربيس باستخدام المعرّف (UID) الحقيقي 🔥
+    // تشغيل العملية المترابطة الآمنة (Transaction)
     await db.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
       
       if (!userDoc.exists) {
-        // إذا كان الحساب غير موجود (حالة فحص اللوحة) يتم إنشاؤه بالمعرف المرسل لكي لا يفشل الطلب
+        // حماية لوحة التحكم لكي لا يسقط الطلب إذا كان المستخدم وهمياً
         ts.set(userRef, { 
           points: finalReward, 
           balance: finalReward, 
           MC: finalReward,
           mc: finalReward,
           totalEarned: finalReward > 0 ? finalReward : 0,
-          email: "test_user_notik@mrcash.app", 
+          email: "test_notik@mrcash.app", 
           createdAt: new Date(),
           uid: firebase_uid
         });
@@ -83,7 +68,7 @@ export async function POST(req: NextRequest) {
         const currentTotal = userDoc.data()?.totalEarned || 0;
         const currentXp = userDoc.data()?.xp || 0;
 
-        // تحديث جميع حقول الرصيد والعملة والخبرة بناءً على هذا المعرّف
+        // تحديث كافة الحقول دفعة واحدة لضمان قراءتها في الواجهة
         ts.update(userRef, { 
           points: currentPoints + finalReward,
           balance: currentBalance + finalReward,
@@ -94,7 +79,7 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // أ) تسجيل لوج المعاملة
+      // أ) تدوين حركة المال بجدول العمليات
       ts.set(transactionRef, {
         userId: firebase_uid,
         amount: finalReward,
@@ -105,7 +90,7 @@ export async function POST(req: NextRequest) {
         status: 'completed'
       });
 
-      // ب) إضافة الإشعار لكي يظهر للمستخدم في حساب MrCash
+      // ب) إشعاع التنبيه في جدول الإشعارات اللحظية ليتفاعل معها الـ Toast بـ MrCash
       ts.set(notificationRef, {
         userId: firebase_uid,
         title: "🎉 Points Credited!",
@@ -119,7 +104,7 @@ export async function POST(req: NextRequest) {
     return new NextResponse("ok", { status: 200 });
 
   } catch (error: any) {
-    console.error("Notik UID Postback Critical Error:", error.message);
+    console.error("Notik Connected Admin Postback Error:", error.message);
     return new NextResponse("ok", { status: 200 });
   }
 }
