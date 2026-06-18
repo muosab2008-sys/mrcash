@@ -84,7 +84,7 @@ export default function OffersPage() {
   const [votingOfferId, setVotingOfferId] = useState<string | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
 
-  // 1. 🌐 جلب البيانات من الـ API وتنسيقها لتطابق العرض الرسمي للشركة
+  // 1. 🌐 جلب البيانات وعرض نقاط الشركة الخام القادمة مباشرة 100%
   useEffect(() => {
     async function fetchOffersDirectly() {
       setLoading(true);
@@ -109,9 +109,8 @@ export default function OffersPage() {
             const offerId = campaign.campaign_id || campaign.id || `notik-offer-${index}`;
             const realPayout = Number(campaign.payout) || 0;
 
-            // 🎯 الحل الجذري: الشركة ترسل الرقم الأصلي مضخماً بـ 1000 في الـ API، ونحن نقسمه هنا ليظهر مثل لوحة تحكمهم تماماً
-            const rawPoints = campaign.points ? Number(campaign.points) : (realPayout * 1000000);
-            const companyPoints = rawPoints / 1000;
+            // 🎯 هنا التعديل المطلوب: نأخذ الرقم القادم من الشركة مباشرة بدون أي ضرب أو قسمة أو شروط
+            const companyPoints = campaign.points ? Number(campaign.points) : realPayout;
 
             let extractedSteps: string[] = [];
             if (campaign.steps && Array.isArray(campaign.steps)) {
@@ -120,17 +119,17 @@ export default function OffersPage() {
               extractedSteps = [campaign.action];
             }
 
-            // تنسيق نقاط المهام الداخلية أيضاً بنفس الطريقة
+            // جلب تفاصيل المهام الإضافية ونقاطها كما هي من الشركة مباشرة بدون تعديل
             let parsedTasks: OfferTask[] = [];
             if (campaign.events && Array.isArray(campaign.events)) {
               parsedTasks = campaign.events.map((ev: any) => ({
                 taskName: ev.event_name || ev.description || ev.name,
-                points: ev.points ? (Number(ev.points) / 1000) : 0
+                points: ev.points ? Number(ev.points) : 0
               }));
             } else if (campaign.requirements_items && Array.isArray(campaign.requirements_items)) {
               parsedTasks = campaign.requirements_items.map((item: any) => ({
                 taskName: item.taskName || item.description || "Task Requirement",
-                points: item.points ? (Number(item.points) / 1000) : 0
+                points: item.points ? Number(item.points) : 0
               }));
             }
 
