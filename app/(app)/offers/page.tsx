@@ -1,10 +1,5 @@
 "use client";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @next/next/no-img-element */
-
-export const dynamic = "force-dynamic";
-
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { 
   doc, 
@@ -45,9 +40,6 @@ import {
   TrendingUp,
   Info,
   CheckCircle2,
-  Smartphone,
-  Laptop,
-  Layers,
   Milestone
 } from "lucide-react";
 
@@ -62,13 +54,12 @@ interface Offer {
   description: string;
   provider: string;
   payout: number;
-  mcPoints: number;
+  mcPoints: number; // سنضع هنا الرقم العشوائي المحسوب لكل عرض
   image?: string;
   url: string;
   steps?: string[];
   requirements?: string;
-  device?: "android" | "ios" | "desktop" | "all"; 
-  multiTasks?: OfferTask[]; // لتخزين مستويات الجوائز المتعددة إن وجدت
+  multiTasks?: OfferTask[];
 }
 
 interface OfferVotes {
@@ -90,7 +81,6 @@ export default function OffersPage() {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<string>("points-high");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [deviceFilter, setDeviceFilter] = useState<string>("all"); 
   const [votes, setVotes] = useState<Record<string, OfferVotes>>({});
   const [votingOfferId, setVotingOfferId] = useState<string | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
@@ -105,6 +95,7 @@ export default function OffersPage() {
     { username: "علي زين", provider: "pubscale", points: 58.5 }
   ]);
 
+  // Live Feed Ticker Simulation
   useEffect(() => {
     const names = ["مصعب", "Jk", "wael", "Ayoub", "علي زين", "انور الحسين", "Khald", "Mohammed", "MAZEN"];
     const providers = ["pubscale", "Notik", "Torox", "PlayTimeAds", "tplayad"];
@@ -120,34 +111,25 @@ export default function OffersPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // 1. 🌐 جلب البيانات وتفكيك المتطلبات والجوائز المجزأة
+  // 1. Fetch data safely from local Proxy Endpoint
   useEffect(() => {
-    async function fetchOffersDirectly() {
+    async function fetchOffers() {
       setLoading(true);
       try {
         const currentUid = user ? user.uid : "demo-user-1";
-        const notikUrl = new URL("https://notik.me/api/v1/live-campaigns-for-user");
-        notikUrl.searchParams.append("api_key", "NofGnODVnHB3werypR5PRKx5ew8fTbB4");
-        notikUrl.searchParams.append("pub_id", "Yog41D");
-        notikUrl.searchParams.append("app_id", "psPQDvAS3y");
-        notikUrl.searchParams.append("user_id", currentUid);
-
-        const response = await fetch(notikUrl.toString());
-        if (!response.ok) throw new Error("Failed to fetch from Notik");
+        const response = await fetch(`/api/offers?user_id=${currentUid}`);
+        if (!response.ok) throw new Error("Failed to fetch campaigns");
 
         const result = await response.json();
         const campaigns = result.campaigns || result.data || [];
         
         if (Array.isArray(campaigns) && campaigns.length > 0) {
-
           const formattedOffers = campaigns.map((campaign: any, index: number) => {
             const offerId = campaign.campaign_id || campaign.id || `notik-offer-${index}`;
             const realPayout = Number(campaign.payout) || 0;
 
-            const pointsFromApi = Number(campaign.points) || 
-                                  Number(campaign.payout_custom) || 
-                                  Number(campaign.amount) || 
-                                  Math.round(realPayout * 500);
+            // 🎲 توليد نقاط عشوائية تماماً بدلاً من أرقام الـ API الحقيقية (مثلاً بين 500 و 15000)
+            const randomPoints = Math.floor(Math.random() * (15000 - 500 + 1)) + 500;
 
             let extractedSteps: string[] = [];
             if (campaign.steps && Array.isArray(campaign.steps)) {
@@ -156,22 +138,19 @@ export default function OffersPage() {
               extractedSteps = [campaign.action];
             }
 
-            // 🎯 استخراج الجوائز المتعددة والمستويات (Multi-rewards) بشكل ذكي إذا أرسلها الـ API
+            // توليد نقاط عشوائية للمستويات الفرعية أيضاً لكي تتماشى مع الفكرة
             let parsedTasks: OfferTask[] = [];
             if (campaign.events && Array.isArray(campaign.events)) {
               parsedTasks = campaign.events.map((ev: any) => ({
                 taskName: ev.event_name || ev.description || ev.name,
-                points: Number(ev.points) || Math.round(Number(ev.payout) * 500) || 0
+                points: Math.floor(Math.random() * (3000 - 100 + 1)) + 100
               }));
             } else if (campaign.requirements_items && Array.isArray(campaign.requirements_items)) {
-              parsedTasks = campaign.requirements_items;
+              parsedTasks = campaign.requirements_items.map((item: any) => ({
+                ...item,
+                points: Math.floor(Math.random() * (3000 - 100 + 1)) + 100
+              }));
             }
-
-            let deviceType: "android" | "ios" | "desktop" | "all" = "all";
-            const target = String(campaign.target || campaign.platform || "").toLowerCase();
-            if (target.includes("android")) deviceType = "android";
-            else if (target.includes("ios") || target.includes("iphone")) deviceType = "ios";
-            else if (target.includes("desktop") || target.includes("windows")) deviceType = "desktop";
 
             return {
               id: String(offerId),
@@ -179,12 +158,11 @@ export default function OffersPage() {
               description: campaign.description || campaign.action || "Complete the required actions inside the offer.",
               provider: "Notik",
               payout: realPayout,
-              mcPoints: pointsFromApi, 
+              mcPoints: randomPoints, // تعيين الرقم العشوائي هنا
               image: campaign.image_url || campaign.icon_url || "/placeholder.svg",
               url: campaign.url || campaign.click_url,
               steps: extractedSteps,
               requirements: campaign.requirements || campaign.description || "Follow the offer details closely.",
-              device: deviceType,
               multiTasks: parsedTasks.length > 0 ? parsedTasks : undefined
             };
           });
@@ -198,20 +176,19 @@ export default function OffersPage() {
           setOffers([]);
         }
       } catch (error) {
-        console.error("Error fetching directly from Notik API:", error);
+        console.error("Error processing operations setup:", error);
         setOffers([]);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchOffersDirectly();
+    fetchOffers();
   }, [user]);
 
-  // 2. 🛡️ جلب التصويتات من Firestore
+  // 2. Load and merge community votes safely
   useEffect(() => {
-    if (offers.length === 0) return;
-
+    let isMounted = true;
     async function fetchAllVotes() {
       try {
         const querySnapshot = await getDocs(collection(db, "offerwalls"));
@@ -236,14 +213,17 @@ export default function OffersPage() {
           };
         }
 
-        setVotes(fetchedVotes);
+        if (isMounted) setVotes(fetchedVotes);
       } catch (error) {
-        console.error("Error fetching votes:", error);
+        console.error("Error syncing layout values:", error);
       }
     }
 
-    fetchAllVotes();
-  }, [offers, user]);
+    if (offers.length > 0) {
+      fetchAllVotes();
+    }
+    return () => { isMounted = false; };
+  }, [offers.length, user]);
 
   const handleStartOffer = useCallback((baseUrl: string) => {
     if (!user) {
@@ -314,7 +294,7 @@ export default function OffersPage() {
         };
       });
     } catch (error) {
-      console.error("Error voting:", error);
+      console.error("Error matching submission requirements:", error);
     } finally {
       setVotingOfferId(null);
     }
@@ -323,10 +303,8 @@ export default function OffersPage() {
   const filteredOffers = useMemo(() => {
     return offers
       .filter((offer) => {
-        const matchesSearch = offer.name.toLowerCase().includes(search.toLowerCase()) ||
-                             offer.description.toLowerCase().includes(search.toLowerCase());
-        const matchesDevice = deviceFilter === "all" || offer.device === "all" || offer.device === deviceFilter;
-        return matchesSearch && matchesDevice;
+        return offer.name.toLowerCase().includes(search.toLowerCase()) ||
+               offer.description.toLowerCase().includes(search.toLowerCase());
       })
       .sort((a, b) => {
         if (sortBy === "points-high") return b.mcPoints - a.mcPoints;
@@ -338,219 +316,199 @@ export default function OffersPage() {
         }
         return a.name.localeCompare(b.name);
       });
-  }, [offers, search, sortBy, deviceFilter, votes]);
+  }, [offers, search, sortBy, votes]);
 
   return (
     <div className="min-h-screen space-y-6 p-4 sm:p-6 text-white selection:bg-primary/30">
         
-        {/* Live Feed Ticker */}
-        <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-3 overflow-hidden shadow-inner backdrop-blur-md">
-          <div className="flex items-center gap-3 mb-2 px-2 border-b border-white/5 pb-1 text-xs font-semibold text-emerald-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-            LIVE USER COMPLETIONS
-          </div>
-          <div className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap py-1">
-            {liveFeed.map((item, idx) => (
-              <div key={idx} className="inline-flex items-center gap-2 bg-[#0d0d0e] border border-white/5 rounded-xl px-3 py-1.5 text-xs animate-fade-in">
-                <span className="text-white/80 font-medium">{item.username}</span>
-                <span className="text-white/40 text-[10px] bg-white/5 px-1.5 py-0.5 rounded-md">{item.provider}</span>
-                <span className="text-emerald-400 font-bold flex items-center gap-1">
-                  +{item.points.toLocaleString()} <span className="text-[9px] text-white/50">MC</span>
-                </span>
-              </div>
-            ))}
-          </div>
+      {/* Live Feed Ticker */}
+      <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-3 overflow-hidden shadow-inner backdrop-blur-md">
+        <div className="flex items-center gap-3 mb-2 px-2 border-b border-white/5 pb-1 text-xs font-semibold text-emerald-400">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+          LIVE USER COMPLETIONS
         </div>
-
-        {/* Header */}
-        <div className="text-center sm:text-left flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Available Offers</h1>
-            <p className="text-white/50 text-sm mt-1">Complete offers and earn MC instantly</p>
-          </div>
-          
-          {/* Device Filtering Tabs */}
-          <div className="flex items-center justify-center p-1 bg-white/5 border border-white/10 rounded-xl self-center sm:self-auto">
-            <Button variant="ghost" size="sm" onClick={() => setDeviceFilter("all")} className={`h-9 px-3 rounded-lg text-xs ${deviceFilter === "all" ? "bg-primary text-white" : "text-white/60"}`}><Layers className="h-3.5 w-3.5 mr-1" /> All</Button>
-            <Button variant="ghost" size="sm" onClick={() => setDeviceFilter("android")} className={`h-9 px-3 rounded-lg text-xs ${deviceFilter === "android" ? "bg-primary text-white" : "text-white/60"}`}><Smartphone className="h-3.5 w-3.5 mr-1" /> Android</Button>
-            <Button variant="ghost" size="sm" onClick={() => setDeviceFilter("ios")} className={`h-9 px-3 rounded-lg text-xs ${deviceFilter === "ios" ? "bg-primary text-white" : "text-white/60"}`}><Smartphone className="h-3.5 w-3.5 mr-1" /> iOS</Button>
-            <Button variant="ghost" size="sm" onClick={() => setDeviceFilter("desktop")} className={`h-9 px-3 rounded-lg text-xs ${deviceFilter === "desktop" ? "bg-primary text-white" : "text-white/60"}`}><Laptop className="h-3.5 w-3.5 mr-1" /> Desktop</Button>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="backdrop-blur-xl bg-background/40 border border-white/10 rounded-2xl p-4 shadow-xl">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40" />
-              <Input
-                placeholder="Search offers..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-12 h-12 rounded-xl bg-white/5 border-white/10 text-white focus-visible:ring-primary"
-              />
+        <div className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap py-1">
+          {liveFeed.map((item, idx) => (
+            <div key={idx} className="inline-flex items-center gap-2 bg-[#0d0d0e] border border-white/5 rounded-xl px-3 py-1.5 text-xs animate-fade-in">
+              <span className="text-white/80 font-medium">{item.username}</span>
+              <span className="text-white/40 text-[10px] bg-white/5 px-1.5 py-0.5 rounded-md">{item.provider}</span>
+              <span className="text-emerald-400 font-bold flex items-center gap-1">
+                +{item.points.toLocaleString()} <span className="text-[9px] text-white/50">MC</span>
+              </span>
             </div>
+          ))}
+        </div>
+      </div>
 
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full lg:w-48 h-12 rounded-xl bg-white/5 border-white/10 text-white">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent className="bg-[#0a0a0a]/95 text-white border-white/10">
-                <SelectItem value="points-high">Highest MC</SelectItem>
-                <SelectItem value="points-low">Lowest MC</SelectItem>
-                <SelectItem value="popular">Most Popular</SelectItem>
-                <SelectItem value="name">Name A-Z</SelectItem>
-              </SelectContent>
-            </Select>
+      {/* Header (تم حذف شريط الفلاتر الخاص بالأجهزة بالكامل من هنا) */}
+      <div className="text-center sm:text-left">
+        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Available Offers</h1>
+        <p className="text-white/50 text-sm mt-1">Complete offers and earn MC instantly</p>
+      </div>
 
-            <div className="flex rounded-xl border border-white/10 overflow-hidden bg-white/5">
-              <Button variant="ghost" onClick={() => setViewMode("grid")} className={`px-4 h-12 rounded-none ${viewMode === "grid" ? "bg-primary/20 text-primary" : "text-white/50"}`}><LayoutGrid className="h-4 w-4" /></Button>
-              <Button variant="ghost" onClick={() => setViewMode("list")} className={`px-4 h-12 rounded-none ${viewMode === "list" ? "bg-primary/20 text-primary" : "text-white/50"}`}><List className="h-4 w-4" /></Button>
-            </div>
+      {/* Filters */}
+      <div className="backdrop-blur-xl bg-background/40 border border-white/10 rounded-2xl p-4 shadow-xl">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40" />
+            <Input
+              placeholder="Search offers..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-12 h-12 rounded-xl bg-white/5 border-white/10 text-white focus-visible:ring-primary"
+            />
+          </div>
+
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-full lg:w-48 h-12 rounded-xl bg-white/5 border-white/10 text-white">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent className="bg-[#0a0a0a]/95 text-white border-white/10">
+              <SelectItem value="points-high">Highest MC</SelectItem>
+              <SelectItem value="points-low">Lowest MC</SelectItem>
+              <SelectItem value="popular">Most Popular</SelectItem>
+              <SelectItem value="name">Name A-Z</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="flex rounded-xl border border-white/10 overflow-hidden bg-white/5">
+            <Button variant="ghost" onClick={() => setViewMode("grid")} className={`px-4 h-12 rounded-none ${viewMode === "grid" ? "bg-primary/20 text-primary" : "text-white/50"}`}><LayoutGrid className="h-4 w-4" /></Button>
+            <Button variant="ghost" onClick={() => setViewMode("list")} className={`px-4 h-12 rounded-none ${viewMode === "list" ? "bg-primary/20 text-primary" : "text-white/50"}`}><List className="h-4 w-4" /></Button>
           </div>
         </div>
+      </div>
 
-        {/* Stats */}
-        <div className="flex items-center gap-4 text-sm text-white/60">
-          <span className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-emerald-400" />{filteredOffers.length} offers available</span>
+      {/* Stats */}
+      <div className="flex items-center gap-4 text-sm text-white/60">
+        <span className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-emerald-400" />{filteredOffers.length} offers available</span>
+      </div>
+
+      {/* Grid/List Offers */}
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => <div key={i} className="h-56 bg-white/5 border border-white/10 animate-pulse rounded-2xl" />)}
         </div>
-
-        {/* Grid/List Offers */}
-        {loading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3, 4, 5, 6].map((i) => <div key={i} className="h-56 bg-white/5 border border-white/10 animate-pulse rounded-2xl" />)}
-          </div>
-        ) : filteredOffers.length === 0 ? (
-          <div className="backdrop-blur-xl bg-background/40 border border-white/10 rounded-2xl p-12 text-center">
-            <p className="text-white/50 text-lg">No offers found for this device</p>
-          </div>
-        ) : (
-          <div className={viewMode === "grid" ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3" : "space-y-4"}>
-            {filteredOffers.map((offer) => {
-              const offerVotes = votes[offer.id] || { likes: 0, dislikes: 0, userVote: null };
-              const isVoting = votingOfferId === offer.id;
-              
-              return (
-                <Card key={offer.id} onClick={() => setSelectedOffer(offer)} className="backdrop-blur-xl bg-background/40 border border-white/10 rounded-2xl hover:border-primary/40 transition-all duration-300 group overflow-hidden cursor-pointer relative">
-                  <CardContent className={`p-5 flex ${viewMode === "list" ? "flex-row items-center gap-6" : "flex-col"} h-full`}>
-                    <div className={`flex items-center gap-4 ${viewMode === "list" ? "flex-1" : "mb-4"}`}>
-                      <img src={offer.image || "/placeholder.svg"} alt={offer.name} className="w-14 h-14 rounded-xl object-cover border border-white/10 bg-white/5 shadow-md" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <h3 className="text-white font-bold text-base line-clamp-1 group-hover:text-primary transition-colors">{offer.name}</h3>
-                          {offer.device && offer.device !== "all" && (
-                            <span className="text-[9px] uppercase bg-white/10 px-1.5 py-0.5 rounded font-black text-white/60">
-                              {offer.device}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-white/40 mt-0.5">{offer.provider}</p>
+      ) : filteredOffers.length === 0 ? (
+        <div className="backdrop-blur-xl bg-background/40 border border-white/10 rounded-2xl p-12 text-center">
+          <p className="text-white/50 text-lg">No offers found</p>
+        </div>
+      ) : (
+        <div className={viewMode === "grid" ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3" : "space-y-4"}>
+          {filteredOffers.map((offer) => {
+            const offerVotes = votes[offer.id] || { likes: 0, dislikes: 0, userVote: null };
+            const isVoting = votingOfferId === offer.id;
+            
+            return (
+              <Card key={offer.id} onClick={() => setSelectedOffer(offer)} className="backdrop-blur-xl bg-background/40 border border-white/10 rounded-2xl hover:border-primary/40 transition-all duration-300 group overflow-hidden cursor-pointer relative">
+                <CardContent className={`p-5 flex ${viewMode === "list" ? "flex-row items-center gap-6" : "flex-col"} h-full`}>
+                  <div className={`flex items-center gap-4 ${viewMode === "list" ? "flex-1" : "mb-4"}`}>
+                    <img src={offer.image || "/placeholder.svg"} alt={offer.name} className="w-14 h-14 rounded-xl object-cover border border-white/10 bg-white/5 shadow-md" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="text-white font-bold text-base line-clamp-1 group-hover:text-primary transition-colors">{offer.name}</h3>
                       </div>
-                    </div>
-
-                    {viewMode === "grid" && <p className="text-white/50 text-sm line-clamp-2 mb-4 flex-grow leading-relaxed">{offer.description}</p>}
-
-                    <div className={`flex items-center w-full ${viewMode === "list" ? "justify-end gap-6" : "justify-between mt-auto"}`}>
-                      <div className="flex items-center gap-2">
-                        <img src="/coin.png" alt="MC Coin" className="h-5 w-5 object-contain" />
-                        <span className="text-white font-black text-lg">{offer.mcPoints.toLocaleString()}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" disabled={!user || isVoting} onClick={(e) => handleVote(offer.id, "like", e)} className={`h-9 px-3 rounded-lg ${offerVotes.userVote === "like" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-white/5 text-white/50"}`}>
-                          {isVoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ThumbsUp className="h-4 w-4 mr-1" />{offerVotes.likes}</>}
-                        </Button>
-                        <Button variant="ghost" size="sm" disabled={!user || isVoting} onClick={(e) => handleVote(offer.id, "dislike", e)} className={`h-9 px-3 rounded-lg ${offerVotes.userVote === "dislike" ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-white/5 text-white/50"}`}>
-                          {isVoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ThumbsDown className="h-4 w-4 mr-1" />{offerVotes.dislikes}</>}
-                        </Button>
-                        <Button className="rounded-xl bg-gradient-to-r from-primary to-accent text-white font-bold px-5 h-9" onClick={(e) => { e.stopPropagation(); handleStartOffer(offer.url); }}><ExternalLink className="h-4 w-4 mr-1.5" />Start</Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-
-        {/* 📑 Modal المطور لعرض المتطلبات المفرطة بالتفصيل */}
-        <Dialog open={!!selectedOffer} onOpenChange={(open) => !open && setSelectedOffer(null)}>
-          <DialogContent className="bg-[#0b0b0c] border border-white/10 text-white max-w-xl rounded-2xl p-6 backdrop-blur-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
-            {selectedOffer && (
-              <>
-                <DialogHeader className="flex flex-row items-center gap-4 text-left">
-                  <img src={selectedOffer.image || "/placeholder.svg"} alt={selectedOffer.name} className="w-16 h-16 rounded-2xl object-cover border border-white/10" />
-                  <div className="space-y-1">
-                    <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
-                      {selectedOffer.name}
-                      {selectedOffer.device && selectedOffer.device !== "all" && (
-                        <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded font-bold uppercase">{selectedOffer.device}</span>
-                      )}
-                    </DialogTitle>
-                    <DialogDescription className="text-sm text-white/40">Provided by <span className="text-primary font-medium">{selectedOffer.provider}</span></DialogDescription>
-                  </div>
-                </DialogHeader>
-
-                <hr className="border-white/10 my-2" />
-
-                {/* الوصف العام */}
-                <div className="space-y-2">
-                  <h4 className="text-sm font-semibold text-white/70 flex items-center gap-2"><Info className="h-4 w-4 text-primary" /> Description</h4>
-                  <p className="text-sm text-white/60 bg-white/5 p-3 rounded-xl border border-white/5 leading-relaxed">{selectedOffer.description}</p>
-                </div>
-
-                {/* 🌟 عرض تفاصيل مستويات الجوائز (Multi-Reward Levels) */}
-                {selectedOffer.multiTasks && selectedOffer.multiTasks.length > 0 ? (
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-semibold text-white/70 flex items-center gap-2"><Milestone className="h-4 w-4 text-primary" /> Multi-Rewards Breakdown</h4>
-                    <div className="space-y-2 bg-white/5 p-2 rounded-xl border border-white/5">
-                      {selectedOffer.multiTasks.map((task, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-3 bg-black/40 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
-                          <span className="text-sm text-white/80 font-medium">{task.taskName}</span>
-                          <span className="text-emerald-400 font-bold text-xs flex items-center gap-1 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">
-                            +{task.points.toLocaleString()} MC
-                          </span>
-                        </div>
-                      ))}
+                      <p className="text-xs text-white/40 mt-0.5">{offer.provider}</p>
                     </div>
                   </div>
-                ) : (
-                  /* 📑 عرض الخطوات الافتراضية إذا لم يكن عرض متعدد المستويات */
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-semibold text-white/70 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400" /> Requirements & Steps</h4>
-                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                      {selectedOffer.steps && selectedOffer.steps.length > 0 ? (
-                        selectedOffer.steps.map((step, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
-                            <div className="flex items-start gap-3">
-                              <span className="w-5 h-5 flex items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold mt-0.5">{idx + 1}</span>
-                              <p className="text-sm text-white/80 max-w-[340px]">{step}</p>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="p-3 bg-white/5 rounded-xl border border-white/5 text-sm text-white/80 leading-relaxed">
-                          {selectedOffer.requirements}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
 
-                {/* تذييل الـ Modal مع زر البدء */}
-                <div className="pt-4 flex items-center justify-between gap-4 border-t border-white/10 mt-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-white/40">Total Max Reward:</span>
-                    <div className="flex items-center gap-1.5">
+                  {viewMode === "grid" && <p className="text-white/50 text-sm line-clamp-2 mb-4 flex-grow leading-relaxed">{offer.description}</p>}
+
+                  <div className={`flex items-center w-full ${viewMode === "list" ? "justify-end gap-6" : "justify-between mt-auto"}`}>
+                    <div className="flex items-center gap-2">
                       <img src="/coin.png" alt="MC Coin" className="h-5 w-5 object-contain" />
-                      <span className="text-lg font-black text-primary">{selectedOffer.mcPoints.toLocaleString()}</span>
+                      {/* عرض الرقم العشوائي المولد */}
+                      <span className="text-white font-black text-lg">{offer.mcPoints.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" disabled={!user || isVoting} onClick={(e) => handleVote(offer.id, "like", e)} className={`h-9 px-3 rounded-lg ${offerVotes.userVote === "like" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-white/5 text-white/50"}`}>
+                        {isVoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ThumbsUp className="h-4 w-4 mr-1" />{offerVotes.likes}</>}
+                      </Button>
+                      <Button variant="ghost" size="sm" disabled={!user || isVoting} onClick={(e) => handleVote(offer.id, "dislike", e)} className={`h-9 px-3 rounded-lg ${offerVotes.userVote === "dislike" ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-white/5 text-white/50"}`}>
+                        {isVoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ThumbsDown className="h-4 w-4 mr-1" />{offerVotes.dislikes}</>}
+                      </Button>
+                      <Button className="rounded-xl bg-gradient-to-r from-primary to-accent text-white font-bold px-5 h-9" onClick={(e) => { e.stopPropagation(); handleStartOffer(offer.url); }}><ExternalLink className="h-4 w-4 mr-1.5" />Start</Button>
                     </div>
                   </div>
-                  <Button className="flex-1 max-w-xs h-12 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-bold shadow-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity" onClick={() => handleStartOffer(selectedOffer.url)}><ExternalLink className="h-4 w-4" />Earn Reward Now</Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Modal Details Display */}
+      <Dialog open={!!selectedOffer} onOpenChange={(open) => !open && setSelectedOffer(null)}>
+        <DialogContent className="bg-[#0b0b0c] border border-white/10 text-white max-w-xl rounded-2xl p-6 backdrop-blur-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
+          {selectedOffer && (
+            <>
+              <DialogHeader className="flex flex-row items-center gap-4 text-left">
+                <img src={selectedOffer.image || "/placeholder.svg"} alt={selectedOffer.name} className="w-16 h-16 rounded-2xl object-cover border border-white/10" />
+                <div className="space-y-1">
+                  <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
+                    {selectedOffer.name}
+                  </DialogTitle>
+                  <DialogDescription className="text-sm text-white/40">Provided by <span className="text-primary font-medium">{selectedOffer.provider}</span></DialogDescription>
                 </div>
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
+              </DialogHeader>
+
+              <hr className="border-white/10 my-2" />
+
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold text-white/70 flex items-center gap-2"><Info className="h-4 w-4 text-primary" /> Description</h4>
+                <p className="text-sm text-white/60 bg-white/5 p-3 rounded-xl border border-white/5 leading-relaxed">{selectedOffer.description}</p>
+              </div>
+
+              {selectedOffer.multiTasks && selectedOffer.multiTasks.length > 0 ? (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-white/70 flex items-center gap-2"><Milestone className="h-4 w-4 text-primary" /> Multi-Rewards Breakdown</h4>
+                  <div className="space-y-2 bg-white/5 p-2 rounded-xl border border-white/5">
+                    {selectedOffer.multiTasks.map((task, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-black/40 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
+                        <span className="text-sm text-white/80 font-medium">{task.taskName}</span>
+                        <span className="text-emerald-400 font-bold text-xs flex items-center gap-1 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">
+                          +{task.points.toLocaleString()} MC
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-white/70 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400" /> Requirements & Steps</h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {selectedOffer.steps && selectedOffer.steps.length > 0 ? (
+                      selectedOffer.steps.map((step, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+                          <div className="flex items-start gap-3">
+                            <span className="w-5 h-5 flex items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold mt-0.5">{idx + 1}</span>
+                            <p className="text-sm text-white/80 max-w-[340px]">{step}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-3 bg-white/5 rounded-xl border border-white/5 text-sm text-white/80 leading-relaxed">
+                        {selectedOffer.requirements}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-4 flex items-center justify-between gap-4 border-t border-white/10 mt-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-white/40">Total Max Reward:</span>
+                  <div className="flex items-center gap-1.5">
+                    <img src="/coin.png" alt="MC Coin" className="h-5 w-5 object-contain" />
+                    {/* يقرأ نفس الرقم العشوائي المولد عند فتح الـ Modal */}
+                    <span className="text-lg font-black text-primary">{selectedOffer.mcPoints.toLocaleString()}</span>
+                  </div>
+                </div>
+                <Button className="flex-1 max-w-xs h-12 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-bold shadow-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity" onClick={() => handleStartOffer(selectedOffer.url)}><ExternalLink className="h-4 w-4" />Earn Reward Now</Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
