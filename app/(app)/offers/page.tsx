@@ -84,7 +84,7 @@ export default function OffersPage() {
   const [votingOfferId, setVotingOfferId] = useState<string | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
 
-  // 1. 🌐 جلب البيانات من الـ API المباشر مع الحفاظ التام على مفاتيحك وتوليد نقاط عشوائية
+  // 1. 🌐 جلب البيانات من الـ API وعرض نقاط الشركة الأصلية المباشرة
   useEffect(() => {
     async function fetchOffersDirectly() {
       setLoading(true);
@@ -92,7 +92,6 @@ export default function OffersPage() {
         const currentUid = user ? user.uid : "demo-user-1";
         const notikUrl = new URL("https://notik.me/api/v1/live-campaigns-for-user");
         
-        // 🔐 تم الاحتفاظ بمفاتيحك السرية كاملة كما هي دون أي تغيير لأمان الاتصال وظهور العروض
         notikUrl.searchParams.append("api_key", "NofGnODVnHB3werypR5PRKx5ew8fTbB4");
         notikUrl.searchParams.append("pub_id", "Yog41D");
         notikUrl.searchParams.append("app_id", "psPQDvAS3y");
@@ -110,8 +109,9 @@ export default function OffersPage() {
             const offerId = campaign.campaign_id || campaign.id || `notik-offer-${index}`;
             const realPayout = Number(campaign.payout) || 0;
 
-            // 🎲 توليد نقاط عشوائية تماماً تظهر للمستخدم بدلاً من حسابات الشركة الحقيقية
-            const randomPoints = Math.floor(Math.random() * (15000 - 500 + 1)) + 500;
+            // 🎯 جلب النقاط الأصلية القادمة من الشركة مباشرة (إذا لم تتوفر يحسبها من قيمة الأرباح payout)
+            // يمكنك ضرب القيمة في معامل معين إذا أردت مضاعفتها للمستخدمين (مثلاً: realPayout * 1000)
+            const companyPoints = campaign.points ? Number(campaign.points) : (realPayout * 1000);
 
             let extractedSteps: string[] = [];
             if (campaign.steps && Array.isArray(campaign.steps)) {
@@ -120,27 +120,27 @@ export default function OffersPage() {
               extractedSteps = [campaign.action];
             }
 
-            // 🎯 توليد نقاط عشوائية للمهام والجوائز المتعددة المجزأة لتطابق الفكرة العشوائية
+            // 🎯 جلب المهام المجزأة بنقاطها الأصلية من الشركة
             let parsedTasks: OfferTask[] = [];
             if (campaign.events && Array.isArray(campaign.events)) {
               parsedTasks = campaign.events.map((ev: any) => ({
                 taskName: ev.event_name || ev.description || ev.name,
-                points: Math.floor(Math.random() * (3000 - 100 + 1)) + 100
+                points: ev.points ? Number(ev.points) : 0
               }));
             } else if (campaign.requirements_items && Array.isArray(campaign.requirements_items)) {
               parsedTasks = campaign.requirements_items.map((item: any) => ({
                 taskName: item.taskName || item.description || "Task Requirement",
-                points: Math.floor(Math.random() * (3000 - 100 + 1)) + 100
+                points: item.points ? Number(item.points) : 0
               }));
             }
 
             return {
               id: String(offerId),
-              name: campaign.name || campaign.title || "Unnumbered Offer",
+              name: campaign.name || campaign.title || "Offer",
               description: campaign.description || campaign.action || "Complete the required actions inside the offer.",
               provider: "Notik",
               payout: realPayout,
-              mcPoints: randomPoints, 
+              mcPoints: companyPoints, // النقاط الأصلية من الشركة
               image: campaign.image_url || campaign.icon_url || "/placeholder.svg",
               url: campaign.url || campaign.click_url,
               steps: extractedSteps,
@@ -396,7 +396,7 @@ export default function OffersPage() {
         </div>
       )}
 
-      {/* 📑 Modal لعرض تفاصيل المتطلبات بالتفصيل بالنقاط العشوائية المحدثة */}
+      {/* 📑 Modal لعرض تفاصيل المتطلبات بالنقاط الحقيقية */}
       <Dialog open={!!selectedOffer} onOpenChange={(open) => !open && setSelectedOffer(null)}>
         <DialogContent className="bg-[#0b0b0c] border border-white/10 text-white max-w-xl rounded-2xl p-6 backdrop-blur-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
           {selectedOffer && (
