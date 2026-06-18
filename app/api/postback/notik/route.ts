@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-// 🔥 استيراد الـ db الأصلي والمربوط بمشروعك مباشرة من ملف الـ firebase-admin الخاص بك 🔥
-import { db } from '@/lib/firebase-admin'; 
+// 🔥 تم تعديل الاسم إلى adminDb ليتطابق مع ملف الفايربيس الخاص بك بالملي 🔥
+import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -38,15 +38,15 @@ export async function POST(req: NextRequest) {
       return new NextResponse("ok", { status: 200 });
     }
 
-    // الإشارة للجداول باستخدام الـ db القادم من ملف lib الخاص بك
-    const userRef = db.collection('users').doc(firebase_uid);
-    const transactionRef = db.collection('transactions').doc(txn_id);
-    const notificationRef = db.collection('notifications').doc();
+    // الإشارة للجداول باستخدام الـ adminDb الصحيح والمصدر من ملفك الخاص
+    const userRef = adminDb.collection('users').doc(firebase_uid);
+    const transactionRef = adminDb.collection('transactions').doc(txn_id);
+    const notificationRef = adminDb.collection('notifications').doc();
 
     const offerName = urlParams.get('offer_name') || bodyParams.offer_name || "Notik Task";
 
-    // تشغيل العملية المترابطة الآمنة (Transaction)
-    await db.runTransaction(async (ts) => {
+    // تشغيل العملية المترابطة الآمنة (Transaction) باستخدام adminDb
+    await adminDb.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
       
       if (!userDoc.exists) {
