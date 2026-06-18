@@ -119,24 +119,44 @@ export default function OffersPage() {
               extractedSteps = [campaign.action];
             }
 
-            // 🛠️ جلب تفاصيل المهام الإضافية مع فحص جميع مسميات النقاط المحتملة من Notik لمنع ظهور الصفر
+            // 🛠️ دالة الفحص الشاملة لاستخراج قيم النقاط الحقيقية من داخل أحداث شركة Notik مهما اختلف المسمى
+            const getTaskPointsRaw = (item: any) => {
+              if (!item) return 0;
+              
+              // قائمة المفاتيح المحتملة بالترتيب
+              const keysToCheck = [
+                'points', 'amount', 'reward', 'bonus', 'pub_bonus', 
+                'user_payout', 'payout', 'credits', 'value', 'mcPoints'
+              ];
+              
+              for (const key of keysToCheck) {
+                if (item[key] !== undefined && item[key] !== null && item[key] !== 0 && item[key] !== "0") {
+                  return item[key];
+                }
+              }
+              
+              // في حال أرسلت الشركة رقم الحدث كقيمة نصية أو رقمية أخرى داخل الـ Object
+              const objectValues = Object.keys(item);
+              for (const k of objectValues) {
+                if (k.toLowerCase().includes('point') || k.toLowerCase().includes('reward') || k.toLowerCase().includes('amt')) {
+                  return item[k];
+                }
+              }
+              
+              return item.points !== undefined ? item.points : 0;
+            };
+
             let parsedTasks: OfferTask[] = [];
             if (campaign.events && Array.isArray(campaign.events)) {
-              parsedTasks = campaign.events.map((ev: any) => {
-                const taskPoints = ev.points !== undefined ? ev.points : (ev.amount !== undefined ? ev.amount : (ev.reward !== undefined ? ev.reward : 0));
-                return {
-                  taskName: ev.event_name || ev.description || ev.name,
-                  points: taskPoints
-                };
-              });
+              parsedTasks = campaign.events.map((ev: any) => ({
+                taskName: ev.event_name || ev.description || ev.name || ev.title || "Task Requirement",
+                points: getTaskPointsRaw(ev)
+              }));
             } else if (campaign.requirements_items && Array.isArray(campaign.requirements_items)) {
-              parsedTasks = campaign.requirements_items.map((item: any) => {
-                const taskPoints = item.points !== undefined ? item.points : (item.amount !== undefined ? item.amount : (item.reward !== undefined ? item.reward : 0));
-                return {
-                  taskName: item.taskName || item.description || "Task Requirement",
-                  points: taskPoints
-                };
-              });
+              parsedTasks = campaign.requirements_items.map((item: any) => ({
+                taskName: item.taskName || item.description || item.name || item.title || "Task Requirement",
+                points: getTaskPointsRaw(item)
+              }));
             }
 
             return {
@@ -433,7 +453,7 @@ export default function OffersPage() {
                       <div key={idx} className="flex items-center justify-between p-3 bg-black/40 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
                         <span className="text-sm text-white/80 font-medium">{task.taskName}</span>
                         <span className="text-emerald-400 font-bold text-xs flex items-center gap-1 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">
-                          +{task.points} MC
+                          + {task.points} MC
                         </span>
                       </div>
                     ))}
