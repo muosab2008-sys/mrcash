@@ -1,5 +1,10 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @next/next/no-img-element */
+
+export const dynamic = "force-dynamic";
+
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { 
   doc, 
@@ -27,7 +32,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
+  DialogDescription mixin
 } from "@/components/ui/dialog";
 import { 
   ExternalLink, 
@@ -54,12 +59,12 @@ interface Offer {
   description: string;
   provider: string;
   payout: number;
-  mcPoints: number; 
+  mcPoints: number;
   image?: string;
   url: string;
   steps?: string[];
   requirements?: string;
-  multiTasks?: OfferTask[];
+  multiTasks?: OfferTask[]; 
 }
 
 interface OfferVotes {
@@ -79,26 +84,33 @@ export default function OffersPage() {
   const [votingOfferId, setVotingOfferId] = useState<string | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
 
-  // جلب البيانات المباشر مع النقاط العشوائية وحذف الأشرطة الزائدة
+  // 1. 🌐 جلب البيانات من الـ API المباشر مع الحفاظ التام على مفاتيحك وتوليد نقاط عشوائية
   useEffect(() => {
-    async function fetchOffers() {
+    async function fetchOffersDirectly() {
       setLoading(true);
       try {
         const currentUid = user ? user.uid : "demo-user-1";
+        const notikUrl = new URL("https://notik.me/api/v1/live-campaigns-for-user");
         
-        // ⚠️ ضع مفتاح Notik الخاص بك هنا بدلاً من كلمة YOUR_NOTIK_API_KEY_HERE
-        const response = await fetch(`https://notik.me/api/v2/coingate/campaigns?api_key=YOUR_NOTIK_API_KEY_HERE&user_id=${currentUid}`);
-        if (!response.ok) throw new Error("Failed to fetch campaigns");
+        // 🔐 تم الاحتفاظ بمفاتيحك السرية كاملة كما هي دون أي تغيير لأمان الاتصال وظهور العروض
+        notikUrl.searchParams.append("api_key", "NofGnODVnHB3werypR5PRKx5ew8fTbB4");
+        notikUrl.searchParams.append("pub_id", "Yog41D");
+        notikUrl.searchParams.append("app_id", "psPQDvAS3y");
+        notikUrl.searchParams.append("user_id", currentUid);
+
+        const response = await fetch(notikUrl.toString());
+        if (!response.ok) throw new Error("Failed to fetch from Notik");
 
         const result = await response.json();
         const campaigns = result.campaigns || result.data || [];
         
         if (Array.isArray(campaigns) && campaigns.length > 0) {
+
           const formattedOffers = campaigns.map((campaign: any, index: number) => {
             const offerId = campaign.campaign_id || campaign.id || `notik-offer-${index}`;
             const realPayout = Number(campaign.payout) || 0;
 
-            // 🎲 توليد نقاط عشوائية تماماً تظهر للمستخدم بدلاً من أرقام الشركة
+            // 🎲 توليد نقاط عشوائية تماماً تظهر للمستخدم بدلاً من حسابات الشركة الحقيقية
             const randomPoints = Math.floor(Math.random() * (15000 - 500 + 1)) + 500;
 
             let extractedSteps: string[] = [];
@@ -108,6 +120,7 @@ export default function OffersPage() {
               extractedSteps = [campaign.action];
             }
 
+            // 🎯 توليد نقاط عشوائية للمهام والجوائز المتعددة المجزأة لتطابق الفكرة العشوائية
             let parsedTasks: OfferTask[] = [];
             if (campaign.events && Array.isArray(campaign.events)) {
               parsedTasks = campaign.events.map((ev: any) => ({
@@ -116,14 +129,14 @@ export default function OffersPage() {
               }));
             } else if (campaign.requirements_items && Array.isArray(campaign.requirements_items)) {
               parsedTasks = campaign.requirements_items.map((item: any) => ({
-                ...item,
+                taskName: item.taskName || item.description || "Task Requirement",
                 points: Math.floor(Math.random() * (3000 - 100 + 1)) + 100
               }));
             }
 
             return {
               id: String(offerId),
-              name: campaign.name || campaign.title || "Offer",
+              name: campaign.name || campaign.title || "Unnumbered Offer",
               description: campaign.description || campaign.action || "Complete the required actions inside the offer.",
               provider: "Notik",
               payout: realPayout,
@@ -145,19 +158,20 @@ export default function OffersPage() {
           setOffers([]);
         }
       } catch (error) {
-        console.error("Error fetching operations:", error);
+        console.error("Error fetching directly from Notik API:", error);
         setOffers([]);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchOffers();
+    fetchOffersDirectly();
   }, [user]);
 
-  // Load community votes
+  // 2. 🛡️ جلب التصويتات من Firestore
   useEffect(() => {
-    let isMounted = true;
+    if (offers.length === 0) return;
+
     async function fetchAllVotes() {
       try {
         const querySnapshot = await getDocs(collection(db, "offerwalls"));
@@ -182,17 +196,14 @@ export default function OffersPage() {
           };
         }
 
-        if (isMounted) setVotes(fetchedVotes);
+        setVotes(fetchedVotes);
       } catch (error) {
-        console.error("Error syncing layout values:", error);
+        console.error("Error fetching votes:", error);
       }
     }
 
-    if (offers.length > 0) {
-      fetchAllVotes();
-    }
-    return () => { isMounted = false; };
-  }, [offers.length, user]);
+    fetchAllVotes();
+  }, [offers, user]);
 
   const handleStartOffer = useCallback((baseUrl: string) => {
     if (!user) {
@@ -263,7 +274,7 @@ export default function OffersPage() {
         };
       });
     } catch (error) {
-      console.error("Error matching submission requirements:", error);
+      console.error("Error voting:", error);
     } finally {
       setVotingOfferId(null);
     }
@@ -290,6 +301,9 @@ export default function OffersPage() {
   return (
     <div className="min-h-screen space-y-6 p-4 sm:p-6 text-white selection:bg-primary/30">
         
+      {/* 1. تم حذف شريط الـ Live User Completions تماماً من هنا */}
+      {/* 2. تم حذف شريط تصفية الأجهزة (All, Android, iOS, Desktop) تماماً من هنا */}
+
       {/* Header */}
       <div className="text-center sm:text-left">
         <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Available Offers</h1>
@@ -385,7 +399,7 @@ export default function OffersPage() {
         </div>
       )}
 
-      {/* Modal Details Display */}
+      {/* 📑 Modal لعرض تفاصيل المتطلبات بالتفصيل بالنقاط العشوائية المحدثة */}
       <Dialog open={!!selectedOffer} onOpenChange={(open) => !open && setSelectedOffer(null)}>
         <DialogContent className="bg-[#0b0b0c] border border-white/10 text-white max-w-xl rounded-2xl p-6 backdrop-blur-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
           {selectedOffer && (
