@@ -84,7 +84,7 @@ export default function OffersPage() {
   const [votingOfferId, setVotingOfferId] = useState<string | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
 
-  // 1. 🌐 جلب البيانات من الـ API وعرض نقاط الشركة الأصلية المباشرة
+  // 1. 🌐 جلب البيانات وتصحيح الأرقام لمنع الملايين تماماً
   useEffect(() => {
     async function fetchOffersDirectly() {
       setLoading(true);
@@ -109,9 +109,13 @@ export default function OffersPage() {
             const offerId = campaign.campaign_id || campaign.id || `notik-offer-${index}`;
             const realPayout = Number(campaign.payout) || 0;
 
-            // 🎯 جلب النقاط الأصلية القادمة من الشركة مباشرة (إذا لم تتوفر يحسبها من قيمة الأرباح payout)
-            // يمكنك ضرب القيمة في معامل معين إذا أردت مضاعفتها للمستخدمين (مثلاً: realPayout * 1000)
-            const companyPoints = campaign.points ? Number(campaign.points) : (realPayout * 1000);
+            // 🛠️ الحسبة الذكية لمنع الملايين:
+            let companyPoints = campaign.points ? Number(campaign.points) : realPayout;
+            
+            // إذا كان الرقم أكبر من أو يساوي مليون (مثال 88 مليون)، نقسمه على 1000 ليعود لوضعه الطبيعي (88 ألف)
+            if (companyPoints >= 1000000) {
+              companyPoints = companyPoints / 1000;
+            }
 
             let extractedSteps: string[] = [];
             if (campaign.steps && Array.isArray(campaign.steps)) {
@@ -120,18 +124,26 @@ export default function OffersPage() {
               extractedSteps = [campaign.action];
             }
 
-            // 🎯 جلب المهام المجزأة بنقاطها الأصلية من الشركة
+            // جلب تفاصيل المهام الإضافية
             let parsedTasks: OfferTask[] = [];
             if (campaign.events && Array.isArray(campaign.events)) {
-              parsedTasks = campaign.events.map((ev: any) => ({
-                taskName: ev.event_name || ev.description || ev.name,
-                points: ev.points ? Number(ev.points) : 0
-              }));
+              parsedTasks = campaign.events.map((ev: any) => {
+                let p = ev.points ? Number(ev.points) : 0;
+                if (p >= 1000000) p = p / 1000;
+                return {
+                  taskName: ev.event_name || ev.description || ev.name,
+                  points: p
+                };
+              });
             } else if (campaign.requirements_items && Array.isArray(campaign.requirements_items)) {
-              parsedTasks = campaign.requirements_items.map((item: any) => ({
-                taskName: item.taskName || item.description || "Task Requirement",
-                points: item.points ? Number(item.points) : 0
-              }));
+              parsedTasks = campaign.requirements_items.map((item: any) => {
+                let p = item.points ? Number(item.points) : 0;
+                if (p >= 1000000) p = p / 1000;
+                return {
+                  taskName: item.taskName || item.description || "Task Requirement",
+                  points: p
+                };
+              });
             }
 
             return {
@@ -140,7 +152,7 @@ export default function OffersPage() {
               description: campaign.description || campaign.action || "Complete the required actions inside the offer.",
               provider: "Notik",
               payout: realPayout,
-              mcPoints: companyPoints, // النقاط الأصلية من الشركة
+              mcPoints: companyPoints, 
               image: campaign.image_url || campaign.icon_url || "/placeholder.svg",
               url: campaign.url || campaign.click_url,
               steps: extractedSteps,
@@ -396,7 +408,7 @@ export default function OffersPage() {
         </div>
       )}
 
-      {/* 📑 Modal لعرض تفاصيل المتطلبات بالنقاط الحقيقية */}
+      {/* Modal */}
       <Dialog open={!!selectedOffer} onOpenChange={(open) => !open && setSelectedOffer(null)}>
         <DialogContent className="bg-[#0b0b0c] border border-white/10 text-white max-w-xl rounded-2xl p-6 backdrop-blur-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
           {selectedOffer && (
