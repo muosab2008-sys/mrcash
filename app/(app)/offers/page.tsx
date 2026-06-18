@@ -77,7 +77,7 @@ export default function OffersPage() {
   const [votingOfferId, setVotingOfferId] = useState<string | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
 
-  // 1. 🌐 جلب البيانات بشكل صحيح ومطابق للوحة تحكم Notik
+  // 1. 🌐 جلب البيانات وحساب النقاط (1 دولار = 500 نقطة)
   useEffect(() => {
     async function fetchOffersDirectly() {
       setLoading(true);
@@ -96,9 +96,19 @@ export default function OffersPage() {
         const campaigns = result.campaigns || result.data || [];
         
         if (Array.isArray(campaigns) && campaigns.length > 0) {
+          
+          // 🪙 تعديل سعر الصرف ليكون كل 1 دولار يعادل 500 نقطة
+          const CONVERSION_RATE = 500; 
+
           const formattedOffers = campaigns.map((campaign: any, index: number) => {
             const offerId = campaign.campaign_id || campaign.id || `notik-offer-${index}`;
-            const pointsFromApi = Number(campaign.points) || Number(campaign.payout_custom) || 0;
+            const realPayout = Number(campaign.payout) || 0;
+
+            // حساب النقاط بناءً على الـ payout الفعلي مضروباً في 500
+            const pointsFromApi = Number(campaign.points) || 
+                                  Number(campaign.payout_custom) || 
+                                  Number(campaign.amount) || 
+                                  Math.round(realPayout * CONVERSION_RATE);
 
             let extractedSteps: string[] = [];
             if (campaign.steps && Array.isArray(campaign.steps)) {
@@ -112,8 +122,8 @@ export default function OffersPage() {
               name: campaign.name || campaign.title || "Unnumbered Offer",
               description: campaign.description || campaign.action || "Complete the required actions inside the offer.",
               provider: "Notik",
-              payout: Number(campaign.payout) || 0,
-              mcPoints: pointsFromApi,
+              payout: realPayout,
+              mcPoints: pointsFromApi > 0 ? pointsFromApi : 50, // حد أدنى آمن للنقاط
               image: campaign.image_url || campaign.icon_url || "/placeholder.svg",
               url: campaign.url || campaign.click_url,
               steps: extractedSteps,
@@ -177,7 +187,6 @@ export default function OffersPage() {
     fetchAllVotes();
   }, [offers, user]);
 
-  // 3. تمرير الـ UID للمستخدم ديناميكياً عند بدء العرض
   const handleStartOffer = useCallback((baseUrl: string) => {
     if (!user) {
       alert("Please log in first to earn points!");
@@ -195,7 +204,6 @@ export default function OffersPage() {
     window.open(finalUrl, "_blank");
   }, [user]);
 
-  // نظام التصويت (Like / Dislike)
   const handleVote = useCallback(async (offerId: string, voteType: "like" | "dislike", e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) return;
@@ -250,12 +258,10 @@ export default function OffersPage() {
     } catch (error) {
       console.error("Error voting:", error);
     } finally {
-      // تم تعديل الإملاء هنا لتصبح finally بشكل صحيح لتقبلها منصة Vercel
       setVotingOfferId(null);
     }
   }, [user]);
 
-  // الفلترة والترتيب برمجياً
   const filteredOffers = useMemo(() => {
     return offers
       .filter((offer) => {
@@ -371,7 +377,7 @@ export default function OffersPage() {
           </div>
         )}
 
-        {/* 📑 نافذة التفاصيل الذكية (Modal) */}
+        {/* 📑 Modal */}
         <Dialog open={!!selectedOffer} onOpenChange={(open) => !open && setSelectedOffer(null)}>
           <DialogContent className="bg-[#0b0b0c] border border-white/10 text-white max-w-xl rounded-2xl p-6 backdrop-blur-2xl">
             {selectedOffer && (
