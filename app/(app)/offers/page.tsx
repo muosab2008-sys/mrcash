@@ -54,7 +54,7 @@ interface Offer {
   description: string;
   provider: string;
   payout: number;
-  mcPoints: number; // سنضع هنا الرقم العشوائي المحسوب لكل عرض
+  mcPoints: number; 
   image?: string;
   url: string;
   steps?: string[];
@@ -68,12 +68,6 @@ interface OfferVotes {
   userVote: "like" | "dislike" | null;
 }
 
-interface LiveFeedItem {
-  username: string;
-  provider: string;
-  points: number;
-}
-
 export default function OffersPage() {
   const { user } = useAuth();
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -84,32 +78,6 @@ export default function OffersPage() {
   const [votes, setVotes] = useState<Record<string, OfferVotes>>({});
   const [votingOfferId, setVotingOfferId] = useState<string | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
-
-  const [liveFeed, setLiveFeed] = useState<LiveFeedItem[]>([
-    { username: "Ayoub Geunana", provider: "pubscale", points: 7.3 },
-    { username: "Maznc", provider: "PlayTimeAds", points: 12 },
-    { username: "Jk", provider: "pubscale", points: 93.6 },
-    { username: "انور الحسين", provider: "pubscale", points: 5.8 },
-    { username: "wael", provider: "tplayad", points: 42.9 },
-    { username: "Zake", provider: "PlayTimeAds", points: 164 },
-    { username: "علي زين", provider: "pubscale", points: 58.5 }
-  ]);
-
-  // Live Feed Ticker Simulation
-  useEffect(() => {
-    const names = ["مصعب", "Jk", "wael", "Ayoub", "علي زين", "انور الحسين", "Khald", "Mohammed", "MAZEN"];
-    const providers = ["pubscale", "Notik", "Torox", "PlayTimeAds", "tplayad"];
-    
-    const interval = setInterval(() => {
-      const randomName = names[Math.floor(Math.random() * names.length)];
-      const randomProvider = providers[Math.floor(Math.random() * providers.length)];
-      const randomPoints = parseFloat((Math.random() * 200 + 1).toFixed(2));
-      
-      setLiveFeed((prev) => [{ username: randomName, provider: randomProvider, points: randomPoints }, ...prev.slice(0, 8)]);
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   // 1. Fetch data safely from local Proxy Endpoint
   useEffect(() => {
@@ -128,7 +96,7 @@ export default function OffersPage() {
             const offerId = campaign.campaign_id || campaign.id || `notik-offer-${index}`;
             const realPayout = Number(campaign.payout) || 0;
 
-            // 🎲 توليد نقاط عشوائية تماماً بدلاً من أرقام الـ API الحقيقية (مثلاً بين 500 و 15000)
+            // 🎲 توليد نقاط عشوائية تماماً بدلاً من أرقام الـ API الحقيقية للشركة
             const randomPoints = Math.floor(Math.random() * (15000 - 500 + 1)) + 500;
 
             let extractedSteps: string[] = [];
@@ -138,7 +106,6 @@ export default function OffersPage() {
               extractedSteps = [campaign.action];
             }
 
-            // توليد نقاط عشوائية للمستويات الفرعية أيضاً لكي تتماشى مع الفكرة
             let parsedTasks: OfferTask[] = [];
             if (campaign.events && Array.isArray(campaign.events)) {
               parsedTasks = campaign.events.map((ev: any) => ({
@@ -158,7 +125,7 @@ export default function OffersPage() {
               description: campaign.description || campaign.action || "Complete the required actions inside the offer.",
               provider: "Notik",
               payout: realPayout,
-              mcPoints: randomPoints, // تعيين الرقم العشوائي هنا
+              mcPoints: randomPoints, 
               image: campaign.image_url || campaign.icon_url || "/placeholder.svg",
               url: campaign.url || campaign.click_url,
               steps: extractedSteps,
@@ -321,32 +288,16 @@ export default function OffersPage() {
   return (
     <div className="min-h-screen space-y-6 p-4 sm:p-6 text-white selection:bg-primary/30">
         
-      {/* Live Feed Ticker */}
-      <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-3 overflow-hidden shadow-inner backdrop-blur-md">
-        <div className="flex items-center gap-3 mb-2 px-2 border-b border-white/5 pb-1 text-xs font-semibold text-emerald-400">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-          LIVE USER COMPLETIONS
-        </div>
-        <div className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap py-1">
-          {liveFeed.map((item, idx) => (
-            <div key={idx} className="inline-flex items-center gap-2 bg-[#0d0d0e] border border-white/5 rounded-xl px-3 py-1.5 text-xs animate-fade-in">
-              <span className="text-white/80 font-medium">{item.username}</span>
-              <span className="text-white/40 text-[10px] bg-white/5 px-1.5 py-0.5 rounded-md">{item.provider}</span>
-              <span className="text-emerald-400 font-bold flex items-center gap-1">
-                +{item.points.toLocaleString()} <span className="text-[9px] text-white/50">MC</span>
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* 1. تم إزالة شريط الـ Live User Completions تماماً من هنا */}
+      {/* 2. تم إزالة شريط تصنيفات الأجهزة (Android/iOS) تماماً */}
 
-      {/* Header (تم حذف شريط الفلاتر الخاص بالأجهزة بالكامل من هنا) */}
+      {/* Header */}
       <div className="text-center sm:text-left">
         <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Available Offers</h1>
         <p className="text-white/50 text-sm mt-1">Complete offers and earn MC instantly</p>
       </div>
 
-      {/* Filters */}
+      {/* Filters & Search - يظهر بشكل طبيعي ومستقر */}
       <div className="backdrop-blur-xl bg-background/40 border border-white/10 rounded-2xl p-4 shadow-xl">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
           <div className="relative flex-1">
@@ -416,7 +367,6 @@ export default function OffersPage() {
                   <div className={`flex items-center w-full ${viewMode === "list" ? "justify-end gap-6" : "justify-between mt-auto"}`}>
                     <div className="flex items-center gap-2">
                       <img src="/coin.png" alt="MC Coin" className="h-5 w-5 object-contain" />
-                      {/* عرض الرقم العشوائي المولد */}
                       <span className="text-white font-black text-lg">{offer.mcPoints.toLocaleString()}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -499,7 +449,6 @@ export default function OffersPage() {
                   <span className="text-xs text-white/40">Total Max Reward:</span>
                   <div className="flex items-center gap-1.5">
                     <img src="/coin.png" alt="MC Coin" className="h-5 w-5 object-contain" />
-                    {/* يقرأ نفس الرقم العشوائي المولد عند فتح الـ Modal */}
                     <span className="text-lg font-black text-primary">{selectedOffer.mcPoints.toLocaleString()}</span>
                   </div>
                 </div>
