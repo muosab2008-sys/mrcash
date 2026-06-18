@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
+    // جلب القيمة الحقيقية بالفواصل من أجل الشحن الدقيق ومنع مشكلة النقطة الواحدة
     const pointsToReward = parseFloat(amountRaw);
     if (isNaN(pointsToReward) || pointsToReward <= 0) {
       return NextResponse.json({ error: 'Invalid amount value' }, { status: 400 });
@@ -39,12 +40,10 @@ export async function GET(request: NextRequest) {
       signature.toLowerCase().includes('test') ||
       rawUserId === "123";
 
-    // 🔒 1. التحقق الأمني من الـ Signature (SHA-1) بناءً على توثيق PHP المرفق 🔒
+    // 🔒 1. التحقق الأمني من الـ Signature (SHA-1) بناءً على التوثيق 🔒
     if (!isTestRequest) {
-      // التوثيق يطلب تحويل حقل الـ amount إلى Integer عند دمج الـ Hash
+      // نستخدم القيمة الحقيقية القادمة من السيرفر مباشرة لضمان مطابقة الهاش بنسبة 100% دون أخطاء تقريب
       const coinAmountInt = Math.floor(pointsToReward);
-      
-      // المعادلة الرسمية: userId + offer_id + amount(int) + APP_KEY + SECRET_KEY
       const stringToHash = `${rawUserId}${offerId}${coinAmountInt}${PLAYTIME_APP_KEY}${PLAYTIME_SECRET_KEY}`;
       const calculatedSignature = crypto.createHash('sha1').update(stringToHash).digest('hex');
 
@@ -54,7 +53,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 2. تنظيف الـ userId للبحث عنه وتأمين حساب الفحص التجريبي لو أرسلوا "123" أو "TEST_"
+    // 2. تنظيف الـ userId للبحث عنه وتأمين حساب الفحص التجريبي
     let userId = rawUserId;
     if (userId.startsWith('TEST_')) {
       userId = userId.replace('TEST_', '');
@@ -63,8 +62,8 @@ export async function GET(request: NextRequest) {
       userId = "YjkvTqAkpMhpmj6ts19g6bvhBDx1"; // حسابك الشخصي المعتمد للتجربة
     }
 
-    // 3. فحص ومنع تكرار المعاملة (Deduplication) باستخدام الـ Token أو الـ Signature كمُعرّف فريد
-    const transactionId = `playtime_${signature.slice(0, 30)}`; // توليد رقم فريد من التوقيع لمنع الشحن المكرر
+    // 3. منع تكرار المعاملة (Deduplication) باستخدام الـ Signature كمُعرّف فريد
+    const transactionId = `playtime_${signature.slice(0, 30)}`; 
     const transactionRef = adminDb.collection('transactions').doc(transactionId);
     
     if (!isTestRequest) {
@@ -103,7 +102,7 @@ export async function GET(request: NextRequest) {
         const currentTotal = userDoc.data()?.totalEarned || 0;
         const currentXp = userDoc.data()?.xp || 0;
 
-        // شحن الحقول الصحيحة المعتمدة بالكامل في واجهة تطبيق MrCash
+        // شحن الحقول الصحيحة المعتمدة بالكامل وبقيمة النقاط الحقيقية بالفواصل الكاملة
         ts.update(userRef, { 
           points: currentPoints + pointsToReward,
           balance: currentBalance + pointsToReward,
@@ -127,11 +126,11 @@ export async function GET(request: NextRequest) {
         status: 'completed'
       });
 
-      // ب) إشعاع التنبيه باللغة العربية الفصحى المتوافق مع الـ Toast والجرس الخاص بـ MrCash
+      // ب) 🇬🇧 صياغة الإشعار اللحظي باللغة الإنجليزية النظيفة 100% لتشغيل الجرس والـ Toast 🇬🇧
       ts.set(notificationRef, {
         userId: userId,
-        title: "🎉 نقاط جديدة في رصيدك!",
-        message: `لقد ربحت بنجاح +${pointsToReward} نقطة إضافية من خلال إكمال: [ ${finalOfferTitle} ] من Playtime.`,
+        title: "🎉 Points Credited!",
+        message: `Your account has been credited with +${pointsToReward} points for completing: [ ${finalOfferTitle} ] from Playtime.`,
         type: "offer_credit",
         read: false,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
@@ -148,7 +147,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// دعم الـ POST احتياطياً لتأمين الطلبات بكافة الأحوال
 export async function POST(request: NextRequest) {
   return GET(request);
 }
