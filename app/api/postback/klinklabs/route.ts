@@ -9,7 +9,7 @@ const KLINK_TRUSTED_IPS = [
   '34.118.33.53',    // Klink IP 1
   '138.68.125.171',  // Klink IP 2
   '64.226.93.56',    // Klink IP 3
-  '2a02:ce0:2004:3acf:99f6:c72:eb9b:31db' // 🎯 الـ IP الشخصي الخاص بك للتجربة المباشرة
+  '31.167.153.187' // 🎯 الـ IP الشخصي الخاص بك للتجربة المباشرة
 ];
 
 export async function POST(request: NextRequest) {
