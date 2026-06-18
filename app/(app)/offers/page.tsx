@@ -24,16 +24,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { 
   ExternalLink, 
   Search, 
   LayoutGrid, 
   List, 
-  Coins,
-  ThumbsUp,
-  ThumbsDown,
-  Loader2,
-  TrendingUp
+  ThumbsUp, 
+  ThumbsDown, 
+  Loader2, 
+  TrendingUp,
+  Info,
+  CheckCircle2
 } from "lucide-react";
 
 interface Offer {
@@ -45,6 +53,8 @@ interface Offer {
   mcPoints: number;
   image?: string;
   url: string;
+  steps?: string[];
+  requirements?: string;
 }
 
 interface OfferVotes {
@@ -63,21 +73,24 @@ export default function OffersPage() {
   const [votes, setVotes] = useState<Record<string, OfferVotes>>({});
   const [votingOfferId, setVotingOfferId] = useState<string | null>(null);
 
+  // حالة لحفظ العرض المحدد الذي سيظهر في الـ Modal
+  const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+
   // 1. 🌐 جلب البيانات مباشرة من متصفح المستخدم إلى سيرفر Notik
   useEffect(() => {
     async function fetchOffersDirectly() {
       setLoading(true);
       try {
-        // نأخذ الـ uid الفعلي للمستخدم وإذا لم يتواجد نضع قيمة افتراضية للزوار
         const currentUid = user ? user.uid : "demo-user-1";
         
-        // بناء رابط Notik المباشر مع الـ Parameters الخاصة بك
+        // بناء رابط Notik المباشر مع رفع الـ limit لجلب كل العروض
         const notikUrl = new URL("https://notik.me/api/v1/live-campaigns-for-user");
         notikUrl.searchParams.append("api_key", "NofGnODVnHB3werypR5PRKx5ew8fTbB4");
         notikUrl.searchParams.append("pub_id", "Yog41D");
         notikUrl.searchParams.append("app_id", "psPQDvAS3y");
         notikUrl.searchParams.append("user_id", currentUid);
         notikUrl.searchParams.append("duration", "30d");
+        notikUrl.searchParams.append("limit", "500"); // جلب كل العروض المتوفرة دفعة واحدة
 
         const response = await fetch(notikUrl.toString());
         
@@ -86,21 +99,32 @@ export default function OffersPage() {
         }
 
         const result = await response.json();
-        
-        // قراءة العروض حسب هيكلة Notik (تكون داخل campaigns أو data)
         const campaigns = result.campaigns || result.data || [];
         
         if (Array.isArray(campaigns)) {
-          const formattedOffers = campaigns.map((campaign: any) => ({
-            id: String(campaign.id || campaign.campaign_id),
-            name: campaign.name || campaign.title,
-            description: campaign.description || campaign.action || "Complete this offer to earn MC",
-            provider: "Notik",
-            payout: Number(campaign.payout) || 0,
-            mcPoints: Number(campaign.payout_custom) || Number(campaign.points) || 0,
-            image: campaign.image_url || campaign.icon_url || "/placeholder.svg",
-            url: campaign.url || campaign.click_url,
-          }));
+          const formattedOffers = campaigns.map((campaign: any) => {
+            // محاولة جلب الخطوات إن أرسلها الـ API
+            let extractedSteps: string[] = [];
+            if (campaign.steps) {
+              extractedSteps = Array.isArray(campaign.steps) ? campaign.steps : [campaign.steps];
+            } else if (campaign.action) {
+              extractedSteps = [campaign.action];
+            }
+
+            return {
+              id: String(campaign.id || campaign.campaign_id),
+              name: campaign.name || campaign.title,
+              description: campaign.description || campaign.action || "Complete this offer to earn MC",
+              provider: "Notik",
+              payout: Number(campaign.payout) || 0,
+              // تأمين قراءة النقاط لمنع ظهور القيمة 0
+              mcPoints: Number(campaign.payout_custom) || Number(campaign.points) || Number(campaign.payout * 1000) || 0,
+              image: campaign.image_url || campaign.icon_url || "/placeholder.svg",
+              url: campaign.url || campaign.click_url,
+              steps: extractedSteps.length > 0 ? extractedSteps : ["Open the app, register, and complete the required tasks."],
+              requirements: campaign.requirements || "This offer rewards within 24 hours. New users only.",
+            };
+          });
           setOffers(formattedOffers);
         } else {
           setOffers([]);
@@ -114,7 +138,7 @@ export default function OffersPage() {
     }
 
     fetchOffersDirectly();
-  }, [user]); // يتحدث تلقائياً فور تسجيل الدخول للتحول من التست لليوزر الحقيقي
+  }, [user]);
 
   // 2. 🛡️ جلب التصويتات من Firestore
   useEffect(() => {
@@ -174,7 +198,8 @@ export default function OffersPage() {
   }, [user]);
 
   // Handle vote (like/dislike)
-  const handleVote = useCallback(async (offerId: string, voteType: "like" | "dislike") => {
+  const handleVote = useCallback(async (offerId: string, voteType: "like" | "dislike", e: React.MouseEvent) => {
+    e.stopPropagation(); // منع فتح الـ Modal عند النقر على زر التصويت
     if (!user) return;
     
     setVotingOfferId(offerId);
@@ -337,7 +362,11 @@ export default function OffersPage() {
               const isVoting = votingOfferId === offer.id;
               
               return (
-                <Card key={offer.id} className="backdrop-blur-xl bg-background/40 border border-white/10 rounded-2xl hover:border-primary/40 transition-all duration-300 group overflow-hidden">
+                <Card 
+                  key={offer.id} 
+                  onClick={() => setSelectedOffer(offer)} // فتح الـ Modal عند الضغط على الكرت
+                  className="backdrop-blur-xl bg-background/40 border border-white/10 rounded-2xl hover:border-primary/40 transition-all duration-300 group overflow-hidden cursor-pointer"
+                >
                   <CardContent className={`p-5 flex ${viewMode === "list" ? "flex-row items-center gap-6" : "flex-col"} h-full`}>
                     
                     <div className={`flex items-center gap-4 ${viewMode === "list" ? "flex-1" : "mb-4"}`}>
@@ -362,14 +391,15 @@ export default function OffersPage() {
 
                     <div className={`flex items-center w-full ${viewMode === "list" ? "justify-end gap-6" : "justify-between mt-auto"}`}>
                       <div className="flex items-center gap-2">
-                        <Coins className="h-5 w-5 text-amber-400" />
+                        {/* 🪙 تم استخدام صورة الكوين المخصصة هنا بدلاً من الأيقونة القديمة */}
+                        <img src="/coin.png" alt="MC Coin" className="h-5 w-5 object-contain" />
                         <span className="text-white font-bold text-lg">{offer.mcPoints.toLocaleString()}</span>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <Button
                           variant="ghost" size="sm" disabled={!user || isVoting}
-                          onClick={() => handleVote(offer.id, "like")}
+                          onClick={(e) => handleVote(offer.id, "like", e)}
                           className={`h-9 px-3 rounded-lg ${offerVotes.userVote === "like" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-white/5 text-white/50"}`}
                         >
                           {isVoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ThumbsUp className="h-4 w-4 mr-1" />{offerVotes.likes}</>}
@@ -377,7 +407,7 @@ export default function OffersPage() {
                         
                         <Button
                           variant="ghost" size="sm" disabled={!user || isVoting}
-                          onClick={() => handleVote(offer.id, "dislike")}
+                          onClick={(e) => handleVote(offer.id, "dislike", e)}
                           className={`h-9 px-3 rounded-lg ${offerVotes.userVote === "dislike" ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-white/5 text-white/50"}`}
                         >
                           {isVoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ThumbsDown className="h-4 w-4 mr-1" />{offerVotes.dislikes}</>}
@@ -385,7 +415,10 @@ export default function OffersPage() {
 
                         <Button 
                           className="rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold px-5 shadow-lg"
-                          onClick={() => handleStartOffer(offer.url)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // منع فتح الـ Modal عند الضغط على زر التشغيل المباشر
+                            handleStartOffer(offer.url);
+                          }}
                         >
                           <ExternalLink className="h-4 w-4 mr-2" />
                           Start
@@ -399,6 +432,90 @@ export default function OffersPage() {
             })}
           </div>
         )}
+
+        {/* 📑 نافذة معلومات العرض المنبثقة (Offer Details Modal) */}
+        <Dialog open={!!selectedOffer} onOpenChange={(open) => !open && setSelectedOffer(null)}>
+          <DialogContent className="bg-[#0b0b0c] border border-white/10 text-white max-w-xl rounded-2xl p-6 backdrop-blur-2xl">
+            {selectedOffer && (
+              <>
+                <DialogHeader className="flex flex-row items-center gap-4 text-left">
+                  <img 
+                    src={selectedOffer.image || "/placeholder.svg"} 
+                    alt={selectedOffer.name} 
+                    className="w-16 h-16 rounded-2xl object-cover border border-white/10"
+                  />
+                  <div className="space-y-1">
+                    <DialogTitle className="text-xl font-bold text-white">{selectedOffer.name}</DialogTitle>
+                    <DialogDescription className="text-sm text-white/40 flex items-center gap-1">
+                      Provided by <span className="text-primary font-medium">{selectedOffer.provider}</span>
+                    </DialogDescription>
+                  </div>
+                </DialogHeader>
+
+                <hr className="border-white/10 my-2" />
+
+                {/* Description */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-white/70 flex items-center gap-2">
+                    <Info className="h-4 w-4 text-primary" /> Description
+                  </h4>
+                  <p className="text-sm text-white/60 bg-white/5 p-3 rounded-xl border border-white/5 leading-relaxed">
+                    {selectedOffer.description}
+                  </p>
+                </div>
+
+                {/* Steps & Rewards */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-white/70 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" /> Steps & Rewards
+                  </h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {selectedOffer.steps?.map((step, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <span className="w-5 h-5 flex items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold mt-0.5">
+                            {idx + 1}
+                          </span>
+                          <p className="text-sm text-white/80 max-w-[340px]">{step}</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5">
+                          <img src="/coin.png" alt="MC Coin" className="h-4 w-4 object-contain" />
+                          <span className="text-sm font-bold text-white">{selectedOffer.mcPoints.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Requirements */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-white/70">Requirements</h4>
+                  <p className="text-xs text-white/40 italic pl-2 border-l-2 border-primary/40">
+                    {selectedOffer.requirements}
+                  </p>
+                </div>
+
+                {/* Action Button Inside Modal */}
+                <div className="pt-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-white/40">Total Reward:</span>
+                    <div className="flex items-center gap-1.5">
+                      <img src="/coin.png" alt="MC Coin" className="h-5 w-5 object-contain" />
+                      <span className="text-lg font-black text-primary">{selectedOffer.mcPoints.toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <Button 
+                    className="flex-1 max-w-xs h-12 rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-bold shadow-lg flex items-center justify-center gap-2"
+                    onClick={() => handleStartOffer(selectedOffer.url)}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Earn Reward Now
+                  </Button>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }
