@@ -77,7 +77,7 @@ export default function OffersPage() {
   const [votingOfferId, setVotingOfferId] = useState<string | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
 
-  // 1. 🌐 جلب البيانات وحساب النقاط (1 دولار = 500 نقطة)
+  // 1. 🌐 جلب البيانات وعرض النقاط الجاهزة من Notik مباشرة
   useEffect(() => {
     async function fetchOffersDirectly() {
       setLoading(true);
@@ -96,19 +96,16 @@ export default function OffersPage() {
         const campaigns = result.campaigns || result.data || [];
         
         if (Array.isArray(campaigns) && campaigns.length > 0) {
-          
-          // 🪙 تعديل سعر الصرف ليكون كل 1 دولار يعادل 500 نقطة
-          const CONVERSION_RATE = 500; 
 
           const formattedOffers = campaigns.map((campaign: any, index: number) => {
             const offerId = campaign.campaign_id || campaign.id || `notik-offer-${index}`;
             const realPayout = Number(campaign.payout) || 0;
 
-            // حساب النقاط بناءً على الـ payout الفعلي مضروباً في 500
+            // 🪙 نأخذ النقاط الجاهزة من Notik مباشرة دون ضربها في أي شيء لأنها معدلة من لوحة التحكم
             const pointsFromApi = Number(campaign.points) || 
                                   Number(campaign.payout_custom) || 
                                   Number(campaign.amount) || 
-                                  Math.round(realPayout * CONVERSION_RATE);
+                                  Math.round(realPayout * 500); // حماية فقط لو جاء العرض فارغاً
 
             let extractedSteps: string[] = [];
             if (campaign.steps && Array.isArray(campaign.steps)) {
@@ -123,7 +120,7 @@ export default function OffersPage() {
               description: campaign.description || campaign.action || "Complete the required actions inside the offer.",
               provider: "Notik",
               payout: realPayout,
-              mcPoints: pointsFromApi > 0 ? pointsFromApi : 50, // حد أدنى آمن للنقاط
+              mcPoints: pointsFromApi, 
               image: campaign.image_url || campaign.icon_url || "/placeholder.svg",
               url: campaign.url || campaign.click_url,
               steps: extractedSteps,
