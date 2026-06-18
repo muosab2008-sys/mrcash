@@ -93,18 +93,13 @@ export default function OffersPage() {
         if (!response.ok) throw new Error("Failed to fetch from Notik");
 
         const result = await response.json();
-        // Notik يرجع العروض داخل مصفوفة باسم campaigns
         const campaigns = result.campaigns || result.data || [];
         
         if (Array.isArray(campaigns) && campaigns.length > 0) {
           const formattedOffers = campaigns.map((campaign: any, index: number) => {
-            // حل مشكلة اختفاء العروض: استخدام الـ campaign_id الحقيقي وضمان عدم تكراره
             const offerId = campaign.campaign_id || campaign.id || `notik-offer-${index}`;
-
-            // حل مشكلة النقاط الوهمية: جلب النقاط الحقيقية المحسوبة من المنصة مباشرة
             const pointsFromApi = Number(campaign.points) || Number(campaign.payout_custom) || 0;
 
-            // جلب المتطلبات الحقيقية بدون تكرار نصوص وهمية
             let extractedSteps: string[] = [];
             if (campaign.steps && Array.isArray(campaign.steps)) {
               extractedSteps = campaign.steps;
@@ -126,7 +121,6 @@ export default function OffersPage() {
             };
           });
 
-          // تنظيف المكرر بناءً على الـ ID الصحيح
           const uniqueOffers = formattedOffers.filter(
             (offer, idx, self) => self.findIndex((o) => o.id === offer.id) === idx
           );
@@ -255,7 +249,8 @@ export default function OffersPage() {
       });
     } catch (error) {
       console.error("Error voting:", error);
-    } finaly {
+    } finally {
+      // تم تعديل الإملاء هنا لتصبح finally بشكل صحيح لتقبلها منصة Vercel
       setVotingOfferId(null);
     }
   }, [user]);
@@ -396,7 +391,6 @@ export default function OffersPage() {
                   <p className="text-sm text-white/60 bg-white/5 p-3 rounded-xl border border-white/5 leading-relaxed">{selectedOffer.description}</p>
                 </div>
 
-                {/* عرض متطلبات حقيقية ديناميكية بدلاً من تكرار نص ثابت */}
                 <div className="space-y-3">
                   <h4 className="text-sm font-semibold text-white/70 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400" /> Requirements & Steps</h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
