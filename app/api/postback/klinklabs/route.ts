@@ -1,139 +1,165 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
 
-if (!admin.apps.length) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      }),
-    });
-  } catch (error: any) {
-    console.error('Firebase Admin Initialization Error:', error.message);
-  }
+export const dynamic = 'force-dynamic';
+
+// 🔒 قائمة الـ IPs الرسمية والموثقة لـ Klink لحماية السيرفر من التزوير 🔒
+const KLINK_TRUSTED_IPS = ['34.118.33.53', '138.68.125.171', '64.226.93.56'];
+
+export async function POST(request: NextRequest) {
+  return handleKlinkPostback(request, true);
 }
 
-const db = admin.firestore();
+export async function GET(request: NextRequest) {
+  return handleKlinkPostback(request, false);
+}
 
-async function parsePostbackData(req: NextRequest) {
-  const urlParams = new URL(req.url).searchParams;
-  let bodyParams: any = {};
-
+async function handleKlinkPostback(request: NextRequest, isPost: boolean) {
   try {
-    const contentType = req.headers.get("content-type") || "";
-    if (contentType.includes("application/json")) {
-      bodyParams = await req.json();
+    // 1. نظام جدار الحماية للتحقق من الـ IP الموثق
+    const forwardedFor = request.headers.get('x-forwarded-for');
+    const clientIp = forwardedFor ? forwardedFor.split(',')[0].trim() : '';
+
+    let payload: any = {};
+
+    // استخراج البيانات بذكاء حسب نوع الطلب القادم (POST JSON أو GET Query)
+    if (isPost) {
+      payload = await request.json();
+    } else {
+      const { searchParams } = new URL(request.url);
+      payload = Object.fromEntries(searchParams.entries());
     }
-  } catch (e) {
-    bodyParams = {};
-  }
 
-  // قراءة كافة الاحتمالات الممكنة لاسم المستخدم لضمان عدم ضياع المعرّف الحقيقي
-  return {
-    userId: urlParams.get('userId') || urlParams.get('user_id') || urlParams.get('uid') || urlParams.get('subId') || bodyParams.userId || bodyParams.user_id || bodyParams.uid,
-    payout: urlParams.get('payout') || bodyParams.payout,
-    status: urlParams.get('status') || bodyParams.status,
-    eventType: urlParams.get('eventType') || bodyParams.eventType,
-    conversionId: urlParams.get('conversionId') || urlParams.get('conversion_id') || bodyParams.conversionId,
-    offerName: urlParams.get('offerName') || urlParams.get('offer_name') || bodyParams.offerName,
-    offerId: urlParams.get('offerId') || urlParams.get('offer_id') || bodyParams.offerId,
-  };
-}
+    // جلب المتغيرات الموضحة في جدول Payload Field Reference بالتوثيق
+    let userId = payload.userId;
+    const conversionId = payload.conversionId;
+    const offerId = payload.offerId;
+    const offerName = payload.offerName || 'Klink Offer';
+    const eventType = payload.eventType || 'conversion'; // conversion أو chargeback
+    const status = payload.status || 'completed'; // completed أو cancelled
+    const payoutRaw = payload.payout; // قيمة الأرباح الممررة من اللوحة
 
-export async function POST(req: NextRequest) {
-  try {
-    const data = await parsePostbackData(req);
-    let userId = data.userId;
-    const transId = data.conversionId || `klink_test_${Date.now()}`;
-    const status = data.status || 'completed';
-    const eventType = data.eventType || 'conversion';
-    const rawPayout = parseFloat(String(data.payout).replace(/[^0-9.-]/g, '')) || 0;
+    // التحقق من المعالم الأساسية الفريدة للمعاملة
+    if (!conversionId || !offerId || !payoutRaw) {
+      return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
+    }
 
-    // 🔥 [الحل الذكي الحاسم]: إذا كان اسم المستخدم القادم من التست فارغاً أو وهمياً (مثل test أو pub-)
-    // سنقوم بالبحث في قاعدة البيانات وجلب حسابك أنت حركياً ليظهر لك الإشعار والنقاط في الموقع فوراً!
-    if (!userId || userId.includes('test') || userId.includes('pub-') || userId === 'undefined') {
-      // جلب أول مستخدم مسجل (غالباً حسابك كأدمن ومطور للتطبيق)
-      const usersSnapshot = await db.collection('users').limit(1).get();
-      if (!usersSnapshot.empty) {
-        userId = usersSnapshot.docs[0].id; 
-      } else {
-        return new NextResponse("ERROR: No User Found In DB", { status: 400 });
+    // تحويل الأرباح إلى قيمة رقمية حقيقية بالفواصل الكاملة والعدل دون نقصان
+    let pointsToReward = parseFloat(payoutRaw);
+
+    if (isNaN(pointsToReward)) {
+      return NextResponse.json({ error: 'Invalid payout value' }, { status: 400 });
+    }
+
+    // كشف طلبات الفحص التجريبية لتسهيل تفعيل الرابط بداخل لوحتهم
+    const isTestRequest = 
+      conversionId.toLowerCase().includes('test') || 
+      userId?.toLowerCase().includes('test') || 
+      userId === "user-pub-001" || 
+      userId === "pub-ext-user" || 
+      userId === "kp-ex001-new" ||
+      !userId;
+
+    // 🔒 التحقق الأمني من الـ IP في البيئة الحقيقية 🔒
+    if (!isTestRequest && clientIp) {
+      if (!KLINK_TRUSTED_IPS.includes(clientIp)) {
+        console.error(`❌ Klink Security Warning: Unauthorized IP blocked: ${clientIp}`);
+        return NextResponse.json({ error: 'Unauthorized IP address' }, { status: 403 });
       }
     }
 
-    // حساب النقاط بناءً على معادلة (1 دولار = 1000 نقطة)
-    const absolutePayout = Math.abs(rawPayout);
-    let calculatedPoints = Math.round(absolutePayout * 1000);
-
-    // إذا كان العرض تجريبياً وقيمته صفر، نمنحه 500 نقطة ثابتة للتجربة ورؤية الأرقام في الواجهة
-    if (rawPayout === 0 || calculatedPoints === 0) {
-      calculatedPoints = 500;
+    // 2. تفعيل معالجة الارتجاع والخصم (Chargeback) إذا تم إلغاء العرض من قبلهم
+    const isChargeback = eventType === 'chargeback' || status === 'cancelled' || pointsToReward < 0;
+    if (isChargeback) {
+      pointsToReward = -Math.abs(pointsToReward); // تحويل القيمة لسالب ليتم الخصم العادل
     }
 
-    let finalReward = calculatedPoints;
-
-    // إدارة عمليات الإلغاء والـ Chargeback
-    if (eventType === 'chargeback' || status === 'cancelled' || rawPayout < 0) {
-      finalReward = -Math.abs(calculatedPoints);
+    // 3. منع تكرار المعاملة للتحويلات العادية (أما الارتجاع فيسمح بتمريره لتحديث الرصيد بسالب)
+    const transactionId = `klink_${conversionId}`;
+    const transactionRef = adminDb.collection('transactions').doc(transactionId);
+    
+    if (!isTestRequest && !isChargeback) {
+      const transactionDoc = await transactionRef.get();
+      if (transactionDoc.exists) {
+        return NextResponse.json({ success: true, message: 'Transaction already processed' }, { status: 200 });
+      }
     }
 
-    const offerName = data.offerName || "Klink Testing Task";
-    const transactionRef = db.collection('transactions').doc(transId);
-
-    // منع تكرار العرض
-    const transactionDoc = await transactionRef.get();
-    if (transactionDoc.exists) {
-      return new NextResponse("DUP", { status: 200 });
+    // تأمين حساب تجريبي للاختبار إذا تم إرسال الطلب من أداة الفحص بمعرف افتراضي
+    if (isTestRequest) {
+      userId = "YjkvTqAkpMhpmj6ts19g6bvhBDx1"; // حسابك الشخصي المعتمد للتجربة والشحن
     }
 
-    const userRef = db.collection('users').doc(userId);
-    const notificationRef = db.collection('notifications').doc();
+    const userRef = adminDb.collection('users').doc(userId);
+    const notificationRef = adminDb.collection('notifications').doc();
 
-    await db.runTransaction(async (ts) => {
+    // 4. 🔥 تشغيل العملية التبادلية الشاملة (Firestore Transaction) لتحديث الرصيد والإشعارات فوراً 🔥
+    await adminDb.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
       
-      if (userDoc.exists) {
-        const currentPoints = userDoc.data()?.points || 0;
-        ts.update(userRef, { points: currentPoints + finalReward });
+      if (!userDoc.exists) {
+        // إنشاء بروفايل تجريبي لحماية الـ API من السقوط أثناء الفحص الخارجي بمعرف وهمي
+        ts.set(userRef, { 
+          points: pointsToReward > 0 ? pointsToReward : 0, 
+          balance: pointsToReward > 0 ? pointsToReward : 0, 
+          MC: pointsToReward > 0 ? pointsToReward : 0,
+          mc: pointsToReward > 0 ? pointsToReward : 0,
+          totalEarned: pointsToReward > 0 ? pointsToReward : 0,
+          email: "test_klink@mrcash.app", 
+          createdAt: new Date(),
+          uid: userId
+        });
       } else {
-        // إنشاء الحساب احتياطياً إذا لم يعثر عليه
-        ts.set(userRef, { points: finalReward, email: "user@mrcash.app", createdAt: new Date() });
+        const currentPoints = userDoc.data()?.points || 0;
+        const currentBalance = userDoc.data()?.balance || 0;
+        const currentMC = userDoc.data()?.MC || userDoc.data()?.mc || 0;
+        const currentTotal = userDoc.data()?.totalEarned || 0;
+        const currentXp = userDoc.data()?.xp || 0;
+
+        // شحن الحساب الحقيقي بقيمة الفواصل الدقيقة الكاملة أو الخصم في حالة الارتجاع
+        ts.update(userRef, { 
+          points: currentPoints + pointsToReward,
+          balance: currentBalance + pointsToReward,
+          MC: currentMC + pointsToReward,
+          mc: currentMC + pointsToReward,
+          totalEarned: currentTotal + (pointsToReward > 0 ? pointsToReward : 0),
+          xp: currentXp + (pointsToReward > 0 ? pointsToReward : 0)
+        });
       }
 
-      // تسجيل المعاملة في السجل لتبلغ عنها الواجهة
+      // أ) تدوين حركة المال بجدول السجلات التاريخية للعمليات (transactions)
       ts.set(transactionRef, {
         userId: userId,
-        amount: finalReward,
-        type: finalReward > 0 ? 'offer_credit' : 'chargeback',
-        offerId: data.offerId || 'klink_task_id',
-        offerName: `${offerName} (KlinkLabs)`,
+        amount: pointsToReward,
+        points: pointsToReward,
+        type: pointsToReward > 0 ? 'offer_credit' : 'chargeback',
+        offerId: offerId,
+        offerName: `${offerName} (Klink)`,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
         status: 'completed'
       });
 
-      // إرسال الإشعار الفوري الذي سيظهر في حسابك بالموقع مباشرة
+      // b) 🇬🇧 كتابة صياغة الإشعار اللحظي باللغة الإنجليزية النظيفة 100% لتشغيل الجرس والـ Toast 🇬🇧
       ts.set(notificationRef, {
         userId: userId,
-        title: finalReward > 0 ? "🎉 Points Credited!" : "⚠️ Points Deducted",
-        message: finalReward > 0 
-          ? `Your account has been credited with +${finalReward} points for completing: [ ${offerName} ] from KlinkLabs.`
-          : `Your account was deducted by ${Math.abs(finalReward)} points due to offer cancellation from KlinkLabs.`,
-        type: finalReward > 0 ? "offer_credit" : "chargeback",
+        title: pointsToReward > 0 ? "🎉 Points Credited!" : "⚠️ Points Deducted",
+        message: pointsToReward > 0 
+          ? `Your account has been credited with +${pointsToReward} points for completing: [ ${offerName} ] from Klink.`
+          : `Your account was deducted by ${Math.abs(pointsToReward)} points due to offer cancellation from Klink.`,
+        type: pointsToReward > 0 ? "offer_credit" : "chargeback",
         read: false,
-        timestamp: admin.firestore.FieldValue.serverTimestamp()
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
     });
 
-    return new NextResponse("OK", { status: 200 });
+    console.log(`[Klink Success] Managed +${pointsToReward} MC for user ${userId}`);
+    return NextResponse.json({ success: true, message: 'Klink postback processed successfully' }, { status: 200 });
 
   } catch (error: any) {
-    console.error("KlinkLabs Internal Postback Error:", error.message);
-    return new NextResponse("OK", { status: 200 });
+    console.error('[Klink Postback Error]:', error);
+    return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
   }
-}
-
-export async function GET(req: NextRequest) {
-  return POST(req);
 }
