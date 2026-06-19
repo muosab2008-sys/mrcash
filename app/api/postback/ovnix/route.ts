@@ -26,34 +26,36 @@ async function handleOvnixPostback(request: NextRequest) {
     let statusParam = rawData.status || '1'; 
     let txid = rawData.txid || `ov_${Date.now()}`;
 
-    // 🎯 نظام تحويل ذكي للمعرف فقط (إذا كان الفحص يرسل رموزاً فارغة ليحولها لحسابك الفعلي)
+    // 🎯 نظام ذكي جداً: إذا كانت اللوحة ترسل الماكرو فارغاً {sub1} أو قيم تيست واضحة، يتم الشحن لحسابك الشخصي
     const isTestRequest = 
       !userId || 
       userId === "user-pub-001" || 
-      userId.includes('{') || 
+      userId === "{sub1}" || 
+      userId === "{user_id}" ||
       String(userId).toLowerCase().includes('test');
 
     if (isTestRequest) {
-      userId = "QpBIsti1UVOyrnkYvYVxemWupQy1"; // حسابك الفعلي بـ MrCash لتستقبل عليه الفحص
+      userId = "QpBIsti1UVOyrnkYvYVxemWupQy1"; // حسابك الفعلي لتجربة الفحص بأمان
     }
 
+    // التحقق النهائي للتأكد من وجود معرف مستخدم (لأي شخص)
     if (!userId) {
       return NextResponse.json({ error: 'Missing sub1/user_id parameter' }, { status: 400 });
     }
 
-    // تحويل القيمة القادمة من اللوحة مباشرة إلى رقم (القيمة التي تختارها أنت في اللوحة)
+    // تحويل القيمة القادمة من اللوحة مباشرة إلى رقم (القيمة التي يحصل عليها أي مستخدم)
     let pointsToReward = parseFloat(rewardValueRaw || '0');
     if (isNaN(pointsToReward)) {
       pointsToReward = 0;
     }
 
-    // التحقق من حالة التراجع (Chargeback)
+    // التحقق من حالة التراجع (Chargeback) لخصم النقاط إذا تم إلغاء العرض
     const isChargeback = statusParam === '2';
     if (isChargeback) {
       pointsToReward = -Math.abs(pointsToReward);
     }
 
-    // لمنع التكرار في العمليات الحية، والسماح للتيست بالمرور دائماً للمعاينة
+    // منع تكرار العمليات الحية لكل الناس (والسماح للتيست الشخصي بالمرور للمعاينة)
     const transactionId = `ovnix_${txid}`;
     const transactionRef = adminDb.collection('transactions').doc(transactionId);
     
@@ -67,11 +69,12 @@ async function handleOvnixPostback(request: NextRequest) {
     const userRef = adminDb.collection('users').doc(userId);
     const notificationRef = adminDb.collection('notifications').doc();
 
-    // 3. 🔥 تشغيل المعاملة في الفايربيس وشحن الحساب بالقيمة المرسلة فوراً 🔥
+    // 3. 🔥 تشغيل المعاملة في الفايربيس وشحن حساب المستخدم الحالي فوراً 🔥
     await adminDb.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
       
       if (!userDoc.exists) {
+        // إذا كان المستخدم جديداً تماماً وغير مسجل (حالة نادرة جداً)، يتم إنشاء ملفه وشحنه
         ts.set(userRef, { 
           points: pointsToReward > 0 ? pointsToReward : 0, 
           balance: pointsToReward > 0 ? pointsToReward : 0, 
@@ -79,11 +82,12 @@ async function handleOvnixPostback(request: NextRequest) {
           mc: pointsToReward > 0 ? pointsToReward : 0,
           totalEarned: pointsToReward > 0 ? pointsToReward : 0,
           xp: pointsToReward > 0 ? pointsToReward : 0,
-          email: "test_ovnix@mrcash.app", 
+          email: "user_ovnix@mrcash.app", 
           createdAt: new Date(),
           uid: userId
         });
       } else {
+        // شحن النقاط للمستحدم الحقيقي الحالي وتحديث كافة حقول الرصيد في تطبيقك
         const currentPoints = userDoc.data()?.points || 0;
         const currentBalance = userDoc.data()?.balance || 0;
         const currentMC = userDoc.data()?.MC || userDoc.data()?.mc || 0;
@@ -100,7 +104,7 @@ async function handleOvnixPostback(request: NextRequest) {
         });
       }
 
-      // أ) تسجيل العملية بجدول الـ transactions
+      // أ) تسجيل العملية بجدول الـ transactions للمستخدم الحالي
       ts.set(transactionRef, {
         userId: userId,
         amount: pointsToReward,
@@ -114,7 +118,7 @@ async function handleOvnixPostback(request: NextRequest) {
         status: 'completed'
       });
 
-      // ب) إرسال الإشعار بالقيمة الحقيقية المرسلة
+      // ب) إرسال الإشعار لجرس تنبيهات حساب المستخدم الحالي
       ts.set(notificationRef, {
         userId: userId,
         title: pointsToReward >= 0 ? "🎉 Points Credited!" : "⚠️ Points Deducted",
@@ -128,6 +132,7 @@ async function handleOvnixPostback(request: NextRequest) {
       });
     });
 
+    console.log(`[Ovnix Live Success] Processed +${pointsToReward} points for user: ${userId}`);
     return NextResponse.json({ success: true, message: 'Ovnix_postback_processed_successfully' }, { status: 200 });
 
   } catch (error: any) {
