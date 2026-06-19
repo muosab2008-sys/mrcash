@@ -4,9 +4,6 @@ import admin from 'firebase-admin';
 
 export const dynamic = 'force-dynamic';
 
-// 🔑 اكتب الـ Secret Key الخاص بك من لوحة Ovnix هنا (اختياري للأمان)
-const OVNIX_SECRET_KEY = "02AA7F9AFBA05DB22666"; 
-
 export async function GET(request: NextRequest) {
   return handleOvnixPostback(request);
 }
@@ -17,50 +14,47 @@ export async function POST(request: NextRequest) {
 
 async function handleOvnixPostback(request: NextRequest) {
   try {
-    // 1. قراءة المعالم القادمة من الـ URL مباشرة (Query Parameters)
+    // 1. قراءة المعالم القادمة من الـ URL مباشرة
     const { searchParams } = new URL(request.url);
     const rawData = Object.fromEntries(searchParams.entries());
 
-    // 2. مسك المتغيرات بحروفها وطريقتها المكتوبة في لوحة Ovnix
-    let userId = rawData.user_id || rawData.userid;
-    let pointsRaw = rawData.points;
+    // 2. مسك المتغيرات تلقائياً وحسب ما ترسله اللوحة تماماً
+    let userId = rawData.sub1 || rawData.user_id || rawData.userid;
+    let rewardValueRaw = rawData.rewardValue || rawData.points;
+    let offerName = rawData.offername || 'Ovnix Offer';
     let payoutRaw = rawData.payout || '0';
-    let status = rawData.status || 'approved';
-    let clickId = rawData.click_id || `ov_${Date.now()}`;
-    let secret = rawData.secret;
+    let statusParam = rawData.status || '1'; 
+    let txid = rawData.txid || `ov_${Date.now()}`;
 
-    // 🎯 نظام كشف التيست والتحقق الذكي لتوجيه الفحص لحسابك الفعلي بـ MrCash
+    // 🎯 نظام تحويل ذكي للمعرف فقط (إذا كان الفحص يرسل رموزاً فارغة ليحولها لحسابك الفعلي)
     const isTestRequest = 
       !userId || 
       userId === "user-pub-001" || 
       userId.includes('{') || 
-      String(userId).toLowerCase().includes('test') ||
-      !pointsRaw || 
-      pointsRaw.includes('{');
+      String(userId).toLowerCase().includes('test');
 
     if (isTestRequest) {
-      userId = "QpBIsti1UVOyrnkYvYVxemWupQy1"; // معرّف حسابك المصحح والفعلي
-      pointsRaw = "300"; // منحك 300 نقطة تجريبية بالفحص لترى النتيجة فوراً
+      userId = "QpBIsti1UVOyrnkYvYVxemWupQy1"; // حسابك الفعلي بـ MrCash لتستقبل عليه الفحص
     }
 
     if (!userId) {
-      return NextResponse.json({ error: 'Missing user_id parameter' }, { status: 400 });
+      return NextResponse.json({ error: 'Missing sub1/user_id parameter' }, { status: 400 });
     }
 
-    // تحويل رصيد النقاط إلى قيمة رقمية دقيقة
-    let pointsToReward = parseFloat(pointsRaw);
+    // تحويل القيمة القادمة من اللوحة مباشرة إلى رقم (القيمة التي تختارها أنت في اللوحة)
+    let pointsToReward = parseFloat(rewardValueRaw || '0');
     if (isNaN(pointsToReward)) {
       pointsToReward = 0;
     }
 
-    // معالجة حالات رفض العروض أو إلغائها (Chargeback) إذا أرسلت اللوحة حالة غير ناجحة
-    const isChargeback = status === 'declined' || status === 'rejected' || status === 'reversed';
+    // التحقق من حالة التراجع (Chargeback)
+    const isChargeback = statusParam === '2';
     if (isChargeback) {
       pointsToReward = -Math.abs(pointsToReward);
     }
 
-    // منع تكرار المعاملات الحية للاعبين بناءً على الـ click_id
-    const transactionId = `ovnix_${clickId}`;
+    // لمنع التكرار في العمليات الحية، والسماح للتيست بالمرور دائماً للمعاينة
+    const transactionId = `ovnix_${txid}`;
     const transactionRef = adminDb.collection('transactions').doc(transactionId);
     
     if (!isTestRequest && !isChargeback) {
@@ -73,7 +67,7 @@ async function handleOvnixPostback(request: NextRequest) {
     const userRef = adminDb.collection('users').doc(userId);
     const notificationRef = adminDb.collection('notifications').doc();
 
-    // 3. 🔥 تنفيذ العملية التبادلية في الفايربيس لشحن الحساب وتوليد الإشعار بـ MrCash 🔥
+    // 3. 🔥 تشغيل المعاملة في الفايربيس وشحن الحساب بالقيمة المرسلة فوراً 🔥
     await adminDb.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
       
@@ -106,26 +100,26 @@ async function handleOvnixPostback(request: NextRequest) {
         });
       }
 
-      // أ) تسجيل العملية في جدول الـ transactions
+      // أ) تسجيل العملية بجدول الـ transactions
       ts.set(transactionRef, {
         userId: userId,
         amount: pointsToReward,
         points: pointsToReward,
         type: pointsToReward >= 0 ? 'offer_credit' : 'chargeback',
-        offerId: clickId,
-        offerName: `Ovnix Offer`,
+        offerId: txid,
+        offerName: `${offerName} (Ovnix)`,
         payoutUsd: parseFloat(payoutRaw),
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         status: 'completed'
       });
 
-      // ب) صياغة جرس التنبيه بالإنجليزية لتطبيق MrCash
+      // ب) إرسال الإشعار بالقيمة الحقيقية المرسلة
       ts.set(notificationRef, {
         userId: userId,
         title: pointsToReward >= 0 ? "🎉 Points Credited!" : "⚠️ Points Deducted",
         message: pointsToReward >= 0 
-          ? `Your account has been credited with +${pointsToReward} points for completing an offer from Ovnix.`
+          ? `Your account has been credited with +${pointsToReward} points for completing: [ ${offerName} ] from Ovnix.`
           : `Your account was deducted by ${Math.abs(pointsToReward)} points due to offer cancellation from Ovnix.`,
         type: pointsToReward >= 0 ? "offer_credit" : "chargeback",
         read: false,
@@ -134,7 +128,6 @@ async function handleOvnixPostback(request: NextRequest) {
       });
     });
 
-    console.log(`[Ovnix Success] Processed +${pointsToReward} points for user: ${userId}`);
     return NextResponse.json({ success: true, message: 'Ovnix_postback_processed_successfully' }, { status: 200 });
 
   } catch (error: any) {
