@@ -25,8 +25,8 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 export function AvatarSelector({
-  totalAvatars = 783,
-  displayCount = 50,
+  totalAvatars = 80,       // تحديث القيمة الافتراضية إلى 80
+  displayCount = 40,       // عرض 40 صورة في المرة الواحدة كحد أقصى مريح للعين
   selectedAvatar,
   onSelect,
   className,
@@ -41,8 +41,8 @@ export function AvatarSelector({
   // Get random selection of avatars
   const displayedAvatars = useMemo(() => {
     const shuffled = shuffleArray(allAvatarIndices);
-    return shuffled.slice(0, displayCount).map((id) => `/avatars/${id}.png`);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // تحديث المسار ليطابق مجلد الحفظ الجديد: /assets/avatars/
+    return shuffled.slice(0, displayCount).map((id) => `/assets/avatars/${id}.png`);
   }, [allAvatarIndices, displayCount, shuffleKey]);
 
   const handleShuffle = () => {
@@ -90,6 +90,11 @@ export function AvatarSelector({
                 fill
                 className="object-cover"
                 sizes="(max-width: 640px) 18vw, 9vw"
+                onError={(e) => {
+                  // حماية برمجية إضافية في حال فقدان أي صورة مستقبلاً
+                  const target = e.target as HTMLImageElement;
+                  target.src = "/assets/avatars/1.png";
+                }}
               />
               {isSelected && (
                 <div className="absolute inset-0 bg-[#3B82F6]/30 flex items-center justify-center">
@@ -112,6 +117,10 @@ export function AvatarSelector({
               alt="Selected avatar"
               fill
               className="object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = "/assets/avatars/1.png";
+              }}
             />
           </div>
           <div>
