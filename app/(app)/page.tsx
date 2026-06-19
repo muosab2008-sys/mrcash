@@ -207,7 +207,7 @@ export default function EarnPage() {
       klink: `https://offerwall.klinkfinance.com/wall?pub_id=a8d01294-6455-411d-8f03-cc1d716c241d&user_id=${uid}`,
       clickwall: `https://clickwall.net/app/iframe/10656/${uid}`,
       notik: `https://notik.me/coins?api_key=NofGnODVnHB3werypR5PRKx5ew8fTbB4&pub_id=Yog41D&app_id=psPQDvAS3y&user_id=${uid}`,
-      notik: `https://offerwall.ovnix.io?pk=02AA7F9AFBA05DB22666&sub1=USER_ID}`,
+      ovnix: `https://offerwall.ovnix.io?pk=02AA7F9AFBA05DB22666&sub1=USER_ID}`,
     };
     return urls[wall.id] || wall.url;
   };
