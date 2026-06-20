@@ -25,8 +25,8 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 export function AvatarSelector({
-  totalAvatars = 80,       // تحديث القيمة الافتراضية إلى 80
-  displayCount = 40,       // عرض 40 صورة في المرة الواحدة كحد أقصى مريح للعين
+  totalAvatars = 80,       // تم تثبيتها على 80 وهو العدد الحقيقي لملفاتك داخل المجلد
+  displayCount = 40,       // عرض 40 صورة عشوائية عند الضغط على الـ Shuffle
   selectedAvatar,
   onSelect,
   className,
@@ -41,8 +41,8 @@ export function AvatarSelector({
   // Get random selection of avatars
   const displayedAvatars = useMemo(() => {
     const shuffled = shuffleArray(allAvatarIndices);
-    // تحديث المسار ليطابق مجلد الحفظ الجديد: /assets/avatars/
-    return shuffled.slice(0, displayCount).map((id) => `/assets/avatars/${id}.png`);
+    // المسار الصحيح والمباشر المتوافق مع بنية مجلد الـ public لديك على جيتهاب
+    return shuffled.slice(0, displayCount).map((id) => `/avatars/${id}.png`);
   }, [allAvatarIndices, displayCount, shuffleKey]);
 
   const handleShuffle = () => {
@@ -91,9 +91,9 @@ export function AvatarSelector({
                 className="object-cover"
                 sizes="(max-width: 640px) 18vw, 9vw"
                 onError={(e) => {
-                  // حماية برمجية إضافية في حال فقدان أي صورة مستقبلاً
+                  // حماية تلقائية مدمجة: إذا لم يجد السيرفر الصورة يحولها لرقم 1 الآمن
                   const target = e.target as HTMLImageElement;
-                  target.src = "/assets/avatars/1.png";
+                  target.src = "/avatars/1.png";
                 }}
               />
               {isSelected && (
@@ -119,7 +119,7 @@ export function AvatarSelector({
               className="object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                target.src = "/assets/avatars/1.png";
+                target.src = "/avatars/1.png";
               }}
             />
           </div>
@@ -132,3 +132,4 @@ export function AvatarSelector({
     </div>
   );
 }
+
