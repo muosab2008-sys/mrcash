@@ -48,7 +48,7 @@ const defaultOfferwalls: Offerwall[] = [
   { id: "clickwall", name: "clickwall", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/69fb3a0a5bce7.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
   { id: "ovnix", name: "ovnix", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/69fb831157dcd.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
   { id: "notik", name: "notik", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/690b3e0d553c7.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
-  
+  { id: "upwall", name: "upwall", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/6809146f505d9.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
 ];
 
 interface VoteData {
@@ -209,6 +209,7 @@ export default function EarnPage() {
       clickwall: `https://clickwall.net/app/iframe/10656/${uid}`,
       notik: `https://notik.me/coins?api_key=NofGnODVnHB3werypR5PRKx5ew8fTbB4&pub_id=Yog41D&app_id=psPQDvAS3y&user_id=${uid}`,
       ovnix: `https://offerwall.ovnix.io?pk=02AA7F9AFBA05DB22666&sub1=USER_ID}`,
+      upwall: `https://offerwall.upwall.io/?app_id=6ff3-bd30-f8e8-4fa9&userid={uniqueUserID}`,
     };
     return urls[wall.id] || wall.url;
   };
