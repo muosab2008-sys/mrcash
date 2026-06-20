@@ -1,41 +1,56 @@
 "use client";
+
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Lock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
+// English letters, numbers, and a curated set of safe symbols (mirrors lib/security.ts).
+const PASSWORD_REGEX = /^[a-zA-Z0-9!@#$%^&*()_+\-=]{6,}$/;
+
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  // New custom SMTP flow uses ?token=, legacy Firebase flow uses ?oobCode=.
+  const customToken = searchParams.get("token");
   const oobCode = searchParams.get("oobCode");
-  
+  const mode: "custom" | "firebase" | "none" = customToken ? "custom" : oobCode ? "firebase" : "none";
+
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [status, setStatus] = useState<"loading" | "valid" | "expired" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Lock to prevent duplicate Firebase requests
+  // Lock to prevent duplicate verification requests.
   const verificationStarted = useRef(false);
 
   useEffect(() => {
-    if (!oobCode || verificationStarted.current) {
-      if (!oobCode) {
-        setStatus("expired");
-        setErrorMessage("Invalid link. Please request a new one.");
-      }
+    if (verificationStarted.current) return;
+    verificationStarted.current = true;
+
+    // Custom token is validated server-side at submit time — show the form immediately.
+    if (mode === "custom") {
+      setStatus("valid");
       return;
     }
 
-    verificationStarted.current = true;
+    if (mode === "none") {
+      setStatus("expired");
+      setErrorMessage("Invalid link. Please request a new one.");
+      return;
+    }
 
-    async function verifyCode() {
+    // Legacy Firebase oobCode flow.
+    (async () => {
       try {
-        await verifyPasswordResetCode(auth, oobCode);
+        await verifyPasswordResetCode(auth, oobCode!);
         setStatus("valid");
       } catch (error: any) {
         setStatus("expired");
-        
         if (error.code === "auth/expired-action-code") {
           setErrorMessage("This link has expired. Please request a new one.");
         } else if (error.code === "auth/invalid-action-code") {
@@ -46,10 +61,8 @@ function ResetPasswordContent() {
           setErrorMessage("An error occurred. Please request a new link.");
         }
       }
-    }
-
-    verifyCode();
-  }, [oobCode]);
+    })();
+  }, [mode, oobCode]);
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,30 +72,45 @@ function ResetPasswordContent() {
       setErrorMessage("Passwords do not match!");
       return;
     }
-
-    if (password.length < 6) {
-      setErrorMessage("Password must be at least 6 characters.");
-      return;
-    }
-
-    if (!oobCode) {
-      setErrorMessage("This link has expired or has already been used.");
+    if (!PASSWORD_REGEX.test(password)) {
+      setErrorMessage("Password must be at least 6 characters using English letters, numbers, or basic symbols.");
       return;
     }
 
     setStatus("loading");
 
     try {
+      if (mode === "custom") {
+        const res = await fetch("/api/auth/reset-password-confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: customToken, newPassword: password }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setStatus("error");
+          setErrorMessage(data.error || "Failed to update password. Please try again.");
+          return;
+        }
+        setStatus("success");
+        return;
+      }
+
+      // Legacy Firebase flow.
+      if (!oobCode) {
+        setStatus("error");
+        setErrorMessage("This link has expired or has already been used.");
+        return;
+      }
       await confirmPasswordReset(auth, oobCode, password);
       setStatus("success");
     } catch (error: any) {
       setStatus("error");
-      
-      if (error.code === "auth/expired-action-code") {
+      if (error?.code === "auth/expired-action-code") {
         setErrorMessage("This link has expired. Please request a new one.");
-      } else if (error.code === "auth/invalid-action-code") {
+      } else if (error?.code === "auth/invalid-action-code") {
         setErrorMessage("This link is invalid or has already been used.");
-      } else if (error.code === "auth/weak-password") {
+      } else if (error?.code === "auth/weak-password") {
         setErrorMessage("Password is too weak. Must be at least 6 characters.");
       } else {
         setErrorMessage("Failed to update password. Please try again.");
@@ -110,8 +138,8 @@ function ResetPasswordContent() {
           </div>
           <p className="text-xl font-black text-white mb-2">Invalid Link</p>
           <p className="text-gray-400 text-sm mt-2 leading-relaxed">{errorMessage}</p>
-          <button 
-            onClick={() => router.push('/login')}
+          <button
+            onClick={() => router.push("/login")}
             className="mt-8 w-full py-4 bg-white text-black font-black rounded-xl hover:bg-gray-200 transition-colors"
           >
             Back to Login
@@ -136,8 +164,8 @@ function ResetPasswordContent() {
           <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto mb-4" />
           <p className="text-xl font-black text-white">Success!</p>
           <p className="text-gray-400 text-sm mt-2">Your password has been updated.</p>
-          <button 
-            onClick={() => router.push('/login')}
+          <button
+            onClick={() => router.push("/login")}
             className="mt-8 w-full py-4 bg-white text-black font-black rounded-xl hover:bg-gray-200 transition-colors"
           >
             Go to Login
@@ -176,11 +204,8 @@ function ResetPasswordContent() {
             />
           </div>
 
-          <button
-            disabled={status === "loading"}
-            className="w-full py-4 bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] text-white font-black rounded-xl shadow-[0_10px_20px_rgba(59,130,246,0.2)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
-          >
-            {status === "loading" ? "Processing..." : "Update Password"}
+          <button className="w-full py-4 bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] text-white font-black rounded-xl shadow-[0_10px_20px_rgba(59,130,246,0.2)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50">
+            Update Password
           </button>
         </form>
       )}
@@ -190,7 +215,7 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-4">
       <Suspense fallback={<div className="text-white font-bold animate-pulse">Loading...</div>}>
         <ResetPasswordContent />
       </Suspense>
