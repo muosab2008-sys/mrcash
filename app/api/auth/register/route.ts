@@ -9,7 +9,7 @@ const TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, username, password, fullName, referralCode } = await request.json();
+    const { email, username, password, fullName, referralCode, photoURL } = await request.json();
 
     // ---------- Strict input validation ----------
     if (!email || !username || !password || !fullName) {
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       email: normalizedEmail,
       username,
       fullName,
-      photoURL: null,
+      photoURL: typeof photoURL === "string" && photoURL ? photoURL : null,
       points: 0,
       fragments: 0,
       level: 1,
