@@ -25,23 +25,24 @@ async function handleUpWallPostback(request: NextRequest) {
     let payoutRaw = rawData.payout || '0';
     let txid = rawData.transactionID || rawData.transactionid || `uw_${Date.now()}`;
 
-    // 🎯 نظام تحويل المعرف فقط لاستقبال التيست على حسابك الفعلي بـ MrCash
+    // 🎯 نظام ذكي جداً: إذا كانت اللوحة ترسل الماكرو فارغاً {userid} أو قيم تجريبية، يتم الشحن لحسابك الشخصي
     const isTestRequest = 
       !userId || 
       userId === "user1234" || 
       userId === "user-pub-001" || 
-      userId.includes('{') || 
+      userId === "{userid}" ||
       String(userId).toLowerCase().includes('test');
 
     if (isTestRequest) {
-      userId = "QpBIsti1UVOyrnkYvYVxemWupQy1"; // حسابك الشخصي والمصحح لاستقبال نقاط الفحص
+      userId = "QpBIsti1UVOyrnkYvYVxemWupQy1"; // حسابك الفعلي لتجربة الفحص بأمان
     }
 
+    // التحقق النهائي للتأكد من وجود معرف مستخدم (لأي شخص)
     if (!userId) {
       return NextResponse.json({ error: 'Missing userid parameter' }, { status: 400 });
     }
 
-    // قراءة رصيد النقاط الممرر من اللوحة مباشرة (دون فرض أي قيم خارجية)
+    // قراءة رصيد النقاط الممرر من اللوحة مباشرة (الذي يحصل عليه أي مستخدم)
     let pointsToReward = parseFloat(userAmountRaw || '0');
     if (isNaN(pointsToReward)) {
       pointsToReward = 0;
@@ -58,7 +59,7 @@ async function handleUpWallPostback(request: NextRequest) {
       pointsToReward = -Math.abs(pointsToReward);
     }
 
-    // حماية السيرفر ومنع تكرار المعاملات للاعبين (أما الفحص فيمر للمعاينة)
+    // حماية السيرفر ومنع تكرار المعاملات للاعبين الحقيقيين (أما الفحص الشخصي فيمر للمعاينة)
     const transactionId = `upwall_${txid}`;
     const transactionRef = adminDb.collection('transactions').doc(transactionId);
     
@@ -72,11 +73,12 @@ async function handleUpWallPostback(request: NextRequest) {
     const userRef = adminDb.collection('users').doc(userId);
     const notificationRef = adminDb.collection('notifications').doc();
 
-    // 3. 🔥 تشغيل العملية في الفايربيس لشحن الحساب بالقيمة المحددة باللوحة 🔥
+    // 3. 🔥 تشغيل العملية في الفايربيس لشحن حساب المستخدم الحالي فوراً 🔥
     await adminDb.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
       
       if (!userDoc.exists) {
+        // إذا كان المستخدم جديداً تماماً وغير مسجل، يتم إنشاء ملفه وشحنه
         ts.set(userRef, { 
           points: pointsToReward > 0 ? pointsToReward : 0, 
           balance: pointsToReward > 0 ? pointsToReward : 0, 
@@ -84,11 +86,12 @@ async function handleUpWallPostback(request: NextRequest) {
           mc: pointsToReward > 0 ? pointsToReward : 0,
           totalEarned: pointsToReward > 0 ? pointsToReward : 0,
           xp: pointsToReward > 0 ? pointsToReward : 0,
-          email: "test_upwall@mrcash.app", 
+          email: "user_upwall@mrcash.app", 
           createdAt: new Date(),
           uid: userId
         });
       } else {
+        // شحن النقاط للمستخدم الحقيقي الحالي وتحديث كافة حقول الرصيد في تطبيقك
         const currentPoints = userDoc.data()?.points || 0;
         const currentBalance = userDoc.data()?.balance || 0;
         const currentMC = userDoc.data()?.MC || userDoc.data()?.mc || 0;
@@ -105,7 +108,7 @@ async function handleUpWallPostback(request: NextRequest) {
         });
       }
 
-      // أ) تسجيل الفاتورة بجدول الـ transactions للمراجعة
+      // أ) تسجيل الفاتورة بجدول الـ transactions للمستخدم الحالي
       ts.set(transactionRef, {
         userId: userId,
         amount: pointsToReward,
@@ -119,7 +122,7 @@ async function handleUpWallPostback(request: NextRequest) {
         status: 'completed'
       });
 
-      // ب) صياغة التنبيه وعرض القيمة المختارة داخل جرس التطبيق بـ MrCash
+      // ب) صياغة التنبيه وعرض القيمة الحقيقية داخل جرس تنبيهات حساب المستخدم الحالي
       ts.set(notificationRef, {
         userId: userId,
         title: pointsToReward >= 0 ? "🎉 Points Credited!" : "⚠️ Points Deducted",
@@ -133,7 +136,7 @@ async function handleUpWallPostback(request: NextRequest) {
       });
     });
 
-    console.log(`[UpWall Success] Processed +${pointsToReward} points for user: ${userId}`);
+    console.log(`[UpWall Live Success] Processed +${pointsToReward} points for user: ${userId}`);
     return NextResponse.json({ success: true, message: 'UpWall_postback_processed_successfully' }, { status: 200 });
 
   } catch (error: any) {
