@@ -373,13 +373,12 @@ export default function LoginPage() {
             </div>
 
             <div className="text-right">
-              <button
-                type="button"
-                onClick={() => setShowResetForm(true)}
+              <Link
+                href="/forgot-password"
                 className="text-sm text-[#3B82F6] hover:text-[#8B5CF6] transition-colors font-medium"
               >
                 Forgot password?
-              </button>
+              </Link>
             </div>
 
             <Button
