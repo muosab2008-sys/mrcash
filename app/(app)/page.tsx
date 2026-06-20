@@ -47,6 +47,7 @@ const defaultOfferwalls: Offerwall[] = [
     { id: "klink", name: "klink", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://assets.klink.finance/klink/klinklabs/klink-labs-dark.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
   { id: "clickwall", name: "clickwall", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/69fb3a0a5bce7.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
   { id: "ovnix", name: "ovnix", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/69fb831157dcd.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
+  { id: "notik", name: "notik", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/690b3e0d553c7.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
   
 ];
 
