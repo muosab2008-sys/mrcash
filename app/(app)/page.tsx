@@ -49,7 +49,7 @@ const defaultOfferwalls: Offerwall[] = [
   { id: "ovnix", name: "ovnix", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/69fb831157dcd.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
   { id: "notik", name: "notik", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/690b3e0d553c7.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
   { id: "upwall", name: "upwall", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/6809146f505d9.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
-  { id: "adbreak", name: "adbreak", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://dashboard.adbreakmedia.com/images/vertical_text_logo/text_bluish_white.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
+  { id: "adbreak", name: "adbreak", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://dashboard.adbreakmedia.com/images/vertical_text_logo/text_bluish_transparent.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
 ];
 
 interface VoteData {
@@ -211,7 +211,7 @@ export default function EarnPage() {
       notik: `https://notik.me/coins?api_key=NofGnODVnHB3werypR5PRKx5ew8fTbB4&pub_id=Yog41D&app_id=psPQDvAS3y&user_id=${uid}`,
       ovnix: `https://offerwall.ovnix.io?pk=02AA7F9AFBA05DB22666&sub1=USER_ID}`,
       upwall: `https://offerwall.upwall.io/?app_id=6ff3-bd30-f8e8-4fa9&userid={uniqueUserID}`,
-      adbreak: `https://wall.adbreakmedia.com/PLACEMENT_IDENTIFIER/${uid}`,
+      adbreak: `https://wall.adbreakmedia.com/11fff2ba859f2bc8b975d98d3d93b104c5c0389ff1fed4cbded445571a0c63da/${uid}`,
     };
     return urls[wall.id] || wall.url;
   };
