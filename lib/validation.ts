@@ -34,3 +34,23 @@ export function getClientIp(headers: Headers): string {
   if (forwarded) return forwarded.split(",")[0].trim();
   return headers.get("x-real-ip") || "unknown";
 }
+
+/**
+ * Resolve the public base URL for building email links.
+ * Order of preference:
+ *   1. NEXT_PUBLIC_APP_URL (explicit override)
+ *   2. The incoming request origin (host + forwarded protocol)
+ *   3. Hardcoded production fallback
+ */
+export function getBaseUrl(headers: Headers): string {
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (envUrl) return envUrl.replace(/\/$/, "");
+
+  const host = headers.get("x-forwarded-host") || headers.get("host");
+  if (host) {
+    const proto = headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+    return `${proto}://${host}`;
+  }
+
+  return "https://mrcash.app";
+}

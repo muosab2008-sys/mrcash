@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { sendCustomEmail, brandedEmail } from "@/lib/email";
-import { isValidEmail, generateSecureToken } from "@/lib/validation";
+import { isValidEmail, generateSecureToken, getBaseUrl } from "@/lib/validation";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://mrcash.app";
 const RESET_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 // Generic response so we never reveal whether an email is registered.
@@ -40,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     await userDoc.ref.update({ resetPasswordToken, resetPasswordExpiry });
 
-    const resetUrl = `${APP_URL}/reset-password?token=${resetPasswordToken}`;
+    const resetUrl = `${getBaseUrl(request.headers)}/reset-password?token=${resetPasswordToken}`;
     await sendCustomEmail(
       normalizedEmail,
       "Reset your MrCash password",

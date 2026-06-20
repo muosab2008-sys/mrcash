@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb, adminAuth } from "@/lib/firebase-admin";
 import { sendCustomEmail, brandedEmail } from "@/lib/email";
-import { isStrictAlnum, isValidEmail, isValidPassword, generateSecureToken, getClientIp } from "@/lib/validation";
+import { isStrictAlnum, isValidEmail, isValidPassword, generateSecureToken, getClientIp, getBaseUrl } from "@/lib/validation";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://mrcash.app";
 const TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export async function POST(request: NextRequest) {
@@ -109,7 +108,7 @@ export async function POST(request: NextRequest) {
     });
 
     // ---------- Fire the verification email ----------
-    const verifyUrl = `${APP_URL}/verify-email?token=${verificationToken}`;
+    const verifyUrl = `${getBaseUrl(request.headers)}/verify-email?token=${verificationToken}`;
     try {
       await sendCustomEmail(
         normalizedEmail,

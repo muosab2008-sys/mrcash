@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { sendCustomEmail, brandedEmail } from "@/lib/email";
-import { generateSecureToken, isValidEmail } from "@/lib/validation";
+import { generateSecureToken, isValidEmail, getBaseUrl } from "@/lib/validation";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://mrcash.app";
 const TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export async function POST(request: NextRequest) {
@@ -39,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     await userDoc.ref.update({ verificationToken, tokenExpiry });
 
-    const verifyUrl = `${APP_URL}/verify-email?token=${verificationToken}`;
+    const verifyUrl = `${getBaseUrl(request.headers)}/verify-email?token=${verificationToken}`;
     await sendCustomEmail(
       normalizedEmail,
       "Verify your MrCash account",
