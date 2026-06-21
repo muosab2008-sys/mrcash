@@ -61,6 +61,24 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const googleProvider = new GoogleAuthProvider();
 
+// Sends the freshly authenticated user's ID token to the server so the real
+// client IP can be logged for anti-fraud tracking. Failures are non-blocking.
+async function logUserIp(firebaseUser: User, event: "register" | "login") {
+  try {
+    const token = await firebaseUser.getIdToken();
+    await fetch("/api/log-ip", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ event }),
+    });
+  } catch (err) {
+    console.error("[v0] Failed to log user IP:", err);
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -113,7 +131,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router]);
 
   const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    await logUserIp(result.user, "login");
   };
 
   const loginWithGoogle = async () => {
@@ -141,12 +160,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isBanned: false,
         createdAt: serverTimestamp(),
       });
+      await logUserIp(firebaseUser, "register");
     } else {
       // Update photoURL if changed for existing Google users
       const existingData = userSnap.data();
       if (firebaseUser.photoURL && existingData?.photoURL !== firebaseUser.photoURL) {
         await setDoc(userDocRef, { photoURL: firebaseUser.photoURL }, { merge: true });
       }
+      await logUserIp(firebaseUser, "login");
     }
   };
 
@@ -181,6 +202,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       twoFactorEnabled: false,
       createdAt: serverTimestamp(),
     });
+
+    await logUserIp(firebaseUser, "register");
   };
 
   const logout = async () => {

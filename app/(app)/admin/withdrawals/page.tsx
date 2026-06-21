@@ -31,8 +31,10 @@ import {
   CheckCheck,
   RotateCcw,
   Ban,
+  ShieldAlert,
 } from "lucide-react";
 import Link from "next/link";
+import { FraudReviewDialog } from "@/components/admin/fraud-review-dialog";
 
 interface Withdrawal {
   id: string;
@@ -54,6 +56,7 @@ export default function AdminWithdrawalsPage() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [markingAll, setMarkingAll] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [fraudReview, setFraudReview] = useState<{ userId: string; username: string } | null>(null);
 
   useEffect(() => {
     const q = query(collection(db, "withdrawals"), orderBy("createdAt", "desc"));
@@ -386,6 +389,20 @@ export default function AdminWithdrawalsPage() {
                         <p className="text-xs text-white/40">
                           Points deducted: {withdrawal.pointsDeducted?.toLocaleString() || 0}
                         </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            setFraudReview({
+                              userId: withdrawal.userId,
+                              username: withdrawal.username || withdrawal.email || withdrawal.userId,
+                            })
+                          }
+                          className="mt-2 h-8 text-amber-500 border-amber-500/30 hover:bg-amber-500/10 rounded-xl"
+                        >
+                          <ShieldAlert className="mr-1 h-3.5 w-3.5" />
+                          Fraud Check
+                        </Button>
                       </div>
                     </div>
 
@@ -468,6 +485,15 @@ export default function AdminWithdrawalsPage() {
           )}
         </CardContent>
       </Card>
+
+      {fraudReview && (
+        <FraudReviewDialog
+          open={!!fraudReview}
+          onOpenChange={(open) => !open && setFraudReview(null)}
+          userId={fraudReview.userId}
+          username={fraudReview.username}
+        />
+      )}
     </div>
   );
 }
