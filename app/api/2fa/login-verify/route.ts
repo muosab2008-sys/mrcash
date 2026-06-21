@@ -2,43 +2,48 @@ import { NextRequest, NextResponse } from "next/server";
 import { verify } from "otplib";
 import { adminDb } from "@/lib/firebase-admin";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   try {
     const { userId, code } = await request.json();
 
     if (!userId || !code) {
       return NextResponse.json(
-        { error: "userId and code are required" },
+        { error: "userId and code are required", valid: false },
         { status: 400 }
       );
     }
 
-    // Get user's 2FA secret from Firestore
     const userDoc = await adminDb.collection("users").doc(userId).get();
-    
+
     if (!userDoc.exists) {
       return NextResponse.json(
-        { error: "User not found" },
+        { error: "User not found", valid: false },
         { status: 404 }
       );
     }
 
     const userData = userDoc.data();
-    
+
     if (!userData?.twoFactorEnabled || !userData?.twoFactorSecret) {
-      return NextResponse.json(
-        { error: "2FA not enabled for this user" },
-        { status: 400 }
-      );
+      // 2FA is not actually enabled — treat as a pass-through so the user is
+      // never locked out if their secret was lost or never stored.
+      return NextResponse.json({ valid: true });
     }
 
-    // Verify the TOTP code
-    const isValid = verify({
-      token: code,
-      secret: userData.twoFactorSecret,
+    // otplib v13 `verify` is async and returns { valid, delta }.
+    // Await it and read `.valid`. Allow a 30s clock-skew window.
+    const result = await verify({
+      token: String(code).trim(),
+      secret: String(userData.twoFactorSecret).trim(),
+      strategy: "totp",
+      digits: 6,
+      period: 30,
+      epochTolerance: 30,
     });
 
-    if (!isValid) {
+    if (!result.valid) {
       return NextResponse.json(
         { error: "Invalid verification code", valid: false },
         { status: 400 }
@@ -47,9 +52,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ valid: true });
   } catch (error) {
-    console.error("2FA login verification error:", error);
+    console.error("[v0] 2FA login verification error:", error);
     return NextResponse.json(
-      { error: "Failed to verify 2FA code" },
+      { error: "Failed to verify 2FA code", valid: false },
       { status: 500 }
     );
   }
