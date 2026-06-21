@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       issuer: "MrCash",
       label: email,
       secret: secret,
-      algorithm: "SHA1",
+      algorithm: "sha1",
       digits: 6,
       period: 30,
     });

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verify } from "otplib";
+import { verifyTotpCode } from "@/lib/totp";
 import { adminDb } from "@/lib/firebase-admin";
 
 export async function POST(request: NextRequest) {
@@ -13,11 +13,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the TOTP code
-    const isValid = verify({
-      token: code,
-      secret: secret,
-    });
+    // Verify the TOTP code (async, with clock-drift tolerance)
+    const isValid = await verifyTotpCode(secret, code);
 
     if (!isValid) {
       return NextResponse.json(

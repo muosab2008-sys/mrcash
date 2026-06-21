@@ -40,6 +40,9 @@ export interface UserData {
   createdAt: Date;
   twoFactorEnabled: boolean;
   twoFactorSecret?: string;
+  bonusEligible: boolean;
+  bonusClaimed: boolean;
+  lastIp?: string | null;
 }
 
 interface AuthContextType {
@@ -60,6 +63,24 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const googleProvider = new GoogleAuthProvider();
+
+/**
+ * Securely records the user's IP for this session. The Firebase ID token is
+ * verified server-side so the IP is only ever written to the matching profile.
+ * Failures are swallowed so they can never block authentication.
+ */
+async function trackSession(firebaseUser: User, type: "login" | "register" | "google") {
+  try {
+    const idToken = await firebaseUser.getIdToken();
+    await fetch("/api/track-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken, type }),
+    });
+  } catch (err) {
+    console.error("[v0] trackSession failed:", err);
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -92,6 +113,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               createdAt: data.createdAt?.toDate() || new Date(),
               twoFactorEnabled: data.twoFactorEnabled || false,
               twoFactorSecret: data.twoFactorSecret || undefined,
+              bonusEligible: data.bonusEligible || false,
+              bonusClaimed: data.bonusClaimed || false,
+              lastIp: data.lastIp || null,
             };
             setUserData(userDataObj);
 
@@ -113,7 +137,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router]);
 
   const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    await trackSession(cred.user, "login");
   };
 
   const loginWithGoogle = async () => {
@@ -148,6 +173,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await setDoc(userDocRef, { photoURL: firebaseUser.photoURL }, { merge: true });
       }
     }
+
+    await trackSession(firebaseUser, "google");
   };
 
   const register = async (email: string, password: string, username: string, photoURL?: string, referralCode?: string) => {
@@ -181,6 +208,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       twoFactorEnabled: false,
       createdAt: serverTimestamp(),
     });
+
+    await trackSession(firebaseUser, "register");
   };
 
   const logout = async () => {
