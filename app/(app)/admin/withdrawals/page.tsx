@@ -31,8 +31,14 @@ import {
   CheckCheck,
   RotateCcw,
   Ban,
+  Zap,
+  ChevronDown,
+  ShieldQuestion,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
+import { auth } from "@/lib/firebase";
+import { OfferVerification } from "@/components/admin/offer-verification";
 
 interface Withdrawal {
   id: string;
@@ -43,7 +49,8 @@ interface Withdrawal {
   pointsDeducted: number;
   method: string;
   paymentDetails: string;
-  status: "pending" | "completed" | "rejected";
+  status: "pending" | "approved" | "completed" | "rejected" | "failed";
+  failReason?: string;
   createdAt: Date;
   processedAt?: Date;
 }
@@ -54,6 +61,8 @@ export default function AdminWithdrawalsPage() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [markingAll, setMarkingAll] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [processingPayouts, setProcessingPayouts] = useState(false);
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
 
   useEffect(() => {
     const q = query(collection(db, "withdrawals"), orderBy("createdAt", "desc"));
@@ -73,6 +82,7 @@ export default function AdminWithdrawalsPage() {
             method: d.method,
             paymentDetails: d.paymentDetails,
             status: d.status,
+            failReason: d.failReason,
             createdAt: d.createdAt?.toDate() || new Date(),
             processedAt: d.processedAt?.toDate(),
           };
@@ -88,7 +98,7 @@ export default function AdminWithdrawalsPage() {
 
   const updateWithdrawalStatus = async (
     id: string,
-    status: "completed" | "rejected",
+    status: "approved" | "completed" | "rejected",
     refundPoints: boolean = false,
     userId?: string,
     pointsToRefund?: number
@@ -115,8 +125,10 @@ export default function AdminWithdrawalsPage() {
 
       await batch.commit();
       
-      if (status === "completed") {
-        toast.success("Withdrawal approved");
+      if (status === "approved") {
+        toast.success("Withdrawal approved - ready for payout");
+      } else if (status === "completed") {
+        toast.success("Withdrawal marked as paid");
       } else if (refundPoints) {
         toast.success("Withdrawal rejected - Points refunded");
       } else {
@@ -131,7 +143,39 @@ export default function AdminWithdrawalsPage() {
 
   // Selection handlers
   const pendingWithdrawals = withdrawals.filter((w) => w.status === "pending");
+  const approvedWithdrawals = withdrawals.filter((w) => w.status === "approved");
   const completedWithdrawals = withdrawals.filter((w) => w.status === "completed");
+  const approvedAmountUSD = approvedWithdrawals.reduce((acc, w) => acc + (w.amountUSD || 0), 0);
+
+  // FAUCETPAY: fire mass payouts for every "approved" request via the backend.
+  const processApprovedPayouts = async () => {
+    if (approvedWithdrawals.length === 0) {
+      toast.info("No approved payouts to process");
+      return;
+    }
+    setProcessingPayouts(true);
+    try {
+      const current = auth.currentUser;
+      if (!current) throw new Error("Not authenticated");
+      const idToken = await current.getIdToken();
+      const res = await fetch("/api/admin/process-payouts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to process payouts");
+      toast.success(
+        `Payouts processed: ${data.completed} sent, ${data.failed} failed`
+      );
+    } catch (error: any) {
+      toast.error(error.message || "Failed to process payouts");
+    } finally {
+      setProcessingPayouts(false);
+    }
+  };
   
   // Calculate total paid to users (completed withdrawals)
   const totalPaidUSD = completedWithdrawals.reduce((acc, w) => acc + (w.amountUSD || 0), 0);
@@ -168,7 +212,7 @@ export default function AdminWithdrawalsPage() {
       for (const id of selectedIds) {
         const ref = doc(db, "withdrawals", id);
         batch.update(ref, {
-          status: "completed",
+          status: "approved",
           processedAt: serverTimestamp(),
         });
       }
@@ -196,13 +240,13 @@ export default function AdminWithdrawalsPage() {
       for (const withdrawal of pendingWithdrawals) {
         const ref = doc(db, "withdrawals", withdrawal.id);
         batch.update(ref, {
-          status: "completed",
+          status: "approved",
           processedAt: serverTimestamp(),
         });
       }
 
       await batch.commit();
-      toast.success(`Marked ${pendingWithdrawals.length} withdrawals as paid`);
+      toast.success(`Approved ${pendingWithdrawals.length} withdrawals for payout`);
       setSelectedIds(new Set());
     } catch (error: any) {
       toast.error(error.message || "Failed to mark all as paid");
@@ -217,7 +261,21 @@ export default function AdminWithdrawalsPage() {
         return (
           <Badge className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-xl">
             <CheckCircle className="mr-1 h-3 w-3" />
-            Completed
+            Paid
+          </Badge>
+        );
+      case "approved":
+        return (
+          <Badge className="bg-[#3B82F6]/10 text-[#3B82F6] border border-[#3B82F6]/20 rounded-xl">
+            <CheckCheck className="mr-1 h-3 w-3" />
+            Approved
+          </Badge>
+        );
+      case "failed":
+        return (
+          <Badge className="bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl">
+            <AlertTriangle className="mr-1 h-3 w-3" />
+            Failed
           </Badge>
         );
       case "rejected":
@@ -256,6 +314,20 @@ export default function AdminWithdrawalsPage() {
               Process withdrawal requests
             </p>
           </div>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            onClick={processApprovedPayouts}
+            disabled={processingPayouts || approvedWithdrawals.length === 0}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl disabled:opacity-50"
+          >
+            {processingPayouts ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Zap className="mr-2 h-4 w-4" />
+            )}
+            Process All Approved Payouts ({approvedWithdrawals.length})
+          </Button>
         </div>
         {pendingWithdrawals.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">

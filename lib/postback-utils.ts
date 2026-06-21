@@ -260,6 +260,33 @@ export async function processPostback(
     createdAt: FieldValue.serverTimestamp(),
   });
 
+  // ANTI-FRAUD: record an immutable completed-offer document with the IP used
+  // at completion time, and flag it when it differs from the IPs we have on
+  // file for this account (a common signal for VPN / proxy / multi-account abuse).
+  const knownIps: string[] = Array.isArray(user.data.knownIps) ? user.data.knownIps : [];
+  const accountIps = [user.data.registrationIp, user.data.lastIp, ...knownIps].filter(Boolean);
+  const offerIp = userIp || null;
+  const ipMismatch = !!offerIp && accountIps.length > 0 && !accountIps.includes(offerIp);
+
+  const completedRef = adminDb.collection("completed_offers").doc();
+  batch.set(completedRef, {
+    userId: user.id,
+    username: user.data.username || userId,
+    photoURL: user.data.photoURL || null,
+    offerwall,
+    offerName,
+    offerId: offerId || null,
+    points,
+    amountUSD,
+    offerIp,
+    registrationIp: user.data.registrationIp || null,
+    lastLoginIp: user.data.lastIp || null,
+    ipMismatch,
+    flagged: ipMismatch,
+    transactionId,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+
   // Update offerwall stats
   const statsRef = adminDb.collection("stats").doc("offerwalls");
   batch.set(

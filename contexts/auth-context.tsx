@@ -61,6 +61,34 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const googleProvider = new GoogleAuthProvider();
 
+/**
+ * Records the current device/IP for anti-fraud + active-session tracking.
+ * Fails silently so it never blocks the login flow.
+ */
+async function logSession(event: "login" | "register") {
+  try {
+    const current = auth.currentUser;
+    if (!current) return;
+    const idToken = await current.getIdToken();
+    const res = await fetch("/api/auth/session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({ event }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.sessionId && typeof window !== "undefined") {
+        localStorage.setItem("mrcash_session_id", data.sessionId);
+      }
+    }
+  } catch (err) {
+    console.error("[v0] session log failed:", err);
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -114,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     await signInWithEmailAndPassword(auth, email, password);
+    await logSession("login");
   };
 
   const loginWithGoogle = async () => {
@@ -148,6 +177,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await setDoc(userDocRef, { photoURL: firebaseUser.photoURL }, { merge: true });
       }
     }
+
+    await logSession(userSnap.exists() ? "login" : "register");
   };
 
   const register = async (email: string, password: string, username: string, photoURL?: string, referralCode?: string) => {
@@ -181,6 +212,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       twoFactorEnabled: false,
       createdAt: serverTimestamp(),
     });
+
+    await logSession("register");
   };
 
   const logout = async () => {
