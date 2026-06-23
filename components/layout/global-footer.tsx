@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { ShieldCheck, Globe, Send } from "lucide-react";
+import { BrandLogo } from "@/components/layout/brand-logo";
 
 export function GlobalFooter() {
   return (
@@ -11,12 +11,7 @@ export function GlobalFooter() {
         
         {/* Brand Section */}
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="Logo" width={32} height={32} className="rounded-xl" loading="eager" priority />
-            <span className="text-2xl font-black brand-gradient-text tracking-tight">
-              MrCash
-            </span>
-          </div>
+          <BrandLogo size={32} wordmarkClassName="text-2xl" priority />
           <p className="text-xs text-muted-foreground leading-relaxed font-medium">
             The premier destination for turning tasks into real digital rewards securely and instantly.
           </p>

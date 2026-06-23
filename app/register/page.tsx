@@ -75,13 +75,13 @@ function RegisterForm() {
           <Link href="/" className="flex items-center gap-3">
             <Image
               src="/logo.png"
-              alt="MrCash"
+              alt="Mr.Cash"
               width={48}
               height={48}
               className="rounded-2xl"
             />
             <span className="text-2xl font-black bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] bg-clip-text text-transparent italic tracking-tighter">
-              MrCash
+              Mr.Cash
             </span>
           </Link>
         </div>
@@ -126,7 +126,7 @@ function RegisterForm() {
             <>
               <div className="text-center mb-8">
                 <h1 className="text-2xl font-bold text-white mb-2">Create Account</h1>
-                <p className="text-sm text-white/40">Join MrCash and start earning rewards</p>
+                <p className="text-sm text-white/40">Join Mr.Cash and start earning rewards</p>
               </div>
 
               <form onSubmit={handleStep1Submit} className="space-y-5">

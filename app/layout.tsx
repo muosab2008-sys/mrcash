@@ -12,14 +12,14 @@ const _geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
 const _geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
 export const metadata: Metadata = {
-  title: 'MrCash - Earn Rewards & Cash',
-  description: 'Earn real cash rewards by completing offers, surveys, and tasks. Join MrCash today!',
+  title: 'Mr.Cash - Earn Rewards & Cash',
+  description: 'Earn real cash rewards by completing offers, surveys, and tasks. Join Mr.Cash today!',
   generator: 'v0.app',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'MrCash',
+    title: 'Mr.Cash',
   },
   formatDetection: {
     telephone: false,
@@ -29,16 +29,16 @@ export const metadata: Metadata = {
     apple: '/logo.png',
   },
   openGraph: {
-    title: 'MrCash - Earn Rewards & Cash',
+    title: 'Mr.Cash - Earn Rewards & Cash',
     description: 'Share your link and get paid! The best platform to earn rewards online.',
     url: 'https://mrcash.vercel.app',
-    siteName: 'MrCash',
+    siteName: 'Mr.Cash',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'MrCash Preview',
+        alt: 'Mr.Cash Preview',
       },
     ],
     locale: 'en_US',
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'MrCash - Earn Rewards & Cash',
+    title: 'Mr.Cash - Earn Rewards & Cash',
     description: 'Earn real cash rewards by completing tasks.',
     images: ['/og-image.png'],
   },

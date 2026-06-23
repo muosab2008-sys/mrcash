@@ -99,7 +99,7 @@ export function PWAInstallButton({ variant = "button" }: { variant?: "button" | 
                 </button>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed mb-3">
-                To install MrCash on your device: tap the share icon 
+                To install Mr.Cash on your device: tap the share icon 
                 <span className="inline-block mx-1 px-1.5 py-0.5 bg-secondary rounded text-[10px]">Share</span>
                 then select &quot;Add to Home Screen&quot;
               </p>
@@ -125,7 +125,7 @@ export function PWAInstallButton({ variant = "button" }: { variant?: "button" | 
         </div>
         <div className="text-left">
           <p className="font-bold text-foreground text-sm">Install App</p>
-          <p className="text-xs text-muted-foreground">Add MrCash to your device</p>
+          <p className="text-xs text-muted-foreground">Add Mr.Cash to your device</p>
         </div>
       </button>
     );

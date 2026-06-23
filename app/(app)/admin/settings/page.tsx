@@ -93,7 +93,7 @@ export default function AdminSettingsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Platform Settings</h1>
-        <p className="text-muted-foreground">Configure your MrCash platform</p>
+        <p className="text-muted-foreground">Configure your Mr.Cash platform</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

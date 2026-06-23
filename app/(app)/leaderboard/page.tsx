@@ -149,7 +149,7 @@ export default function LeaderboardPage() {
         {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold text-foreground mb-2">Leaderboard</h1>
-          <p className="text-muted-foreground">Top earners in the MrCash community</p>
+          <p className="text-muted-foreground">Top earners in the Mr.Cash community</p>
         </div>
 
         {/* Top 3 Podium */}

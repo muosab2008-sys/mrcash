@@ -35,7 +35,7 @@ export default function BannedPage() {
           <div className="mx-auto mb-4">
             <Image
               src="/logo.png"
-              alt="MrCash"
+              alt="Mr.Cash"
               width={64}
               height={64}
               className="rounded-xl opacity-50"

@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NotificationPanel } from "@/components/notifications/notification-panel";
+import { BrandLogo } from "@/components/layout/brand-logo";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -47,18 +48,8 @@ export function Header({ onMenuClick }: HeaderProps) {
               <Menu className="h-5 w-5" />
             </Button>
 
-            <Link href="/" className="lg:hidden flex items-center gap-2.5 min-w-0 group">
-              <Image 
-                src="/logo.png" 
-                alt="MrCash Logo"
-                width={28} 
-                height={28}
-                priority
-                className="object-contain w-7 h-7 shrink-0 transition-transform group-hover:scale-105"
-              />
-              <span className="text-xl font-black tracking-tight brand-gradient-text">
-                MrCash
-              </span>
+            <Link href="/" className="lg:hidden group">
+              <BrandLogo size={28} wordmarkClassName="text-xl" priority className="transition-transform group-hover:scale-105" />
             </Link>
           </div>
 
@@ -174,7 +165,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                 />
                 <div>
                   <h3 className="font-bold text-lg text-foreground">Points Balance</h3>
-                  <p className="text-xs text-muted-foreground">MrCash Rewards System</p>
+                  <p className="text-xs text-muted-foreground">Mr.Cash Rewards System</p>
                 </div>
               </div>
               <button 

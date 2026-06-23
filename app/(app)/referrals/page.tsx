@@ -79,8 +79,8 @@ export default function ReferralsPage() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Join MrCash",
-          text: "Earn rewards with MrCash! Use my referral link to get started:",
+          title: "Join Mr.Cash",
+          text: "Earn rewards with Mr.Cash! Use my referral link to get started:",
           url: referralLink,
         });
       } catch {

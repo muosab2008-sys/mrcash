@@ -159,13 +159,13 @@ export default function LoginPage() {
             <Link href="/" className="flex items-center gap-3">
               <Image
                 src="/logo.png"
-                alt="MrCash"
+                alt="Mr.Cash"
                 width={48}
                 height={48}
                 className="rounded-2xl"
               />
               <span className="text-2xl font-black bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] bg-clip-text text-transparent italic tracking-tighter">
-                MrCash
+                Mr.Cash
               </span>
             </Link>
           </div>
@@ -245,13 +245,13 @@ export default function LoginPage() {
             <Link href="/" className="flex items-center gap-3">
               <Image
                 src="/logo.png"
-                alt="MrCash"
+                alt="Mr.Cash"
                 width={48}
                 height={48}
                 className="rounded-2xl"
               />
               <span className="text-2xl font-black bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] bg-clip-text text-transparent italic tracking-tighter">
-                MrCash
+                Mr.Cash
               </span>
             </Link>
           </div>
@@ -323,13 +323,13 @@ export default function LoginPage() {
           <Link href="/" className="flex items-center gap-3">
             <Image
               src="/logo.png"
-              alt="MrCash"
+              alt="Mr.Cash"
               width={48}
               height={48}
               className="rounded-2xl"
             />
             <span className="text-2xl font-black bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] bg-clip-text text-transparent italic tracking-tighter">
-              MrCash
+              Mr.Cash
             </span>
           </Link>
         </div>
@@ -338,7 +338,7 @@ export default function LoginPage() {
         <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-8">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-white mb-2">Welcome Back</h1>
-            <p className="text-sm text-white/40">Sign in to your MrCash account</p>
+            <p className="text-sm text-white/40">Sign in to your Mr.Cash account</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">

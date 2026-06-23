@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     // Create the otpauth URL for Google Authenticator
     const otpauthUrl = generateURI({
-      issuer: "MrCash",
+      issuer: "Mr.Cash",
       label: email,
       secret: secret,
       algorithm: "SHA1",

@@ -7,7 +7,6 @@ import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import {
   Coins,
-  Trophy,
   Users,
   Ticket,
   User,
@@ -20,6 +19,7 @@ import {
   Settings,
   Crown,
 } from "lucide-react";
+import { BrandLogo } from "@/components/layout/brand-logo";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -40,7 +40,6 @@ const pointsToUSD = (points: number) => (points / 1000).toFixed(2);
 
 const navItems = [
   { href: "/", label: "Earn", icon: Coins },
-  { href: "/levels", label: "Levels", icon: Trophy },
   { href: "/leaderboard", label: "Leaderboard", icon: Crown },
   { href: "/referrals", label: "Referrals", icon: Users },
   { href: "/promo", label: "Promo Codes", icon: Ticket },
@@ -77,10 +76,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
       >
         {/* Mobile Header */}
         <div className="flex items-center justify-between border-b border-border p-4 lg:hidden">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Image src="/logo.png" alt="MrCash" width={32} height={32} className="rounded-xl shrink-0" />
-            <span className="font-bold text-lg brand-gradient-text">MrCash</span>
-          </div>
+          <BrandLogo size={32} wordmarkClassName="text-lg" />
           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
@@ -91,8 +87,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
           "hidden items-center gap-2.5 border-b border-border p-4 lg:flex",
           isCollapsed && "justify-center"
         )}>
-          <Image src="/logo.png" alt="MrCash" width={isCollapsed ? 32 : 36} height={isCollapsed ? 32 : 36} className="rounded-xl shrink-0" />
-          {!isCollapsed && <span className="text-lg font-bold brand-gradient-text">MrCash</span>}
+          <BrandLogo size={isCollapsed ? 32 : 36} iconOnly={isCollapsed} wordmarkClassName="text-lg" />
         </div>
 
         {/* User Stats (Mobile only) */}
