@@ -5,7 +5,7 @@ import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAd9KgnzExZ5RdrJVB_hpzxUvrqHiQ3jmU",
-  authDomain: "mrcash.app", // الدومين الاحترافي الجديد الخاص بك
+  authDomain: "Mr.Cash", // الدومين الاحترافي الجديد الخاص بك
   projectId: "mrcash-com",
   storageBucket: "mrcash-com.firebasestorage.app",
   messagingSenderId: "348374269609",
