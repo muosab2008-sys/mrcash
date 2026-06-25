@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { collection, query, orderBy, limit, onSnapshot, doc, getDoc, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,7 +15,13 @@ export function LiveFeed() {
   const [userHistory, setUserHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // 1️⃣ جلب التغذية الحية لآخر العروض المستلمة
+  // مرجع لحاوية السحب بالماوس
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isDown = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+
+  // 1️⃣ جلب التغذية الحية لآخر العروض
   useEffect(() => {
     const q = query(collection(db, "live_feed"), orderBy("createdAt", "desc"), limit(20));
     
@@ -23,19 +29,14 @@ export function LiveFeed() {
       const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setFeedItems(items);
 
-      // جلب الأفاتار الخاص بكل مستخدم بناءً على الـ userId المستلم من الـ Callback
       const newAvatarsMap: { [key: string]: string } = { ...avatarsMap };
-      
       for (const item of items) {
         if (item.userId && !newAvatarsMap[item.userId]) {
           try {
-            // جلب مستند المستخدم مباشرة من كولكشن users باستخدام الـ userId
             const userDocRef = doc(db, "users", item.userId);
             const userDocSnap = await getDoc(userDocRef);
-            
             if (userDocSnap.exists()) {
               const userData = userDocSnap.data();
-              // هنا نأخذ حقل الأفاتار المختار (تأكد أن اسمه في كولكشن users هو avatarUrl أو photoURL)
               newAvatarsMap[item.userId] = userData.avatarUrl || userData.photoURL || "";
             }
           } catch (err) {
@@ -49,14 +50,37 @@ export function LiveFeed() {
     return () => unsubscribe();
   }, []);
 
-  // 2️⃣ جلب العروض السابقة للمستخدم عند الضغط على الكبسولة عبر الـ userId
+  // 2️⃣ حركية السحب بالماوس (Drag to Scroll) للشريط
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    isDown.current = true;
+    scrollRef.current.classList.add("active");
+    startX.current = e.pageX - scrollRef.current.offsetLeft;
+    scrollLeft.current = scrollRef.current.scrollLeft;
+  };
+
+  const handleMouseLeaveOrUp = () => {
+    isDown.current = false;
+    if (scrollRef.current) {
+      scrollRef.current.classList.remove("active");
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDown.current || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX.current) * 1.5; // سرعة السحب
+    scrollRef.current.scrollLeft = scrollLeft.current - walk;
+  };
+
+  // 3️⃣ جلب تاريخ العمليات عند الضغط
   const handleUserClick = async (item: any) => {
     setSelectedUser(item);
     setLoadingHistory(true);
     setUserHistory([]);
     
     try {
-      // استعلام لجلب آخر 5 عروض أكملها هذا المستخدم بناءً على الـ userId الخاص به
       const q = query(
         collection(db, "live_feed"), 
         where("userId", "==", item.userId), 
@@ -78,11 +102,11 @@ export function LiveFeed() {
   return (
     <div className="w-full flex flex-col justify-center py-4 bg-transparent select-none relative z-40">
       
-      {/* الكبسولة الرئيسية الانسيابية الفخمة المتناسقة مع لوحة تحكم MrCash */}
+      {/* الحاوية الرئيسية الخارجي */}
       <div className="relative flex items-center h-12 w-full backdrop-blur-md bg-[#13131a]/40 rounded-full border border-white/[0.05] shadow-lg overflow-visible">
         
         {/* شارة LIVE الثابتة جهة اليسار */}
-        <div className="absolute left-0 z-30 bg-[#0d0d12] px-4 h-full flex items-center border-r border-white/[0.05] rounded-l-full shadow-md">
+        <div className="absolute left-0 top-0 bottom-0 z-30 bg-[#0d0d12] px-4 h-full flex items-center border-r border-white/[0.05] rounded-l-full shadow-md">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
@@ -94,31 +118,36 @@ export function LiveFeed() {
           </div>
         </div>
 
-        {/* حاوية التمرير الأفقي السلس */}
-        <div className="flex-1 h-full overflow-x-auto scrollbar-none ml-20 rounded-r-full relative z-10 flex items-center scroll-smooth">
-          <div className="flex items-center gap-3 px-4 pr-12">
+        {/* حاوية العناصر المعدلة لدعم السحب بالماوس + حل مشكلة الـ Overflow للـ Tooltip */}
+        <div 
+          ref={scrollRef}
+          onMouseDown={handleMouseDown}
+          onMouseLeave={handleMouseLeaveOrUp}
+          onMouseUp={handleMouseLeaveOrUp}
+          onMouseMove={handleMouseMove}
+          className="flex-1 h-full overflow-x-auto scrollbar-none ml-20 rounded-r-full relative z-10 flex items-center cursor-grab active:cursor-grabbing"
+        >
+          <div className="flex items-center gap-3 px-4 pr-12 h-full">
             {feedItems.map((item, index) => {
               const itemId = `${item.id}-${index}`;
-              const userAvatar = avatarsMap[item.userId] || ""; // الأفاتار الفعلي المختار من الـ 80 أفاتار
+              const userAvatar = avatarsMap[item.userId] || "";
 
               return (
                 <div
                   key={itemId}
-                  className="relative inline-flex items-center gap-2 px-3 py-1 bg-[#1c1c24]/40 hover:bg-[#1c1c24]/90 border border-white/[0.03] hover:border-cyan-500/30 rounded-full cursor-pointer transition-all duration-200 shrink-0 h-8 group/item shadow-sm"
+                  className="relative inline-flex items-center gap-2 px-3 py-1 bg-[#1c1c24]/40 hover:bg-[#1c1c24]/90 border border-white/[0.03] hover:border-cyan-500/30 rounded-full h-8 group/item shadow-sm"
                   onMouseEnter={() => setActiveTooltip(itemId)}
                   onMouseLeave={() => setActiveTooltip(null)}
                   onClick={() => handleUserClick({ ...item, currentAvatar: userAvatar })}
                 >
-                  {/* عرض الأفاتار المخصص للمستخدم بدقة */}
-                  <Avatar className="h-5 w-5 border border-white/10">
+                  <Avatar className="h-5 w-5 border border-white/10 pointer-events-none">
                     <AvatarImage src={userAvatar} />
                     <AvatarFallback className="bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-400 text-[9px] font-bold">
                       {item.username?.[0]?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                   
-                  {/* اسم المستخدم وقيمة النقاط الحالية */}
-                  <div className="flex items-center gap-1.5 text-[11px]">
+                  <div className="flex items-center gap-1.5 text-[11px] pointer-events-none">
                     <span className="font-medium text-white/80 group-hover/item:text-white transition-colors truncate max-w-[80px]">
                       {item.username}
                     </span>
@@ -127,12 +156,12 @@ export function LiveFeed() {
                     </span>
                   </div>
 
-                  {/* الـ Tooltip المنبثق عند الـ Hover لأسفل الكبسولة */}
+                  {/* الـ Tooltip المنبثق المعدل مكانه لضمان الظهور فوق أي overflow بدون اختفاء */}
                   <div className={`
-                    absolute top-[135%] left-1/2 -translate-x-1/2 w-52 
-                    bg-[#0d0d12] border border-white/10 rounded-xl p-3 shadow-[0_10px_25px_rgba(0,0,0,0.5)]
-                    transition-all duration-200 z-50 pointer-events-none
-                    ${activeTooltip === itemId ? "opacity-100 visible translate-y-0 scale-100" : "opacity-0 invisible -translate-y-2 scale-95"}
+                    absolute bottom-[-95px] left-1/2 -translate-x-1/2 w-52 
+                    bg-[#0d0d12] border border-white/10 rounded-xl p-3 shadow-[0_10px_25px_rgba(0,0,0,0.8)]
+                    transition-all duration-150 z-[99] pointer-events-none
+                    ${activeTooltip === itemId ? "opacity-100 visible scale-100" : "opacity-0 invisible scale-95"}
                   `}>
                     <div className="space-y-1.5 text-left whitespace-normal text-[11px]">
                       <div className="flex flex-col border-b border-white/5 pb-1">
@@ -150,23 +179,24 @@ export function LiveFeed() {
                         </div>
                       </div>
                     </div>
-                    <div className="absolute bottom-[98%] left-1/2 -translate-x-1/2 w-2 h-2 bg-[#0d0d12] border-t border-l border-white/10 rotate-45"></div>
+                    {/* السهم الصغير */}
+                    <div className="absolute top-[-5px] left-1/2 -translate-x-1/2 w-2 h-2 bg-[#0d0d12] border-t border-l border-white/10 rotate-45"></div>
                   </div>
+
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* تلاشي الحافة اليمنى ناعم */}
+        {/* تلاشي الحافة اليمنى */}
         <div className="absolute right-0 top-0 bottom-0 w-16 z-20 bg-gradient-to-l from-[#09090d] to-transparent pointer-events-none rounded-r-full" />
       </div>
 
-      {/* 📥 نافذة الـ Modal التي تظهر عند الضغط على المستخدم وتستعرض بياناته وأفاواتاره المختار */}
+      {/* 📥 نافذة الـ Modal الكبرى للبروفايل عند الضغط */}
       {selectedUser && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
-          <div className="relative w-full max-w-md bg-[#0d0d12] border border-white/10 rounded-2xl p-6 shadow-2xl text-white space-y-5 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            
+          <div className="relative w-full max-w-md bg-[#0d0d12] border border-white/10 rounded-2xl p-6 shadow-2xl text-white space-y-5 overflow-hidden template-animate">
             <button 
               onClick={() => setSelectedUser(null)} 
               className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors p-1 hover:bg-white/5 rounded-lg"
@@ -192,7 +222,6 @@ export function LiveFeed() {
               </div>
             </div>
 
-            {/* بطاقات الإحصائيات الفخمة */}
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-[#13131a] border border-white/5 rounded-xl p-3 text-center">
                 <Target className="h-4 w-4 text-cyan-400 mx-auto mb-1" />
@@ -211,7 +240,6 @@ export function LiveFeed() {
               </div>
             </div>
 
-            {/* جدول سجل المهام والعروض الأخيرة من الفايربيس */}
             <div className="space-y-2 text-left">
               <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-white/30">
                 <Activity className="h-3 w-3 text-purple-400" />
