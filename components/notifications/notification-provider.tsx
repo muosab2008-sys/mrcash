@@ -2,7 +2,9 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useRef } from "react";
 import { useAuth } from "@/contexts/auth-context";
-import { db } from "@/lib/firebase";
+import { db, getMessagingInstance } from "@/lib/firebase";
+import { registerFcmToken } from "@/lib/fcm";
+import { onMessage } from "firebase/messaging";
 import { 
   collection, 
   query, 
@@ -158,6 +160,33 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Register the FCM token whenever we have a logged-in user and permission
+  // has already been granted (e.g. returning visitors).
+  useEffect(() => {
+    if (!user) return;
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+    registerFcmToken(user.uid).catch((err) =>
+      console.error("[v0] FCM auto-register failed:", err)
+    );
+  }, [user]);
+
+  // Listen for foreground push messages and surface them as toasts so the
+  // experience matches background notifications.
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+    (async () => {
+      const messaging = await getMessagingInstance();
+      if (!messaging) return;
+      unsubscribe = onMessage(messaging, (payload) => {
+        const title = payload.notification?.title || payload.data?.title || "Mr.Cash";
+        const body = payload.notification?.body || payload.data?.body || "";
+        toast(title, { description: body });
+      });
+    })();
+    return () => unsubscribe?.();
+  }, [user]);
+
   // Firestore Real-time Listener for notifications
   useEffect(() => {
     if (!user) {
@@ -204,6 +233,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     try {
       const permission = await Notification.requestPermission();
       setPushPermission(permission);
+      if (permission === "granted" && user) {
+        await registerFcmToken(user.uid);
+      }
       return permission === "granted";
     } catch {
       return false;

@@ -79,8 +79,25 @@ export function LiveFeed() {
     setSelectedUser(item);
     setLoadingHistory(true);
     setUserHistory([]);
-    
+
+    if (!item.userId) {
+      setLoadingHistory(false);
+      return;
+    }
+
     try {
+      // Fetch the real user profile for accurate level / total earned stats
+      const userDocRef = doc(db, "users", item.userId);
+      const userDocSnap = await getDoc(userDocRef);
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        setSelectedUser((prev: any) => ({
+          ...prev,
+          level: userData.level || 1,
+          totalEarned: userData.totalEarned || 0,
+        }));
+      }
+
       const q = query(
         collection(db, "live_feed"), 
         where("userId", "==", item.userId), 
@@ -231,12 +248,12 @@ export function LiveFeed() {
               <div className="bg-[#13131a] border border-white/5 rounded-xl p-3 text-center">
                 <Trophy className="h-4 w-4 text-purple-400 mx-auto mb-1" />
                 <span className="text-[9px] text-white/40 uppercase font-bold block">Total Earned</span>
-                <span className="text-xs font-bold text-cyan-400">{(selectedUser.points || 0).toLocaleString()} MC</span>
+                <span className="text-xs font-bold text-cyan-400">{(selectedUser.totalEarned ?? selectedUser.points ?? 0).toLocaleString()} MC</span>
               </div>
               <div className="bg-[#13131a] border border-white/5 rounded-xl p-3 text-center">
                 <Award className="h-4 w-4 text-emerald-400 mx-auto mb-1" />
                 <span className="text-[9px] text-white/40 uppercase font-bold block">Rank</span>
-                <span className="text-xs font-bold text-emerald-400">Level 1</span>
+                <span className="text-xs font-bold text-emerald-400">Level {selectedUser.level || 1}</span>
               </div>
             </div>
 

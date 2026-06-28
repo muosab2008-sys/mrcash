@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getMessaging } from "firebase-admin/messaging";
 
 // Safe Firebase Admin initialization
 function getAdminDb() {
@@ -91,15 +92,19 @@ async function createUser(
 // Add to live feed
 async function addToLiveFeed(
   adminDb: FirebaseFirestore.Firestore,
+  userId: string,
   username: string,
   points: number,
-  source: string
+  source: string,
+  offerName: string
 ) {
   try {
     await adminDb.collection("live_feed").add({
+      userId,
       username,
       points,
       source,
+      offerName,
       createdAt: FieldValue.serverTimestamp(),
     });
 
@@ -117,6 +122,75 @@ async function addToLiveFeed(
     }
   } catch (error) {
     console.error("Live feed error:", error);
+  }
+}
+
+// Create an in-app notification document (drives the Firestore toast listener)
+async function createNotification(
+  adminDb: FirebaseFirestore.Firestore,
+  userId: string,
+  points: number
+) {
+  try {
+    await adminDb.collection("notifications").add({
+      userId,
+      title: "Points Credited!",
+      message: `You earned +${points.toLocaleString()} points from your completed offer.`,
+      type: "offer_credit",
+      points,
+      read: false,
+      timestamp: FieldValue.serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("Notification create error:", error);
+  }
+}
+
+// Send an FCM web-push notification to all of the user's registered devices
+async function sendPushNotification(
+  adminDb: FirebaseFirestore.Firestore,
+  userId: string,
+  tokens: string[],
+  points: number,
+  offerName: string
+) {
+  if (!tokens || tokens.length === 0) return;
+  try {
+    const response = await getMessaging().sendEachForMulticast({
+      tokens,
+      notification: {
+        title: "Points Credited! 🎉",
+        body: `You earned +${points.toLocaleString()} MC from "${offerName}".`,
+      },
+      data: { url: "/", points: String(points), type: "offer_credit" },
+      webpush: {
+        fcmOptions: { link: "/" },
+        notification: { icon: "/logo.png", badge: "/logo.png" },
+      },
+    });
+
+    // Prune tokens that are no longer valid so the array stays clean.
+    const invalidTokens: string[] = [];
+    response.responses.forEach((res, idx) => {
+      if (!res.success) {
+        const code = res.error?.code || "";
+        if (
+          code === "messaging/registration-token-not-registered" ||
+          code === "messaging/invalid-registration-token"
+        ) {
+          invalidTokens.push(tokens[idx]);
+        }
+      }
+    });
+
+    if (invalidTokens.length > 0) {
+      await adminDb
+        .collection("users")
+        .doc(userId)
+        .update({ fcmTokens: FieldValue.arrayRemove(...invalidTokens) });
+    }
+  } catch (error) {
+    console.error("Push notification error:", error);
   }
 }
 
@@ -257,7 +331,18 @@ export async function GET(request: NextRequest) {
     });
 
     // Add to live feed
-    await addToLiveFeed(adminDb, user.data.username || userIdentifier, points, source);
+    await addToLiveFeed(
+      adminDb,
+      user.id,
+      user.data.username || userIdentifier,
+      points,
+      source,
+      offerName
+    );
+
+    // Create in-app notification + send web push
+    await createNotification(adminDb, user.id, points);
+    await sendPushNotification(adminDb, user.id, user.data.fcmTokens || [], points, offerName);
 
     // Handle referral bonus (10%)
     if (user.data.referredBy) {
