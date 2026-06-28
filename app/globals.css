@@ -229,7 +229,8 @@
   animation: scroll 30s linear infinite;
 }
 
-.animate-scroll:hover {
+.animate-scroll:hover,
+.animate-scroll.is-paused {
   animation-play-state: paused;
 }
 
