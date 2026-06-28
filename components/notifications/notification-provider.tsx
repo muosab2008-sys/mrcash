@@ -11,10 +11,16 @@ import {
   onSnapshot,
   doc,
   updateDoc,
+  arrayUnion,
   Timestamp,
 } from "firebase/firestore";
 import { toast } from "sonner";
 import { CheckCircle2, XCircle, Gift } from "lucide-react";
+import {
+  requestNotificationPermissionAndToken,
+  onForegroundMessage,
+  showNativeNotification,
+} from "@/lib/firebase-messaging";
 
 interface Notification {
   id: string;
@@ -158,6 +164,40 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Persist the FCM device token on the user doc + listen for foreground pushes.
+  useEffect(() => {
+    if (!user) return;
+    let unsubscribe: (() => void) | undefined;
+
+    (async () => {
+      // Only fetch a token if the user has already granted permission, so we
+      // never trigger a permission prompt unexpectedly on load.
+      if (typeof window !== "undefined" && Notification.permission === "granted") {
+        const token = await requestNotificationPermissionAndToken();
+        if (token) {
+          try {
+            await updateDoc(doc(db, "users", user.uid), {
+              fcmTokens: arrayUnion(token),
+            });
+          } catch (err) {
+            console.error("[v0] Failed to save FCM token:", err);
+          }
+        }
+      }
+
+      // Show native notifications for background-style payloads received while focused.
+      unsubscribe = await onForegroundMessage((payload) => {
+        const title = payload.notification?.title || "Points Credited!";
+        const body = payload.notification?.body || "";
+        showNativeNotification(title, body, payload.data?.url || "/");
+      });
+    })();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [user]);
+
   // Firestore Real-time Listener for notifications
   useEffect(() => {
     if (!user) {
@@ -202,8 +242,21 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const permission = await Notification.requestPermission();
+      // Acquire the FCM token (this also requests permission) and persist it.
+      const token = await requestNotificationPermissionAndToken();
+      const permission = Notification.permission;
       setPushPermission(permission);
+
+      if (token && user) {
+        try {
+          await updateDoc(doc(db, "users", user.uid), {
+            fcmTokens: arrayUnion(token),
+          });
+        } catch (err) {
+          console.error("[v0] Failed to save FCM token:", err);
+        }
+      }
+
       return permission === "granted";
     } catch {
       return false;
