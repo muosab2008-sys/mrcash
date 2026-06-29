@@ -5,7 +5,6 @@ import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
-// 🚨 تأكد من كتابة المفاتيح الخاصة بك في ملف الـ .env أو ضعها هنا مباشرة
 const PLAYTIME_APP_KEY = process.env.PLAYTIME_APP_KEY || "YOUR_APPLICATION_KEY";
 const PLAYTIME_SECRET_KEY = process.env.PLAYTIME_SECRET_KEY || "YOUR_APPLICATION_SECRET_KEY";
 
@@ -13,42 +12,39 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     
-    // جلب المتغيرات بناءً على الجدول الموضح في توثيق Playtime SDK
+    // جلب المعالم المطلوبة بناءً على التوثيق الرسمي لـ Playtime SDK
     const rawUserId = searchParams.get('user_id'); 
     const offerId = searchParams.get('offer_id');
     const amountRaw = searchParams.get('amount'); 
     const signature = searchParams.get('signature');
+    const eventName = searchParams.get('event') || ''; // 🚨 حقل الـ event الأساسي للهاش
     
     const offerName = searchParams.get('offer_name') || 'Playtime Task';
-    const taskName = searchParams.get('task_name') || '';
 
-    // التحقق من المعالم الأساسية المطلوبة في التوثيق
     if (!rawUserId || !offerId || !amountRaw || !signature) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    // جلب القيمة الحقيقية بالفواصل من أجل الشحن الدقيق ومنع مشكلة النقطة الواحدة
     const pointsToReward = parseFloat(amountRaw);
     if (isNaN(pointsToReward) || pointsToReward <= 0) {
       return NextResponse.json({ error: 'Invalid amount value' }, { status: 400 });
     }
 
-    // كشف طلبات الفحص التجريبية لتسهيل تفعيل الرابط بداخل لوحة التحكم
+    // كشف طلبات الفحص التجريبية من لوحة تحكم الشركة
     const isTestRequest = 
       rawUserId.toLowerCase().includes('test') || 
       offerId.toLowerCase().includes('test') || 
       signature.toLowerCase().includes('test') ||
       rawUserId === "123";
 
-    // 🔒 1. التحقق الأمني من الـ Signature (SHA-1) بناءً على التوثيق 🔒
+    // 🔒 1. التحقق الأمني الصحيح من الـ Signature (SHA-1) بناءً على وثيقتك المرفقة 🔒
     if (!isTestRequest) {
-      // نستخدم القيمة الحقيقية القادمة من السيرفر مباشرة لضمان مطابقة الهاش بنسبة 100% دون أخطاء تقريب
-      const coinAmountInt = Math.floor(pointsToReward);
-      const stringToHash = `${rawUserId}${offerId}${coinAmountInt}${PLAYTIME_APP_KEY}${PLAYTIME_SECRET_KEY}`;
+      // الترتيب الرسمي المعتمد: userId + offer_id + event + APP_KEY + SECRET_KEY
+      const stringToHash = `${rawUserId}${offerId}${eventName}${PLAYTIME_APP_KEY}${PLAYTIME_SECRET_KEY}`;
       const calculatedSignature = crypto.createHash('sha1').update(stringToHash).digest('hex');
 
       if (signature.toLowerCase() !== calculatedSignature.toLowerCase()) {
-        console.error(`❌ Playtime Security Warning: Signature Mismatch!`);
+        console.error(`❌ Playtime Security Warning: Signature Mismatch! Calculated: ${calculatedSignature}, Received: ${signature}`);
         return NextResponse.json({ error: 'Invalid signature hash' }, { status: 403 });
       }
     }
@@ -75,16 +71,23 @@ export async function GET(request: NextRequest) {
 
     const userRef = adminDb.collection('users').doc(userId);
     const notificationRef = adminDb.collection('notifications').doc();
+    const liveFeedRef = adminDb.collection('live_feed').doc();
 
-    const displayTask = taskName ? ` - ${taskName}` : '';
-    const finalOfferTitle = `${offerName}${displayTask}`;
+    const displayEvent = eventName ? ` (${eventName})` : '';
+    const finalOfferTitle = `${offerName}${displayEvent}`;
 
-    // 4. 🔥 تشغيل العملية المترابطة الآمنة (Transaction) لتحديث كافة حقول الرصيد والجرس فوراً 🔥
+    let userTokens: string[] = [];
+    let finalUsername = "User";
+    let finalPhotoURL = "";
+
+    // 🔥 تشغيل العملية المترابطة الآمنة لتحديث الرصيد وكتابة التغذية الحية الفورية للأفاتار 🔥
     await adminDb.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
       
       if (!userDoc.exists) {
-        // إنشاء بروفايل تجريبي لحماية الـ API من السقوط أثناء الفحص الخارجي بـ User ID عشوائي
+        finalPhotoURL = "";
+        finalUsername = "Test User";
+        
         ts.set(userRef, { 
           points: pointsToReward, 
           balance: pointsToReward, 
@@ -93,16 +96,22 @@ export async function GET(request: NextRequest) {
           totalEarned: pointsToReward,
           email: "test_playtime@mrcash.app", 
           createdAt: new Date(),
-          uid: userId
+          uid: userId,
+          username: finalUsername,
+          photoURL: finalPhotoURL
         });
       } else {
-        const currentPoints = userDoc.data()?.points || 0;
-        const currentBalance = userDoc.data()?.balance || 0;
-        const currentMC = userDoc.data()?.MC || userDoc.data()?.mc || 0;
-        const currentTotal = userDoc.data()?.totalEarned || 0;
-        const currentXp = userDoc.data()?.xp || 0;
+        const userData = userDoc.data();
+        finalUsername = userData?.username || userData?.displayName || "User";
+        finalPhotoURL = userData?.photoURL || userData?.avatarUrl || "";
+        userTokens = userData?.fcmTokens || []; // جلب توكنز الأجهزة لإرسال الإشعار
 
-        // شحن الحقول الصحيحة المعتمدة بالكامل وبقيمة النقاط الحقيقية بالفواصل الكاملة
+        const currentPoints = userData?.points || 0;
+        const currentBalance = userData?.balance || 0;
+        const currentMC = userData?.MC || userData?.mc || 0;
+        const currentTotal = userData?.totalEarned || 0;
+        const currentXp = userData?.xp || 0;
+
         ts.update(userRef, { 
           points: currentPoints + pointsToReward,
           balance: currentBalance + pointsToReward,
@@ -126,7 +135,18 @@ export async function GET(request: NextRequest) {
         status: 'completed'
       });
 
-      // ب) 🇬🇧 صياغة الإشعار اللحظي باللغة الإنجليزية النظيفة 100% لتشغيل الجرس والـ Toast 🇬🇧
+      // ب) 🔔 تحديث شريط الـ Live Feed فورياً ليظهر المستخدم والأفاتار الحقيقي المختار من الـ 80 أفاتار 🔔
+      ts.set(liveFeedRef, {
+        userId: userId,
+        username: finalUsername,
+        points: pointsToReward,
+        offerName: finalOfferTitle,
+        source: 'PlaytimeSdk',
+        photoURL: finalPhotoURL,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      // ج) صياغة الإشعار اللحظي للموقع لجرس التنبيهات
       ts.set(notificationRef, {
         userId: userId,
         title: "🎉 Points Credited!",
@@ -138,7 +158,30 @@ export async function GET(request: NextRequest) {
       });
     });
 
-    console.log(`[Playtime Success] Credited +${pointsToReward} MC to user ${userId}`);
+    // 4) 🚀 إرسال إشعار الدفع الفوري (FCM Push Notification) لخلفية المتصفح والجوال 🚀
+    if (userTokens && userTokens.length > 0) {
+      const payload = {
+        notification: {
+          title: '🎉 Points Credited!',
+          body: `Your account has been credited with +${pointsToReward} MC for completing tasks from Playtime.`,
+          icon: '/logo.png',
+        }
+      };
+
+      const sendPromises = userTokens.map(async (token) => {
+        try {
+          await admin.messaging().send({
+            token: token,
+            notification: payload.notification,
+          });
+        } catch (fcmErr) {
+          console.error(`[FCM Error] Failed sending to token: ${token}`);
+        }
+      });
+      await Promise.all(sendPromises);
+    }
+
+    console.log(`[Playtime Success] Clean hash matched! Credited +${pointsToReward} MC & Updated Live Feed/FCM for user ${userId}`);
     return NextResponse.json({ success: true, message: 'Processed successfully' }, { status: 200 });
 
   } catch (error: any) {
