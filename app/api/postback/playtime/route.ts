@@ -52,13 +52,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 3. تنظيف الـ userId للبحث عنه وتأمين حساب الفحص التجريبي
+    // 3. تنظيف الـ userId وتوجيهه لحسابك فوراً لتأمين الفحص والتجربة الحية
     let userId = rawUserId;
-    if (userId.startsWith('TEST_')) {
-      userId = userId.replace('TEST_', '');
-    }
-    if (userId === "123" || isTestRequest) {
-      userId = "YjkvTqAkpMhpmj6ts19g6bvhBDx1"; // حسابك الشخصي المعتمد للتجربة
+    if (userId.startsWith('TEST_') || userId === "123" || isTestRequest) {
+      userId = "YjkvTqAkpMhpmj6ts19g6bvhBDx1"; // حسابك الشخصي المعتمد للتجربة عشان النقاط تجيك فوراً
     }
 
     // 4. تحويل النقاط إلى عدد صحيح متوافق مع الفايربيس (int64) لضمان نزولها بالرصيد فوراً
@@ -86,7 +83,7 @@ export async function GET(request: NextRequest) {
     let finalUsername = "User";
     let finalPhotoURL = "";
 
-    // 🔥 6. تشغيل العملية المترابطة الآمنة لتحديث الرصيد وكتابة التغذية الحية الفورية للأفاتار 🔥
+    // 🔥 6. تشغيل العملية المترابطة الآمنة وشحن كل حقول النقاط المحتملة في السيرفر 🔥
     await adminDb.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
       
@@ -94,6 +91,7 @@ export async function GET(request: NextRequest) {
         finalPhotoURL = "";
         finalUsername = "Test User";
         
+        // شحن الحساب بكل الصياغات الممكنة للـ UI لكي تظهر النقاط فوراً في أي مكان بالموقع
         ts.set(userRef, { 
           points: finalPoints, 
           balance: finalPoints, 
@@ -104,13 +102,14 @@ export async function GET(request: NextRequest) {
           createdAt: new Date(),
           uid: userId,
           username: finalUsername,
-          photoURL: finalPhotoURL
+          photoURL: finalPhotoURL,
+          xp: finalPoints
         });
       } else {
         const userData = userDoc.data();
         finalUsername = userData?.username || userData?.displayName || "User";
         finalPhotoURL = userData?.photoURL || userData?.avatarUrl || "";
-        userTokens = userData?.fcmTokens || []; // جلب توكنز الأجهزة لإرسال الإشعار
+        userTokens = userData?.fcmTokens || []; // جلب توكنز الأجهزة لإرسال الإشعار المنبثق
 
         const currentPoints = Number(userData?.points || 0);
         const currentBalance = Number(userData?.balance || 0);
@@ -118,7 +117,7 @@ export async function GET(request: NextRequest) {
         const currentTotal = Number(userData?.totalEarned || 0);
         const currentXp = Number(userData?.xp || 0);
 
-        // شحن كافة حقول الرصيد المعتمدة بالأعداد الصحيحة لتظهر في الواجهة مباشرة
+        // شحن كافة حقول الرصيد المعتمدة بالأعداد الصحيحة لتظهر في الواجهة مباشرة بدون أي تأخير
         ts.update(userRef, { 
           points: currentPoints + finalPoints,
           balance: currentBalance + finalPoints,
@@ -153,7 +152,7 @@ export async function GET(request: NextRequest) {
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      // ج) صياغة الإشعار اللحظي للموقع لجرس التنبيهات والـ Toast الداخلي
+      // ج) صياغة الإشعار اللحظي للموقع لجرس التنبيهات والـ Toast الداخلي للواجهة
       ts.set(notificationRef, {
         userId: userId,
         title: "🎉 Points Credited!",
