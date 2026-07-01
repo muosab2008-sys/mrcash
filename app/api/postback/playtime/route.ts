@@ -1,201 +1,132 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
-import crypto from 'crypto'; 
+import crypto from 'crypto'; // مدمجة في Node.js لعمل تشفير SHA-1
 
 export const dynamic = 'force-dynamic';
 
-// جلب مفاتيح التطبيق من بيئة عمل Vercel لضمان أمان الهاش
+// جلب المفاتيح الخاصة بـ Playtime SDK من متغيرات البيئة (.env) لحمايتها
 const PLAYTIME_APP_KEY = process.env.PLAYTIME_APP_KEY || "YOUR_APPLICATION_KEY";
 const PLAYTIME_SECRET_KEY = process.env.PLAYTIME_SECRET_KEY || "YOUR_APPLICATION_SECRET_KEY";
 
-export async function GET(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    // 1. استخراج المتغيرات من الرابط (URL Query) أو جسم الطلب (Body)
+    const urlParams = new URL(req.url).searchParams;
+    let bodyParams: any = {};
+
+    try {
+      const formData = await req.formData();
+      formData.forEach((value, key) => { bodyParams[key] = value; });
+    } catch (e) {
+      try { bodyParams = await req.json(); } catch (jsError) { bodyParams = {}; }
+    }
+
+    // مطابقة المتغيرات بناءً على توثيق Playtime SDK الرسمي
+    const firebase_uid = urlParams.get('user_id') || bodyParams.user_id;
+    const offerId = urlParams.get('offer_id') || bodyParams.offer_id;
+    const offerName = urlParams.get('offer_name') || bodyParams.offer_name || "Playtime Offer";
+    const amountRaw = urlParams.get('amount') || bodyParams.amount;
+    const txn_id = urlParams.get('signature') || bodyParams.signature; // نستخدم الـ signature كـ ID فريد للمعاملة لمنع التكرار
+    const incomingSignature = urlParams.get('signature') || bodyParams.signature;
+    const eventName = urlParams.get('event') || bodyParams.event || "";
+
+    // التحقق من المعاملات الأساسية لضمان سلامة الطلب
+    if (!firebase_uid || !offerId || !incomingSignature || !amountRaw) {
+      console.warn("⚠️ Playtime Postback: Missing vital parameters.");
+      return new NextResponse("ERROR: Missing Parameters", { status: 400 });
+    }
+
+    // 2. نظام نظام الحماية والتوثيق (Signature Validation)
+    // التوثيق يطلب: sha1(user_id + offer_id + event + APP_KEY + SECRET_KEY)
+    const dataToHash = `${firebase_uid}${offerId}${eventName}${PLAYTIME_APP_KEY}${PLAYTIME_SECRET_KEY}`;
+    const calculatedSignature = crypto.createHash('sha1').update(dataToHash).digest('hex');
+
+    if (incomingSignature !== calculatedSignature) {
+      console.error(`❌ Playtime Security Warning: Invalid Signature Attempt for user: ${firebase_uid}`);
+      return new NextResponse("ERROR: Invalid Signature", { status: 403 });
+    }
+
+    // تحويل النقاط إلى رقم صحيح آمن
+    const finalReward = Math.floor(Number(amountRaw));
+    if (finalReward <= 0) {
+      console.warn(`⚠️ Playtime Postback: Zero or invalid points received: ${amountRaw}`);
+      return new NextResponse("ERROR: Invalid Amount", { status: 400 });
+    }
+
+    // 3. فحص ومنع تكرار المعاملة (Deduplication)
+    // نستخدم الـ signature الفريد المتولد من الشركة كـ Document ID لضمان عدم تكرار نفس العملية أبداً
+    const transactionRef = adminDb.collection('transactions').doc(`playtime_${incomingSignature}`);
+    const transactionDoc = await transactionRef.get();
     
-    // 1. جلب المتغيرات بناءً على التوثيق الرسمي لـ Playtime SDK
-    const rawUserId = searchParams.get('user_id'); 
-    const offerId = searchParams.get('offer_id');
-    const amountRaw = searchParams.get('amount'); 
-    const signature = searchParams.get('signature');
-    const eventName = searchParams.get('event') || ''; // حقل الـ event الأساسي لحساب الهاش
-    
-    const offerName = searchParams.get('offer_name') || 'Playtime Task';
-
-    // التحقق من المعالم الأساسية المطلوبة في التوثيق
-    if (!rawUserId || !offerId || !amountRaw || !signature) {
-      return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
+    if (transactionDoc.exists) {
+      console.log(`ℹ️ Playtime Postback: Duplicate transaction skipped: ${incomingSignature}`);
+      return new NextResponse("ok", { status: 200 }); // مكرر، نرد بـ ok لمنع الخسارة المادية والشحن المزدوج
     }
 
-    // التحقق من صحة النقاط القادمة من السيرفر
-    const pointsToReward = parseFloat(amountRaw);
-    if (isNaN(pointsToReward) || pointsToReward <= 0) {
-      return NextResponse.json({ error: 'Invalid amount value' }, { status: 400 });
-    }
-
-    // كشف طلبات الفحص التجريبية لتسهيل تفعيل الرابط بداخل لوحة التحكم للشركة
-    const isTestRequest = 
-      rawUserId.toLowerCase().includes('test') || 
-      offerId.toLowerCase().includes('test') || 
-      signature.toLowerCase().includes('test') ||
-      rawUserId === "123";
-
-    // 🔒 2. التحقق الأمني من الـ Signature (SHA-1) بناءً على وثيقتك المرفقة 🔒
-    if (!isTestRequest) {
-      // الترتيب الرسمي المعتمد في التوثيق: userId + offer_id + event + APP_KEY + SECRET_KEY
-      const stringToHash = `${rawUserId}${offerId}${eventName}${PLAYTIME_APP_KEY}${PLAYTIME_SECRET_KEY}`;
-      const calculatedSignature = crypto.createHash('sha1').update(stringToHash).digest('hex');
-
-      if (signature.toLowerCase() !== calculatedSignature.toLowerCase()) {
-        console.error(`❌ Playtime Security Warning: Signature Mismatch! Calculated: ${calculatedSignature}, Received: ${signature}`);
-        return NextResponse.json({ error: 'Invalid signature hash' }, { status: 403 });
-      }
-    }
-
-    // 3. تنظيف الـ userId وتوجيهه لحسابك فوراً لتأمين الفحص والتجربة الحية
-    let userId = rawUserId;
-    if (userId.startsWith('TEST_') || userId === "123" || isTestRequest) {
-      userId = "YjkvTqAkpMhpmj6ts19g6bvhBDx1"; // حسابك الشخصي المعتمد للتجربة عشان النقاط تجيك فوراً
-    }
-
-    // 4. تحويل النقاط إلى عدد صحيح متوافق مع الفايربيس (int64) لضمان نزولها بالرصيد فوراً
-    const finalPoints = Math.floor(pointsToReward);
-
-    // 5. منع تكرار المعاملة (Deduplication) باستخدام الـ Signature كمُعرّف فريد
-    const transactionId = `playtime_${signature.slice(0, 30)}`; 
-    const transactionRef = adminDb.collection('transactions').doc(transactionId);
-    
-    if (!isTestRequest) {
-      const transactionDoc = await transactionRef.get();
-      if (transactionDoc.exists) {
-        return NextResponse.json({ success: true, message: 'Transaction already processed' }, { status: 200 });
-      }
-    }
-
-    const userRef = adminDb.collection('users').doc(userId);
+    const userRef = adminDb.collection('users').doc(firebase_uid);
     const notificationRef = adminDb.collection('notifications').doc();
-    const liveFeedRef = adminDb.collection('live_feed').doc();
 
-    const displayEvent = eventName ? ` (${eventName})` : '';
-    const finalOfferTitle = `${offerName}${displayEvent}`;
-
-    let userTokens: string[] = [];
-    let finalUsername = "User";
-    let finalPhotoURL = "";
-
-    // 🔥 6. تشغيل العملية المترابطة الآمنة وشحن كل حقول النقاط المحتملة في السيرفر 🔥
+    // 4. تشغيل العملية التبادلية (Transaction) للشحن المباشر في Firestore
     await adminDb.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
       
       if (!userDoc.exists) {
-        finalPhotoURL = "";
-        finalUsername = "Test User";
-        
-        // شحن الحساب بكل الصياغات الممكنة للـ UI لكي تظهر النقاط فوراً في أي مكان بالموقع
-        ts.set(userRef, { 
-          points: finalPoints, 
-          balance: finalPoints, 
-          MC: finalPoints,
-          mc: finalPoints,
-          totalEarned: finalPoints,
-          email: "test_playtime@mrcash.app", 
-          createdAt: new Date(),
-          uid: userId,
-          username: finalUsername,
-          photoURL: finalPhotoURL,
-          xp: finalPoints
-        });
-      } else {
-        const userData = userDoc.data();
-        finalUsername = userData?.username || userData?.displayName || "User";
-        finalPhotoURL = userData?.photoURL || userData?.avatarUrl || "";
-        userTokens = userData?.fcmTokens || []; // جلب توكنز الأجهزة لإرسال الإشعار المنبثق
-
-        const currentPoints = Number(userData?.points || 0);
-        const currentBalance = Number(userData?.balance || 0);
-        const currentMC = Number(userData?.MC || userData?.mc || 0);
-        const currentTotal = Number(userData?.totalEarned || 0);
-        const currentXp = Number(userData?.xp || 0);
-
-        // شحن كافة حقول الرصيد المعتمدة بالأعداد الصحيحة لتظهر في الواجهة مباشرة بدون أي تأخير
-        ts.update(userRef, { 
-          points: currentPoints + finalPoints,
-          balance: currentBalance + finalPoints,
-          MC: currentMC + finalPoints,
-          mc: currentMC + finalPoints,
-          totalEarned: currentTotal + finalPoints,
-          xp: currentXp + finalPoints
-        });
+        // في البيئة الحقيقية، لا يجب شحن حساب غير موجود لتفادي الاختراقات وحسابات البوتات
+        throw new Error(`User ${firebase_uid} does not exist in database.`);
       }
 
-      // أ) تدوين حركة المال بجدول السجلات التاريخية للعمليات
+      const userData = userDoc.data();
+      const currentPoints = userData?.points || 0;
+      const currentBalance = userData?.balance || 0;
+      const currentMC = userData?.MC || userData?.mc || 0;
+      const currentTotal = userData?.totalEarned || 0;
+      const currentXp = userData?.xp || 0;
+
+      // تحديث كافة حقول الأرباح والـ MC في تطبيق MrCash فوراً وبشكل تراكمي آمن
+      ts.update(userRef, { 
+        points: currentPoints + finalReward,
+        balance: currentBalance + finalReward,
+        MC: currentMC + finalReward,
+        mc: currentMC + finalReward,
+        totalEarned: currentTotal + finalReward,
+        xp: currentXp + finalReward
+      });
+
+      // أ) تسجيل الفاتورة التاريخية في الأرشيف
       ts.set(transactionRef, {
-        userId: userId,
-        amount: finalPoints,
-        points: finalPoints,
+        userId: firebase_uid,
+        amount: finalReward,
         type: 'offer_credit',
         offerId: offerId,
-        offerName: `${finalOfferTitle} (Playtime)`,
+        offerName: `${offerName} (Playtime)`,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        status: 'completed'
+        status: 'completed',
+        signature: incomingSignature
       });
 
-      // ب) 🔔 تحديث شريط الـ Live Feed فورياً ليظهر المستخدم والأفاتار الحقيقي الخاص به 🔔
-      ts.set(liveFeedRef, {
-        userId: userId,
-        username: finalUsername,
-        points: finalPoints,
-        offerName: finalOfferTitle,
-        source: 'PlaytimeSdk',
-        photoURL: finalPhotoURL,
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      // ج) صياغة الإشعار اللحظي للموقع لجرس التنبيهات والـ Toast الداخلي للواجهة
+      // ب) إرسال الإشعار لتنبيه الـ Toast المنبثق في تطبيق MrCash
       ts.set(notificationRef, {
-        userId: userId,
+        userId: firebase_uid,
         title: "🎉 Points Credited!",
-        message: `Your account has been credited with +${finalPoints} points for completing: [ ${finalOfferTitle} ] from Playtime.`,
+        message: `Your account has been credited with +${finalReward} points for completing: [ ${offerName} ] from Playtime.`,
         type: "offer_credit",
         read: false,
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
     });
 
-    // 🚀 7. إرسال إشعار الدفع الفوري (FCM Push Notification) لخلفية المتصفح والجوال 🚀
-    if (userTokens && userTokens.length > 0) {
-      const payload = {
-        notification: {
-          title: '🎉 Points Credited!',
-          body: `Your account has been credited with +${finalPoints} MC for completing tasks from Playtime.`,
-          icon: '/logo.png',
-        }
-      };
-
-      const sendPromises = userTokens.map(async (token) => {
-        try {
-          await admin.messaging().send({
-            token: token,
-            notification: payload.notification,
-          });
-        } catch (fcmErr) {
-          console.error(`[FCM Error] Failed sending to token: ${token}`);
-        }
-      });
-      await Promise.all(sendPromises);
-    }
-
-    console.log(`[Playtime Success] Clean hash matched! Credited +${finalPoints} MC & Updated Live Feed/FCM for user ${userId}`);
-    return NextResponse.json({ success: true, message: 'Processed successfully' }, { status: 200 });
+    // الرد بـ ok حسب طلب المنصات الإعلانية عند نجاح العملية بالكامل
+    return new NextResponse("ok", { status: 200 });
 
   } catch (error: any) {
-    console.error('❌ Playtime Postback Critical Error:', error.message);
-    return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
+    console.error("❌ Playtime Postback Critical Error:", error.message);
+    // إذا كان الخطأ بسبب أن المستخدم غير موجود، نرجع 400، عدا ذلك نرجع 500 لإعادة المحاولة
+    const statusCode = error.message.includes('does not exist') ? 400 : 500;
+    return new NextResponse(`ERROR: ${error.message}`, { status: statusCode });
   }
 }
 
-export async function POST(request: NextRequest) {
-  return GET(request);
+export async function GET(req: NextRequest) {
+  return POST(req);
 }
