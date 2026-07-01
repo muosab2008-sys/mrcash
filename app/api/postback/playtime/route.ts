@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
-import crypto from 'crypto'; // مدمجة في Node.js لعمل تشفير SHA-1
+import crypto from 'crypto'; 
 
 export const dynamic = 'force-dynamic';
 
-// جلب المفاتيح الخاصة بـ Playtime SDK من متغيرات البيئة (.env) لحمايتها
-const PLAYTIME_APP_KEY = process.env.PLAYTIME_APP_KEY || "YOUR_APPLICATION_KEY";
-const PLAYTIME_SECRET_KEY = process.env.PLAYTIME_SECRET_KEY || "YOUR_APPLICATION_SECRET_KEY";
+const PLAYTIME_APP_KEY = process.env.PLAYTIME_APP_KEY || "";
+const PLAYTIME_SECRET_KEY = process.env.PLAYTIME_SECRET_KEY || "";
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. استخراج المتغيرات من الرابط (URL Query) أو جسم الطلب (Body)
     const urlParams = new URL(req.url).searchParams;
     let bodyParams: any = {};
 
@@ -22,58 +20,57 @@ export async function POST(req: NextRequest) {
       try { bodyParams = await req.json(); } catch (jsError) { bodyParams = {}; }
     }
 
-    // مطابقة المتغيرات بناءً على توثيق Playtime SDK الرسمي
+    // جلب المتغيرات بناءً على الرابط المعتمد لديك
     const firebase_uid = urlParams.get('user_id') || bodyParams.user_id;
     const offerId = urlParams.get('offer_id') || bodyParams.offer_id;
     const offerName = urlParams.get('offer_name') || bodyParams.offer_name || "Playtime Offer";
     const amountRaw = urlParams.get('amount') || bodyParams.amount;
-    const txn_id = urlParams.get('signature') || bodyParams.signature; // نستخدم الـ signature كـ ID فريد للمعاملة لمنع التكرار
     const incomingSignature = urlParams.get('signature') || bodyParams.signature;
-    const eventName = urlParams.get('event') || bodyParams.event || "";
+    const eventName = urlParams.get('event') || bodyParams.event || ""; 
+    const payout = urlParams.get('payout') || bodyParams.payout || "";
 
-    // التحقق من المعاملات الأساسية لضمان سلامة الطلب
+    console.log("📥 Playtime Active Request:", { firebase_uid, offerId, amountRaw, incomingSignature, eventName });
+
     if (!firebase_uid || !offerId || !incomingSignature || !amountRaw) {
-      console.warn("⚠️ Playtime Postback: Missing vital parameters.");
+      console.warn("⚠️ Playtime Postback: Missing parameters.");
       return new NextResponse("ERROR: Missing Parameters", { status: 400 });
     }
 
-    // 2. نظام نظام الحماية والتوثيق (Signature Validation)
-    // التوثيق يطلب: sha1(user_id + offer_id + event + APP_KEY + SECRET_KEY)
+    // بناء وتجربة التوقيع الرقمي حسب توثيق SDK
     const dataToHash = `${firebase_uid}${offerId}${eventName}${PLAYTIME_APP_KEY}${PLAYTIME_SECRET_KEY}`;
     const calculatedSignature = crypto.createHash('sha1').update(dataToHash).digest('hex');
 
+    // التحقق من التوقيع الرقمي
     if (incomingSignature !== calculatedSignature) {
-      console.error(`❌ Playtime Security Warning: Invalid Signature Attempt for user: ${firebase_uid}`);
+      console.error(`❌ Playtime Signature Mismatch.\nIncoming: ${incomingSignature}\nCalculated: ${calculatedSignature}`);
+      
+      // إذا كنت في مرحلة الفحص النهائي وتواجه مشكلة التشفير بسبب أداة التست، 
+      // يمكنك تعطيل السطر التالي مؤقتاً برمز // لرؤية النقاط وهي تُشحن، ثم إعادته للإنتاج.
       return new NextResponse("ERROR: Invalid Signature", { status: 403 });
     }
 
-    // تحويل النقاط إلى رقم صحيح آمن
     const finalReward = Math.floor(Number(amountRaw));
     if (finalReward <= 0) {
-      console.warn(`⚠️ Playtime Postback: Zero or invalid points received: ${amountRaw}`);
       return new NextResponse("ERROR: Invalid Amount", { status: 400 });
     }
 
-    // 3. فحص ومنع تكرار المعاملة (Deduplication)
-    // نستخدم الـ signature الفريد المتولد من الشركة كـ Document ID لضمان عدم تكرار نفس العملية أبداً
+    // منع تكرار المعاملة
     const transactionRef = adminDb.collection('transactions').doc(`playtime_${incomingSignature}`);
     const transactionDoc = await transactionRef.get();
     
     if (transactionDoc.exists) {
-      console.log(`ℹ️ Playtime Postback: Duplicate transaction skipped: ${incomingSignature}`);
-      return new NextResponse("ok", { status: 200 }); // مكرر، نرد بـ ok لمنع الخسارة المادية والشحن المزدوج
+      console.log(`ℹ️ Duplicate transaction: ${incomingSignature}`);
+      return new NextResponse("ok", { status: 200 });
     }
 
     const userRef = adminDb.collection('users').doc(firebase_uid);
     const notificationRef = adminDb.collection('notifications').doc();
 
-    // 4. تشغيل العملية التبادلية (Transaction) للشحن المباشر في Firestore
     await adminDb.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
       
       if (!userDoc.exists) {
-        // في البيئة الحقيقية، لا يجب شحن حساب غير موجود لتفادي الاختراقات وحسابات البوتات
-        throw new Error(`User ${firebase_uid} does not exist in database.`);
+        throw new Error(`User ${firebase_uid} not found`);
       }
 
       const userData = userDoc.data();
@@ -83,7 +80,6 @@ export async function POST(req: NextRequest) {
       const currentTotal = userData?.totalEarned || 0;
       const currentXp = userData?.xp || 0;
 
-      // تحديث كافة حقول الأرباح والـ MC في تطبيق MrCash فوراً وبشكل تراكمي آمن
       ts.update(userRef, { 
         points: currentPoints + finalReward,
         balance: currentBalance + finalReward,
@@ -93,10 +89,10 @@ export async function POST(req: NextRequest) {
         xp: currentXp + finalReward
       });
 
-      // أ) تسجيل الفاتورة التاريخية في الأرشيف
       ts.set(transactionRef, {
         userId: firebase_uid,
         amount: finalReward,
+        payout: payout,
         type: 'offer_credit',
         offerId: offerId,
         offerName: `${offerName} (Playtime)`,
@@ -105,7 +101,6 @@ export async function POST(req: NextRequest) {
         signature: incomingSignature
       });
 
-      // ب) إرسال الإشعار لتنبيه الـ Toast المنبثق في تطبيق MrCash
       ts.set(notificationRef, {
         userId: firebase_uid,
         title: "🎉 Points Credited!",
@@ -116,13 +111,12 @@ export async function POST(req: NextRequest) {
       });
     });
 
-    // الرد بـ ok حسب طلب المنصات الإعلانية عند نجاح العملية بالكامل
+    console.log(`✅ Successfully credited ${finalReward} points to ${firebase_uid}`);
     return new NextResponse("ok", { status: 200 });
 
   } catch (error: any) {
-    console.error("❌ Playtime Postback Critical Error:", error.message);
-    // إذا كان الخطأ بسبب أن المستخدم غير موجود، نرجع 400، عدا ذلك نرجع 500 لإعادة المحاولة
-    const statusCode = error.message.includes('does not exist') ? 400 : 500;
+    console.error("❌ Playtime Critical Error:", error.message);
+    const statusCode = error.message.includes('not found') ? 400 : 500;
     return new NextResponse(`ERROR: ${error.message}`, { status: statusCode });
   }
 }
