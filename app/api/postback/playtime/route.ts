@@ -8,19 +8,28 @@ export const dynamic = 'force-dynamic';
 const PLAYTIME_APP_KEY = process.env.PLAYTIME_APP_KEY || "";
 const PLAYTIME_SECRET_KEY = process.env.PLAYTIME_SECRET_KEY || "";
 
-export async function POST(req: NextRequest) {
+// دالة معالجة البيانات الموحدة
+async function handlePostback(req: NextRequest, isGetMethod: boolean) {
   try {
     const urlParams = new URL(req.url).searchParams;
     let bodyParams: any = {};
 
-    try {
-      const formData = await req.formData();
-      formData.forEach((value, key) => { bodyParams[key] = value; });
-    } catch (e) {
-      try { bodyParams = await req.json(); } catch (jsError) { bodyParams = {}; }
+    // نقرأ الـ body فقط إذا كان الطلب POST أو PUT لضمان عدم حدوث Crash
+    if (!isGetMethod) {
+      try {
+        const contentType = req.headers.get('content-type') || '';
+        if (contentType.includes('form-data') || contentType.includes('x-www-form-urlencoded')) {
+          const formData = await req.formData();
+          formData.forEach((value, key) => { bodyParams[key] = value; });
+        } else if (contentType.includes('application/json')) {
+          bodyParams = await req.json();
+        }
+      } catch (e) {
+        console.warn("⚠️ Could not parse request body, falling back to URL params.");
+      }
     }
 
-    // جلب المتغيرات بناءً على الرابط المعتمد لديك
+    // جلب المتغيرات من الـ URL أو الـ Body
     const firebase_uid = urlParams.get('user_id') || bodyParams.user_id;
     const offerId = urlParams.get('offer_id') || bodyParams.offer_id;
     const offerName = urlParams.get('offer_name') || bodyParams.offer_name || "Playtime Offer";
@@ -29,23 +38,22 @@ export async function POST(req: NextRequest) {
     const eventName = urlParams.get('event') || bodyParams.event || ""; 
     const payout = urlParams.get('payout') || bodyParams.payout || "";
 
-    console.log("📥 Playtime Active Request:", { firebase_uid, offerId, amountRaw, incomingSignature, eventName });
+    console.log(`📥 [${req.method}] Playtime Postback Incoming:`, { firebase_uid, offerId, amountRaw, incomingSignature, eventName });
 
     if (!firebase_uid || !offerId || !incomingSignature || !amountRaw) {
-      console.warn("⚠️ Playtime Postback: Missing parameters.");
+      console.warn("⚠️ Playtime Postback: Missing vital parameters.");
       return new NextResponse("ERROR: Missing Parameters", { status: 400 });
     }
 
-    // بناء وتجربة التوقيع الرقمي حسب توثيق SDK
+    // حساب الـ Signature
     const dataToHash = `${firebase_uid}${offerId}${eventName}${PLAYTIME_APP_KEY}${PLAYTIME_SECRET_KEY}`;
     const calculatedSignature = crypto.createHash('sha1').update(dataToHash).digest('hex');
 
-    // التحقق من التوقيع الرقمي
+    console.log(`🔍 Signature Check:\nIncoming: ${incomingSignature}\nCalculated: ${calculatedSignature}`);
+
+    // 🚨 تنبيه فحص حرج: إذا كانت أداة الفحص تولد سيكنتشر مختلف، قم بتعطيل هذا الشرط مؤقتاً برمز // للتأكد من وصول النقاط
     if (incomingSignature !== calculatedSignature) {
-      console.error(`❌ Playtime Signature Mismatch.\nIncoming: ${incomingSignature}\nCalculated: ${calculatedSignature}`);
-      
-      // إذا كنت في مرحلة الفحص النهائي وتواجه مشكلة التشفير بسبب أداة التست، 
-      // يمكنك تعطيل السطر التالي مؤقتاً برمز // لرؤية النقاط وهي تُشحن، ثم إعادته للإنتاج.
+      console.error(`❌ Playtime Signature Mismatch!`);
       return new NextResponse("ERROR: Invalid Signature", { status: 403 });
     }
 
@@ -54,12 +62,12 @@ export async function POST(req: NextRequest) {
       return new NextResponse("ERROR: Invalid Amount", { status: 400 });
     }
 
-    // منع تكرار المعاملة
+    // منع التكرار
     const transactionRef = adminDb.collection('transactions').doc(`playtime_${incomingSignature}`);
     const transactionDoc = await transactionRef.get();
     
     if (transactionDoc.exists) {
-      console.log(`ℹ️ Duplicate transaction: ${incomingSignature}`);
+      console.log(`ℹ️ Duplicate transaction skipped: ${incomingSignature}`);
       return new NextResponse("ok", { status: 200 });
     }
 
@@ -70,7 +78,7 @@ export async function POST(req: NextRequest) {
       const userDoc = await ts.get(userRef);
       
       if (!userDoc.exists) {
-        throw new Error(`User ${firebase_uid} not found`);
+        throw new Error(`User ${firebase_uid} not found in database.`);
       }
 
       const userData = userDoc.data();
@@ -121,6 +129,10 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export async function POST(req: NextRequest) {
+  return handlePostback(req, false);
+}
+
 export async function GET(req: NextRequest) {
-  return POST(req);
+  return handlePostback(req, true);
 }
