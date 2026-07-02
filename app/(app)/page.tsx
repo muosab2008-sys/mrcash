@@ -1,6 +1,6 @@
 "use client";
 
-
+// Force rebuild
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
@@ -63,9 +63,9 @@ export default function EarnPage() {
   const [votes, setVotes] = useState<Record<string, VoteData>>({});
   const [votingId, setVotingId] = useState<string | null>(null);
 
-  // ستايت خاصة بعداد النقرات السري للمستخدم على الشركة المقفلة
+  // ستايت لحساب النقرات السرية والتخطي الوهمي فقط للواجهة
   const [secretClickCount, setSecretClickCount] = useState(0);
-  const [hasTriggeredSecret, setHasTriggeredSecret] = useState(false);
+  const [isBypassed, setIsBypassed] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, "offerwalls"), orderBy("avgPoints", "desc"));
@@ -205,38 +205,21 @@ export default function EarnPage() {
     return urls[wall.id] || wall.url;
   };
 
-  // احتساب المستوى ديناميكياً: كل 10,000 نقطة تعطي لفل واحد
-  // إذا تم تفعيل الثغرة، نقوم بإعطائه المستوى 10 تلقائياً (عبر تعويض نقاط وهمي)
-  const baseTotalEarned = userData?.totalEarned || 0;
-  const simulatedTotalEarned = hasTriggeredSecret ? Math.max(90000, baseTotalEarned) : baseTotalEarned;
-
+  // ليفل حقيقي 100% يعتمد فقط على الـ Firestore الخاص بالمستخدم
   const pointsPerLevel = 10000;
-  const currentLevel = Math.floor(simulatedTotalEarned / pointsPerLevel) + 1;
-  const pointsInCurrentLevel = simulatedTotalEarned % pointsPerLevel;
+  const currentLevel = Math.floor((userData?.totalEarned || 0) / pointsPerLevel) + 1;
+  const pointsInCurrentLevel = (userData?.totalEarned || 0) % pointsPerLevel;
   const levelProgress = (pointsInCurrentLevel / pointsPerLevel) * 100;
 
-  // وظيفة التعامل مع النقرات على كرت الحظر لاكتشاف الثغرة
-  const handleLockedCardClick = async (wallId: string) => {
-    if (wallId !== "adtogame" || hasTriggeredSecret) return;
+  // وظيفة معالجة النقرات على جدار القفل للثغرة
+  const handleLockedCardClick = (wallId: string) => {
+    if (wallId !== "adtogame" || isBypassed) return;
 
     const nextCount = secretClickCount + 1;
     setSecretClickCount(nextCount);
 
     if (nextCount >= 10) {
-      setHasTriggeredSecret(true);
-      
-      // اختيار اختياري: إذا أردت حفظ النقاط والمستوى الجديد في الفايربيس بشكل دائم
-      if (userData?.uid) {
-        try {
-          const userRef = doc(db, "users", userData.uid);
-          await updateDoc(userRef, {
-            totalEarned: increment(90000), // يضيف نقاط لجعله لفل 10 فوراً
-            points: increment(90000)
-          });
-        } catch (e) {
-          console.error("Firebase update failed, keeping bypass local:", e);
-        }
-      }
+      setIsBypassed(true); // نفتح الشركة واجهياً فقط دون المساس بالنقاط واللفل الحقيقيين!
     }
   };
 
@@ -282,14 +265,10 @@ export default function EarnPage() {
             <div className="min-w-0 flex-1">
               <p className="text-sm text-muted-foreground font-medium">Available Balance</p>
               <div className="flex items-baseline gap-2">
-                <p className="text-3xl font-black text-foreground">
-                  {hasTriggeredSecret ? ((userData?.points ?? 0) + 90000).toLocaleString() : (userData?.points ?? 0).toLocaleString()}
-                </p>
+                <p className="text-3xl font-black text-foreground">{(userData?.points ?? 0).toLocaleString()}</p>
                 <span className="text-sm text-muted-foreground">MC</span>
               </div>
-              <p className="text-xs text-primary font-medium">
-                = ${pointsToUSD(hasTriggeredSecret ? (userData?.points ?? 0) + 90000 : (userData?.points ?? 0))} USD
-              </p>
+              <p className="text-xs text-primary font-medium">= ${pointsToUSD(userData?.points ?? 0)} USD</p>
             </div>
           </CardContent>
         </Card>
@@ -334,15 +313,15 @@ export default function EarnPage() {
               const wallVotes = votes[wall.id] || { likes: wall.likes || 0, dislikes: wall.dislikes || 0, userVote: null };
               const isVoting = votingId === wall.id;
               
-              // تحديد حالة القفل بناءً على المستوى الجديد المحسوب
-              const isLocked = wall.id === "adtogame" && currentLevel < 10;
+              // الشرط: مقفل إذا كان لفل المستخدم الحقيقي أقل من 10 ولم يقم بتفعيل التخطي الوهمي (الثغرة)
+              const isLocked = wall.id === "adtogame" && currentLevel < 10 && !isBypassed;
 
               return (
                 <div 
                   key={wall.id} 
                   onClick={() => { 
                     if (isLocked) {
-                      handleLockedCardClick(wall.id); // استدعاء دالة حساب نقرات الثغرة عند محاولة الضغط
+                      handleLockedCardClick(wall.id); // زيادة العداد عند الضغط على الكرت المقفل
                       return;
                     }
                     const url = getDynamicUrl(wall); 
