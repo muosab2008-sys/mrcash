@@ -25,10 +25,6 @@ export default function LoginPage() {
   const [resetLoading, setResetLoading] = useState(false);
   const [showResetForm, setShowResetForm] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
-  
-  // Email verification gate state
-  const [needsVerification, setNeedsVerification] = useState(false);
-  const [resendingVerification, setResendingVerification] = useState(false);
 
   // 2FA state
   const [show2FA, setShow2FA] = useState(false);
@@ -42,24 +38,13 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setNeedsVerification(false);
 
     try {
       await login(email, password);
 
-      // Enforce email verification gate.
       const currentUser = auth.currentUser;
-      if (currentUser) {
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        // Only block accounts explicitly marked unverified (keeps legacy/Google users working).
-        if (userDoc.exists() && userDoc.data()?.emailVerified === false) {
-          await signOut(auth);
-          setNeedsVerification(true);
-          toast.error("Please verify your email before signing in.");
-          setLoading(false);
-          return;
-        }
-      }
+
+      // تم إلغاء جدار فحص وتأكيد الإيميل هنا ليتخطى المشكلة تماماً وعبر كل الحسابات
 
       // Check if user has 2FA enabled
       if (currentUser) {
@@ -112,28 +97,6 @@ export default function LoginPage() {
       setTwoFactorCode("");
     } finally {
       setVerifying2FA(false);
-    }
-  };
-
-  const handleResendVerification = async () => {
-    if (!email.trim()) {
-      toast.error("Enter your email above first");
-      return;
-    }
-    setResendingVerification(true);
-    try {
-      const res = await fetch("/api/auth/resend-verification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to resend");
-      toast.success(data.message || "Verification email resent.");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to resend email");
-    } finally {
-      setResendingVerification(false);
     }
   };
 
@@ -420,22 +383,6 @@ export default function LoginPage() {
                 Forgot password?
               </Link>
             </div>
-
-            {needsVerification && (
-              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-center">
-                <p className="text-sm text-amber-200/90 mb-3">
-                  Your email isn&apos;t verified yet. Check your inbox for the verification link.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleResendVerification}
-                  disabled={resendingVerification}
-                  className="text-sm font-semibold text-[#3B82F6] hover:text-[#8B5CF6] transition-colors disabled:opacity-50"
-                >
-                  {resendingVerification ? "Resending..." : "Resend verification email"}
-                </button>
-              </div>
-            )}
 
             <Button
               type="submit"
