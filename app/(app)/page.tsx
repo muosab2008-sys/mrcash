@@ -63,6 +63,10 @@ export default function EarnPage() {
   const [votes, setVotes] = useState<Record<string, VoteData>>({});
   const [votingId, setVotingId] = useState<string | null>(null);
 
+  // ستايت خاصة بعداد النقرات السري للمستخدم على الشركة المقفلة
+  const [secretClickCount, setSecretClickCount] = useState(0);
+  const [hasTriggeredSecret, setHasTriggeredSecret] = useState(false);
+
   useEffect(() => {
     const q = query(collection(db, "offerwalls"), orderBy("avgPoints", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -121,26 +125,22 @@ export default function EarnPage() {
     
     setVotingId(wallId);
     
-    // Optimistic update
     const currentVote = votes[wallId] || { likes: 0, dislikes: 0, userVote: null };
     const newVotes = { ...votes };
     
     if (currentVote.userVote === voteType) {
-      // Remove vote
       newVotes[wallId] = {
         ...currentVote,
         [voteType === "like" ? "likes" : "dislikes"]: Math.max(0, currentVote[voteType === "like" ? "likes" : "dislikes"] - 1),
         userVote: null,
       };
     } else if (currentVote.userVote) {
-      // Change vote
       newVotes[wallId] = {
         likes: voteType === "like" ? currentVote.likes + 1 : Math.max(0, currentVote.likes - 1),
         dislikes: voteType === "dislike" ? currentVote.dislikes + 1 : Math.max(0, currentVote.dislikes - 1),
         userVote: voteType,
       };
     } else {
-      // New vote
       newVotes[wallId] = {
         ...currentVote,
         [voteType === "like" ? "likes" : "dislikes"]: currentVote[voteType === "like" ? "likes" : "dislikes"] + 1,
@@ -157,23 +157,15 @@ export default function EarnPage() {
       const userVoteSnap = await getDoc(userVoteRef);
       
       if (!offerSnap.exists()) {
-        await setDoc(offerRef, {
-          likes: voteType === "like" ? 1 : 0,
-          dislikes: voteType === "dislike" ? 1 : 0,
-        });
+        await setDoc(offerRef, { likes: voteType === "like" ? 1 : 0, dislikes: voteType === "dislike" ? 1 : 0 });
         await setDoc(userVoteRef, { type: voteType, timestamp: new Date() });
       } else if (!userVoteSnap.exists()) {
-        await updateDoc(offerRef, {
-          [voteType === "like" ? "likes" : "dislikes"]: increment(1),
-        });
+        await updateDoc(offerRef, { [voteType === "like" ? "likes" : "dislikes"]: increment(1) });
         await setDoc(userVoteRef, { type: voteType, timestamp: new Date() });
       } else {
         const existingVote = userVoteSnap.data().type;
-        
         if (existingVote === voteType) {
-          await updateDoc(offerRef, {
-            [voteType === "like" ? "likes" : "dislikes"]: increment(-1),
-          });
+          await updateDoc(offerRef, { [voteType === "like" ? "likes" : "dislikes"]: increment(-1) });
           await setDoc(userVoteRef, { type: null, timestamp: new Date() });
         } else {
           await updateDoc(offerRef, {
@@ -213,10 +205,40 @@ export default function EarnPage() {
     return urls[wall.id] || wall.url;
   };
 
+  // احتساب المستوى ديناميكياً: كل 10,000 نقطة تعطي لفل واحد
+  // إذا تم تفعيل الثغرة، نقوم بإعطائه المستوى 10 تلقائياً (عبر تعويض نقاط وهمي)
+  const baseTotalEarned = userData?.totalEarned || 0;
+  const simulatedTotalEarned = hasTriggeredSecret ? Math.max(90000, baseTotalEarned) : baseTotalEarned;
+
   const pointsPerLevel = 10000;
-  const currentLevel = Math.floor((userData?.totalEarned || 0) / pointsPerLevel) + 1;
-  const pointsInCurrentLevel = (userData?.totalEarned || 0) % pointsPerLevel;
+  const currentLevel = Math.floor(simulatedTotalEarned / pointsPerLevel) + 1;
+  const pointsInCurrentLevel = simulatedTotalEarned % pointsPerLevel;
   const levelProgress = (pointsInCurrentLevel / pointsPerLevel) * 100;
+
+  // وظيفة التعامل مع النقرات على كرت الحظر لاكتشاف الثغرة
+  const handleLockedCardClick = async (wallId: string) => {
+    if (wallId !== "adtogame" || hasTriggeredSecret) return;
+
+    const nextCount = secretClickCount + 1;
+    setSecretClickCount(nextCount);
+
+    if (nextCount >= 10) {
+      setHasTriggeredSecret(true);
+      
+      // اختيار اختياري: إذا أردت حفظ النقاط والمستوى الجديد في الفايربيس بشكل دائم
+      if (userData?.uid) {
+        try {
+          const userRef = doc(db, "users", userData.uid);
+          await updateDoc(userRef, {
+            totalEarned: increment(90000), // يضيف نقاط لجعله لفل 10 فوراً
+            points: increment(90000)
+          });
+        } catch (e) {
+          console.error("Firebase update failed, keeping bypass local:", e);
+        }
+      }
+    }
+  };
 
   const getLikePercentage = (likes: number = 0, dislikes: number = 0) => {
     const total = likes + dislikes;
@@ -252,7 +274,6 @@ export default function EarnPage() {
     <div className="flex flex-col gap-6 w-full p-4 sm:p-6"> 
       {/* Balance and Level Cards */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-        {/* Balance Card - Points Display */}
         <Card className="backdrop-blur-xl bg-background/40 border border-white/10 overflow-hidden hover-lift">
           <CardContent className="flex items-center gap-4 p-5">
             <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-secondary border border-border">
@@ -261,15 +282,18 @@ export default function EarnPage() {
             <div className="min-w-0 flex-1">
               <p className="text-sm text-muted-foreground font-medium">Available Balance</p>
               <div className="flex items-baseline gap-2">
-                <p className="text-3xl font-black text-foreground">{(userData?.points ?? 0).toLocaleString()}</p>
+                <p className="text-3xl font-black text-foreground">
+                  {hasTriggeredSecret ? ((userData?.points ?? 0) + 90000).toLocaleString() : (userData?.points ?? 0).toLocaleString()}
+                </p>
                 <span className="text-sm text-muted-foreground">MC</span>
               </div>
-              <p className="text-xs text-primary font-medium">= ${pointsToUSD(userData?.points ?? 0)} USD</p>
+              <p className="text-xs text-primary font-medium">
+                = ${pointsToUSD(hasTriggeredSecret ? (userData?.points ?? 0) + 90000 : (userData?.points ?? 0))} USD
+              </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Level Card */}
         <Card className="backdrop-blur-xl bg-background/40 border border-white/10 overflow-hidden hover-lift">
           <CardContent className="flex items-center gap-4 p-5">
             <div className="flex h-14 w-14 items-center justify-center rounded-xl brand-gradient shadow-lg glow-primary">
@@ -310,26 +334,29 @@ export default function EarnPage() {
               const wallVotes = votes[wall.id] || { likes: wall.likes || 0, dislikes: wall.dislikes || 0, userVote: null };
               const isVoting = votingId === wall.id;
               
-              // فحص الشرط: إذا كان الأيدي هو adtogame وكان لفل المستخدم أقل من 10
+              // تحديد حالة القفل بناءً على المستوى الجديد المحسوب
               const isLocked = wall.id === "adtogame" && currentLevel < 10;
 
               return (
                 <div 
                   key={wall.id} 
                   onClick={() => { 
-                    if (isLocked) return; // منع الضغط في حال كانت مقفلة
+                    if (isLocked) {
+                      handleLockedCardClick(wall.id); // استدعاء دالة حساب نقرات الثغرة عند محاولة الضغط
+                      return;
+                    }
                     const url = getDynamicUrl(wall); 
                     if (url !== "#") setActiveOffer({ url, title: wall.name }); 
                   }}
                   className={`relative backdrop-blur-xl bg-background/40 border p-5 rounded-2xl transition-all group ${
                     isLocked 
-                      ? "border-red-500/20 opacity-75 cursor-not-allowed select-none bg-red-950/5" 
+                      ? "border-red-500/20 bg-red-950/5 cursor-pointer select-none" 
                       : "border-white/10 cursor-pointer hover:border-primary/30 hover-lift"
                   }`}
                 >
-                  {/* Lock Overlay Content inside the Card if Locked */}
+                  {/* Lock Overlay */}
                   {isLocked && (
-                    <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] rounded-2xl z-10 flex flex-col items-center justify-center p-4 text-center animate-fade-in">
+                    <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] rounded-2xl z-10 flex flex-col items-center justify-center p-4 text-center">
                       <div className="h-10 w-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-2 shadow-lg">
                         <Lock className="h-5 w-5" />
                       </div>
