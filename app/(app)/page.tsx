@@ -10,15 +10,12 @@ import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X, ArrowLeft, Maximize2, ThumbsUp, ThumbsDown, Flame, Trophy, TrendingUp } from "lucide-react"; 
+import { X, ArrowLeft, Maximize2, ThumbsUp, ThumbsDown, Flame, Trophy, TrendingUp, Lock } from "lucide-react"; 
 
 import Image from "next/image";
 
-
 // Helper function to convert points to USD (1000 points = $1)
 const pointsToUSD = (points: number) => (points / 1000).toFixed(2);
-
-
 
 interface Offerwall { 
   id: string; 
@@ -209,8 +206,8 @@ export default function EarnPage() {
       klink: `https://offerwall.klinkfinance.com/wall?pub_id=a8d01294-6455-411d-8f03-cc1d716c241d&user_id=${uid}`,
       clickwall: `https://clickwall.net/app/iframe/10656/${uid}`,
       notik: `https://notik.me/coins?api_key=NofGnODVnHB3werypR5PRKx5ew8fTbB4&pub_id=Yog41D&app_id=psPQDvAS3y&user_id=${uid}`,
-      ovnix: `https://offerwall.ovnix.io?pk=02AA7F9AFBA05DB22666&sub1=USER_ID}`,
-      upwall: `https://offerwall.upwall.io/?app_id=6ff3-bd30-f8e8-4fa9&userid={uniqueUserID}`,
+      ovnix: `https://offerwall.ovnix.io?pk=02AA7F9AFBA05DB22666&sub1=${uid}`,
+      upwall: `https://offerwall.upwall.io/?app_id=6ff3-bd30-f8e8-4fa9&userid=${uid}`,
       adbreak: `https://wall.adbreakmedia.com/11fff2ba859f2bc8b975d98d3d93b104c5c0389ff1fed4cbded445571a0c63da/${uid}`,
     };
     return urls[wall.id] || wall.url;
@@ -313,14 +310,41 @@ export default function EarnPage() {
               const wallVotes = votes[wall.id] || { likes: wall.likes || 0, dislikes: wall.dislikes || 0, userVote: null };
               const isVoting = votingId === wall.id;
               
+              // فحص الشرط: إذا كان الأيدي هو adtogame وكان لفل المستخدم أقل من 10
+              const isLocked = wall.id === "adtogame" && currentLevel < 10;
+
               return (
                 <div 
                   key={wall.id} 
-                  onClick={() => { const url = getDynamicUrl(wall); if (url !== "#") setActiveOffer({ url, title: wall.name }); }}
-                  className="relative backdrop-blur-xl bg-background/40 border border-white/10 p-5 rounded-2xl cursor-pointer transition-all hover:border-primary/30 hover-lift group"
+                  onClick={() => { 
+                    if (isLocked) return; // منع الضغط في حال كانت مقفلة
+                    const url = getDynamicUrl(wall); 
+                    if (url !== "#") setActiveOffer({ url, title: wall.name }); 
+                  }}
+                  className={`relative backdrop-blur-xl bg-background/40 border p-5 rounded-2xl transition-all group ${
+                    isLocked 
+                      ? "border-red-500/20 opacity-75 cursor-not-allowed select-none bg-red-950/5" 
+                      : "border-white/10 cursor-pointer hover:border-primary/30 hover-lift"
+                  }`}
                 >
+                  {/* Lock Overlay Content inside the Card if Locked */}
+                  {isLocked && (
+                    <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] rounded-2xl z-10 flex flex-col items-center justify-center p-4 text-center animate-fade-in">
+                      <div className="h-10 w-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-2 shadow-lg">
+                        <Lock className="h-5 w-5" />
+                      </div>
+                      <span className="text-xs font-black text-foreground tracking-wide uppercase">Locked</span>
+                      <p className="text-[11px] text-muted-foreground mt-1 max-w-[180px]">
+                        Requires <span className="text-red-400 font-bold">Level 10</span> to unlock this provider.
+                      </p>
+                      <Badge variant="outline" className="mt-2 bg-secondary/50 border-white/5 text-[10px] font-medium text-muted-foreground">
+                        Your Level: {currentLevel}/10
+                      </Badge>
+                    </div>
+                  )}
+
                   {/* Hot Badge */}
-                  {wall.isHot && (
+                  {wall.isHot && !isLocked && (
                     <div className="absolute top-4 right-4">
                       <Badge className="bg-orange-500/10 text-orange-500 border border-orange-500/20 font-bold text-[10px] px-2 py-1 rounded-lg flex items-center gap-1">
                         <Flame className="h-3 w-3" />
@@ -354,7 +378,7 @@ export default function EarnPage() {
                   {/* Interactive Like/Dislike Buttons */}
                   <div className="flex items-center justify-between">
                     <button
-                      disabled={!userData?.uid || isVoting}
+                      disabled={!userData?.uid || isVoting || isLocked}
                       onClick={(e) => handleVote(wall.id, "like", e)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
                         wallVotes.userVote === "like"
@@ -366,7 +390,7 @@ export default function EarnPage() {
                       <span className="font-medium text-xs">{wallVotes.likes}</span>
                     </button>
                     <button
-                      disabled={!userData?.uid || isVoting}
+                      disabled={!userData?.uid || isVoting || isLocked}
                       onClick={(e) => handleVote(wall.id, "dislike", e)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
                         wallVotes.userVote === "dislike"
@@ -385,6 +409,6 @@ export default function EarnPage() {
         </div>
       </div>
 
-      </div>
+    </div>
   );
 }
