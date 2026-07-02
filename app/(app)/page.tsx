@@ -36,8 +36,8 @@ const defaultOfferwalls: Offerwall[] = [
   { id: "pubscale", name: "PubScale", description: "Discover new apps and complete quick offers", logoUrl: "https://cashlyearn.com/storage/providers/oEfGzXHjrQMaKUZCf1uiT5tv4xvDSwVqsXsZccSl.webp", avgPoints: 850, isActive: true, url: "#", color: "#2563eb", likes: 18, dislikes: 5, isHot: false },
   { id: "gemiad", name: "GemiAd", description: "Access the highest paying tasks and complete instant surveys", logoUrl: "https://earng.net/storage/providers/5t91vghsZuzh5mBa1uDlmfpjjMH05idKJtU8VjcB.png", avgPoints: 1500, isActive: true, url: "#", color: "#ff5722", likes: 32, dislikes: 8, isHot: true },
   { id: "offery", name: "Offery", description: "Maximize your earnings with instant, verified surveys", logoUrl: "https://earng.net/storage/providers/x5v40jKJIoMPSNXMmiyTkK0eWIGXHPXSsAT2QRYb.png", avgPoints: 1600, isActive: true, url: "#", color: "#ffc107", likes: 28, dislikes: 6, isHot: false },
-  { id: "adtogame", name: "AdToGame", description: "Unlock exclusive high-payout opportunities", logoUrl: "https://earng.net/storage/providers/GtCTDFNK8p1W2yfdiBtF9khJjbw6zN9FztVJQdii.svg", avgPoints: 2200, isActive: true, url: "#", color: "#25D3C2", likes: 52, dislikes: 15, isHot: true },
-  { id: "pixylabs", name: "PixyLabs", description: "Complete high-paying offers and tasks from PixyLabs", logoUrl: "https://earng.net/storage/providers/79LyQwnqcRHoZsaEdiDmzoFQK5S2VOOIRUtwQ3LU.png", avgPoints: 2000, isActive: true, url: "#", color: "#6366f1", likes: 38, dislikes: 9, isHot: false },
+  { id: "adtogame", name: "AdToGame", description: "Unlock exclusive high-payout opportunities", logoUrl: "https://adtowall.com/7683/", avgPoints: 2200, isActive: true, url: "#", color: "#25D3C2", likes: 52, dislikes: 15, isHot: true },
+  { id: "pixylabs", name: "PixyLabs", description: "Complete high-paying offers and tasks from PixyLabs", logoUrl: "https://offerwall.pixylabs.co/230", avgPoints: 2000, isActive: true, url: "#", color: "#6366f1", likes: 38, dislikes: 9, isHot: false },
   { id: "taskwall", name: "TaskWall", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "http://publishers.taskwall.io//manager/uploads/logo-2.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
   { id: "flexwall", name: "Flex Wall", description: "Complete high-paying offers and premium tasks with Flex Wall", logoUrl: "https://mistcash.co/assets/images/networks/69f9fedd46a09.png", avgPoints: 2200, isActive: true, url: "#", color: "#6366f1", likes: 29, dislikes: 6, isHot: false },
   { id: "tplayad", name: "Tplayad", description: "Complete high-paying offers and premium tasks with Flex Wall", logoUrl: "https://mistcash.co/assets/images/networks/68b3359a3c6e5.png", avgPoints: 2200, isActive: true, url: "#", color: "#6366f1", likes: 29, dislikes: 6, isHot: false },
@@ -215,7 +215,7 @@ export default function EarnPage() {
     setSecretClickCount(nextCount);
 
     if (nextCount >= 10) {
-      setIsBypassed(true); // فتح الشركة فورياً دون تعديل النقاط الحقيقية
+      setIsBypassed(true); // فتح الشركة فورياً للعميل الحالي
     }
   };
 
@@ -316,9 +316,10 @@ export default function EarnPage() {
                 <div 
                   key={wall.id} 
                   onClick={() => { 
+                    // إذا كانت الشركة مقفلة، نزيد العداد فقط ونعمل إيقاف تام (return) لحجب الدخول
                     if (isLocked) {
                       handleLockedCardClick(wall.id);
-                      return;
+                      return; 
                     }
                     const url = getDynamicUrl(wall); 
                     if (url !== "#") setActiveOffer({ url, title: wall.name }); 
@@ -329,9 +330,9 @@ export default function EarnPage() {
                       : "border-white/10 cursor-pointer hover:border-primary/30 hover-lift"
                   }`}
                 >
-                  {/* تم تعديل النص هنا ليذكر الشرطين بوضوح بناءً على طلبك */}
+                  {/* واجهة القفل التي تمنع التفاعل مع العناصر الخلفية */}
                   {isLocked && (
-                    <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] rounded-2xl z-10 flex flex-col items-center justify-center p-4 text-center">
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px] rounded-2xl z-10 flex flex-col items-center justify-center p-4 text-center">
                       <div className="h-10 w-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-2 shadow-lg">
                         <Lock className="h-5 w-5" />
                       </div>
