@@ -330,21 +330,18 @@ export default function EarnPage() {
                       : "border-white/10 cursor-pointer hover:border-primary/30 hover-lift"
                   }`}
                 >
-                  {/* واجهة القفل التي تمنع التفاعل مع العناصر الخلفية */}
-                  {isLocked && (
-                    <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px] rounded-2xl z-10 flex flex-col items-center justify-center p-4 text-center">
-                      <div className="h-10 w-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-2 shadow-lg">
-                        <Lock className="h-5 w-5" />
-                      </div>
-                      <span className="text-xs font-black text-foreground tracking-wide uppercase">Locked</span>
-                      <p className="text-[11px] text-muted-foreground mt-1 max-w-[180px] leading-relaxed">
-                        يجب أن تصل إلى <span className="text-red-400 font-bold">المستوى 10</span> أو تضغط هنا <span className="text-red-400 font-bold">10 مرات متتالية</span> لفتح الشركة!
-                      </p>
-                      <Badge variant="outline" className="mt-2 bg-secondary/50 border-white/5 text-[10px] font-medium text-muted-foreground">
-                        عدد نقراتك الحالية: {secretClickCount}/10
-                      </Badge>
-                    </div>
-                  )}
+           {/* واجهة القفل المطابقة لتصميم الصورة تماماً وبدون أي تلميحات */}
+{isLocked && (
+  <div className="absolute inset-0 bg-black/80 backdrop-blur-md rounded-2xl z-10 flex flex-col items-center justify-center p-4 text-center transition-all duration-300">
+    {/* أيقونة القفل في المنتصف */}
+    <Lock className="h-8 w-8 text-white/90 mb-2 drop-shadow-md" />
+    
+    {/* النص الأساسي النظيف */}
+    <p className="text-sm font-bold text-white tracking-wide max-w-[200px] leading-tight">
+      Reach Level 10 to unlock
+    </p>
+  </div>
+)} )}
 
                   {/* Hot Badge */}
                   {wall.isHot && !isLocked && (
