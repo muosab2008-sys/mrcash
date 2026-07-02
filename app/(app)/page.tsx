@@ -174,7 +174,7 @@ export default function EarnPage() {
       }
     } catch (error) {
       console.error("Error voting:", error);
-    } military {
+    } finally {
       setVotingId(null);
     }
   };
