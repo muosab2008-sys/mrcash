@@ -341,7 +341,7 @@ export default function EarnPage() {
       Reach Level 10 to unlock
     </p>
   </div>
-)} )}
+)}
 
                   {/* Hot Badge */}
                   {wall.isHot && !isLocked && (
