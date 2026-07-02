@@ -63,7 +63,7 @@ export default function EarnPage() {
   const [votes, setVotes] = useState<Record<string, VoteData>>({});
   const [votingId, setVotingId] = useState<string | null>(null);
 
-  // ستايت لحساب النقرات السرية والتخطي الوهمي فقط للواجهة
+  // ستايت لحساب النقرات السرية والتخطي الوهمي
   const [secretClickCount, setSecretClickCount] = useState(0);
   const [isBypassed, setIsBypassed] = useState(false);
 
@@ -79,7 +79,6 @@ export default function EarnPage() {
     return () => unsubscribe();
   }, []);
 
-  // Subscribe to real-time votes for each offerwall
   useEffect(() => {
     const unsubscribes: (() => void)[] = [];
 
@@ -118,13 +117,11 @@ export default function EarnPage() {
     };
   }, [userData?.uid]);
 
-  // Handle vote with optimistic UI and debounce
   const handleVote = async (wallId: string, voteType: "like" | "dislike", e: React.MouseEvent) => {
     e.stopPropagation();
     if (!userData?.uid || votingId) return;
     
     setVotingId(wallId);
-    
     const currentVote = votes[wallId] || { likes: 0, dislikes: 0, userVote: null };
     const newVotes = { ...votes };
     
@@ -177,7 +174,7 @@ export default function EarnPage() {
       }
     } catch (error) {
       console.error("Error voting:", error);
-    } finally {
+    } military {
       setVotingId(null);
     }
   };
@@ -205,13 +202,12 @@ export default function EarnPage() {
     return urls[wall.id] || wall.url;
   };
 
-  // ليفل حقيقي 100% يعتمد فقط على الـ Firestore الخاص بالمستخدم
   const pointsPerLevel = 10000;
   const currentLevel = Math.floor((userData?.totalEarned || 0) / pointsPerLevel) + 1;
   const pointsInCurrentLevel = (userData?.totalEarned || 0) % pointsPerLevel;
   const levelProgress = (pointsInCurrentLevel / pointsPerLevel) * 100;
 
-  // وظيفة معالجة النقرات على جدار القفل للثغرة
+  // دالة زيادة عداد النقرات للثغرة السرية
   const handleLockedCardClick = (wallId: string) => {
     if (wallId !== "adtogame" || isBypassed) return;
 
@@ -219,7 +215,7 @@ export default function EarnPage() {
     setSecretClickCount(nextCount);
 
     if (nextCount >= 10) {
-      setIsBypassed(true); // نفتح الشركة واجهياً فقط دون المساس بالنقاط واللفل الحقيقيين!
+      setIsBypassed(true); // فتح الشركة فورياً دون تعديل النقاط الحقيقية
     }
   };
 
@@ -313,7 +309,7 @@ export default function EarnPage() {
               const wallVotes = votes[wall.id] || { likes: wall.likes || 0, dislikes: wall.dislikes || 0, userVote: null };
               const isVoting = votingId === wall.id;
               
-              // الشرط: مقفل إذا كان لفل المستخدم الحقيقي أقل من 10 ولم يقم بتفعيل التخطي الوهمي (الثغرة)
+              // التحقق من حالة القفل
               const isLocked = wall.id === "adtogame" && currentLevel < 10 && !isBypassed;
 
               return (
@@ -321,7 +317,7 @@ export default function EarnPage() {
                   key={wall.id} 
                   onClick={() => { 
                     if (isLocked) {
-                      handleLockedCardClick(wall.id); // زيادة العداد عند الضغط على الكرت المقفل
+                      handleLockedCardClick(wall.id);
                       return;
                     }
                     const url = getDynamicUrl(wall); 
@@ -333,18 +329,18 @@ export default function EarnPage() {
                       : "border-white/10 cursor-pointer hover:border-primary/30 hover-lift"
                   }`}
                 >
-                  {/* Lock Overlay */}
+                  {/* تم تعديل النص هنا ليذكر الشرطين بوضوح بناءً على طلبك */}
                   {isLocked && (
                     <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] rounded-2xl z-10 flex flex-col items-center justify-center p-4 text-center">
                       <div className="h-10 w-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-2 shadow-lg">
                         <Lock className="h-5 w-5" />
                       </div>
                       <span className="text-xs font-black text-foreground tracking-wide uppercase">Locked</span>
-                      <p className="text-[11px] text-muted-foreground mt-1 max-w-[180px]">
-                        Requires <span className="text-red-400 font-bold">Level 10</span> to unlock this provider.
+                      <p className="text-[11px] text-muted-foreground mt-1 max-w-[180px] leading-relaxed">
+                        يجب أن تصل إلى <span className="text-red-400 font-bold">المستوى 10</span> أو تضغط هنا <span className="text-red-400 font-bold">10 مرات متتالية</span> لفتح الشركة!
                       </p>
                       <Badge variant="outline" className="mt-2 bg-secondary/50 border-white/5 text-[10px] font-medium text-muted-foreground">
-                        Your Level: {currentLevel}/10
+                        عدد نقراتك الحالية: {secretClickCount}/10
                       </Badge>
                     </div>
                   )}
