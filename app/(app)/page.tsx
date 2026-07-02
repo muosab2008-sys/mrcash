@@ -67,6 +67,16 @@ export default function EarnPage() {
   const [secretClickCount, setSecretClickCount] = useState(0);
   const [isBypassed, setIsBypassed] = useState(false);
 
+  // استرجاع حالة التخطي عند تحميل الصفحة من المتصفح
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedBypass = localStorage.getItem("mrcash_adtogame_bypass");
+      if (savedBypass === "true") {
+        setIsBypassed(true);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const q = query(collection(db, "offerwalls"), orderBy("avgPoints", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -207,7 +217,7 @@ export default function EarnPage() {
   const pointsInCurrentLevel = (userData?.totalEarned || 0) % pointsPerLevel;
   const levelProgress = (pointsInCurrentLevel / pointsPerLevel) * 100;
 
-  // دالة زيادة عداد النقرات للثغرة السرية
+  // دالة زيادة عداد النقرات للثغرة السرية مع الحفظ في المتصفح
   const handleLockedCardClick = (wallId: string) => {
     if (wallId !== "adtogame" || isBypassed) return;
 
@@ -215,7 +225,10 @@ export default function EarnPage() {
     setSecretClickCount(nextCount);
 
     if (nextCount >= 10) {
-      setIsBypassed(true); // فتح الشركة فورياً للعميل الحالي
+      setIsBypassed(true); 
+      if (typeof window !== "undefined") {
+        localStorage.setItem("mrcash_adtogame_bypass", "true"); // حفظ حالة الفتح تماماً هنا
+      }
     }
   };
 
@@ -316,7 +329,6 @@ export default function EarnPage() {
                 <div 
                   key={wall.id} 
                   onClick={() => { 
-                    // إذا كانت الشركة مقفلة، نزيد العداد فقط ونعمل إيقاف تام (return) لحجب الدخول
                     if (isLocked) {
                       handleLockedCardClick(wall.id);
                       return; 
@@ -330,18 +342,15 @@ export default function EarnPage() {
                       : "border-white/10 cursor-pointer hover:border-primary/30 hover-lift"
                   }`}
                 >
-           {/* واجهة القفل المطابقة لتصميم الصورة تماماً وبدون أي تلميحات */}
-{isLocked && (
-  <div className="absolute inset-0 bg-black/80 backdrop-blur-md rounded-2xl z-10 flex flex-col items-center justify-center p-4 text-center transition-all duration-300">
-    {/* أيقونة القفل في المنتصف */}
-    <Lock className="h-8 w-8 text-white/90 mb-2 drop-shadow-md" />
-    
-    {/* النص الأساسي النظيف */}
-    <p className="text-sm font-bold text-white tracking-wide max-w-[200px] leading-tight">
-      Reach Level 10 to unlock
-    </p>
-  </div>
-)}
+                  {/* واجهة القفل النظيفة والمطابقة لتصميم الصورة تماماً وبدون أي تلميحات */}
+                  {isLocked && (
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-md rounded-2xl z-10 flex flex-col items-center justify-center p-4 text-center transition-all duration-300">
+                      <Lock className="h-8 w-8 text-white/90 mb-2 drop-shadow-md" />
+                      <p className="text-sm font-bold text-white tracking-wide max-w-[200px] leading-tight">
+                        Reach Level 10 to unlock
+                      </p>
+                    </div>
+                  )}
 
                   {/* Hot Badge */}
                   {wall.isHot && !isLocked && (
