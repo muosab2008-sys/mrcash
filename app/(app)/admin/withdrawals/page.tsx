@@ -31,6 +31,8 @@ import {
   CheckCheck,
   RotateCcw,
   Ban,
+  Globe,
+  Gift,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -46,6 +48,9 @@ interface Withdrawal {
   status: "pending" | "completed" | "rejected";
   createdAt: Date;
   processedAt?: Date;
+  ipAddress?: string | null;
+  lastOfferName?: string | null;
+  lastOfferwall?: string | null;
 }
 
 export default function AdminWithdrawalsPage() {
@@ -75,6 +80,9 @@ export default function AdminWithdrawalsPage() {
             status: d.status,
             createdAt: d.createdAt?.toDate() || new Date(),
             processedAt: d.processedAt?.toDate(),
+            ipAddress: d.ipAddress || null,
+            lastOfferName: d.lastOfferName || null,
+            lastOfferwall: d.lastOfferwall || null,
           };
         }) as Withdrawal[];
         setWithdrawals(data);
@@ -386,6 +394,21 @@ export default function AdminWithdrawalsPage() {
                         <p className="text-xs text-white/40">
                           Points deducted: {withdrawal.pointsDeducted?.toLocaleString() || 0}
                         </p>
+
+                        {/* Anti-cheat: IP + last completed offer */}
+                        <div className="flex flex-wrap items-center gap-2 pt-2">
+                          <span className="flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/5 px-2.5 py-1 text-xs font-medium text-red-400">
+                            <Globe className="h-3.5 w-3.5" />
+                            IP: <span className="font-mono">{withdrawal.ipAddress || "unknown"}</span>
+                          </span>
+                          {(withdrawal.lastOfferName || withdrawal.lastOfferwall) && (
+                            <span className="flex items-center gap-1.5 rounded-lg border border-[#8B5CF6]/20 bg-[#8B5CF6]/5 px-2.5 py-1 text-xs font-medium text-[#a78bfa]">
+                              <Gift className="h-3.5 w-3.5" />
+                              Last offer: {withdrawal.lastOfferName || "—"}
+                              {withdrawal.lastOfferwall ? ` (${withdrawal.lastOfferwall})` : ""}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 

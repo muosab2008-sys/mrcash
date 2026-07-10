@@ -5,6 +5,8 @@ export const dynamic = "force-dynamic";
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { Mail, KeyRound, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
 
 export default function ForgotPasswordPage() {
@@ -19,21 +21,19 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Something went wrong. Please try again.");
-        return;
-      }
-
+      // Use Firebase's official password reset email flow.
+      await sendPasswordResetEmail(auth, email.trim());
       setSent(true);
-    } catch {
-      setError("Something went wrong. Please try again later.");
+    } catch (err: any) {
+      // Avoid leaking whether an account exists; only surface obvious input errors.
+      if (err?.code === "auth/invalid-email") {
+        setError("Please enter a valid email address.");
+      } else if (err?.code === "auth/user-not-found") {
+        // Show success state anyway to prevent account enumeration.
+        setSent(true);
+      } else {
+        setError("Something went wrong. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }

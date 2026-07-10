@@ -2,19 +2,19 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
-  collection, doc, onSnapshot, query, where, orderBy, serverTimestamp, runTransaction,
+  collection, doc, query, where, orderBy, limit, getDocs, serverTimestamp, runTransaction,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
+import { fetchClientIp } from "@/lib/client-ip";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, CheckCircle, Clock, History, Info, X, Wallet, ArrowRightLeft } from "lucide-react";
+import { Loader2, Info, X, Wallet, ArrowRightLeft } from "lucide-react";
 import Image from "next/image";
 
 // Points to USD conversion (1000 points = $1)
@@ -104,24 +104,12 @@ const CASHOUT_CATEGORIES = [
 
 export default function CashoutPage() {
   const { userData } = useAuth();
-  const [withdrawals, setWithdrawals] = useState<any[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<any>(null);
   const [selectedAmount, setSelectedAmount] = useState<any>(null);
   const [paymentDetails, setPaymentDetails] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [displayMode, setDisplayMode] = useState<"points" | "usd">("points");
-
-  useEffect(() => {
-    if (!userData?.uid) return;
-    const q = query(collection(db, "withdrawals"), where("userId", "==", userData.uid), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setWithdrawals(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      setLoadingHistory(false);
-    }, () => setLoadingHistory(false));
-    return () => unsubscribe();
-  }, [userData?.uid]);
 
   const handleOpenWithdraw = (method: any) => {
     setSelectedMethod(method);
@@ -136,17 +124,46 @@ export default function CashoutPage() {
 
     setSubmitting(true);
     try {
+      // Capture the current device IP for anti-cheat tracking.
+      const ipAddress = await fetchClientIp();
+
+      // Grab the user's most recent completed offer to attach for admin review.
+      let lastOfferName: string | null = null;
+      let lastOfferwall: string | null = null;
+      try {
+        const lastOfferSnap = await getDocs(
+          query(
+            collection(db, "transactions"),
+            where("userId", "==", userData.uid),
+            orderBy("createdAt", "desc"),
+            limit(1)
+          )
+        );
+        if (!lastOfferSnap.empty) {
+          const last = lastOfferSnap.docs[0].data();
+          lastOfferName = last.offerName || null;
+          lastOfferwall = last.offerwallName || last.offerwall || null;
+        }
+      } catch (err) {
+        console.log("[v0] cashout: last offer lookup failed:", err);
+      }
+
       await runTransaction(db, async (transaction) => {
         const userRef = doc(db, "users", userData.uid);
         transaction.update(userRef, { points: (userData.points || 0) - selectedAmount.points });
         const withdrawalRef = doc(collection(db, "withdrawals"));
         transaction.set(withdrawalRef, {
           userId: userData.uid,
+          username: userData.username || null,
+          email: userData.email || null,
           method: selectedMethod.name,
           pointsDeducted: selectedAmount.points,
           amountUSD: selectedAmount.usd,
           paymentDetails,
           status: "pending",
+          ipAddress,
+          lastOfferName,
+          lastOfferwall,
           createdAt: serverTimestamp(),
         });
       });
@@ -244,49 +261,14 @@ export default function CashoutPage() {
         </div>
       ))}
 
-      {/* History Section */}
-      <div className="mt-8 space-y-4">
-        <div className="flex items-center gap-3 px-1">
-          <History className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-bold">Recent Withdrawals</h2>
-        </div>
-        <div className="glass-card overflow-hidden">
-          {loadingHistory ? (
-            <div className="p-16 flex justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>
-          ) : (
-            <div className="divide-y divide-border">
-              {withdrawals.length === 0 ? (
-                <div className="p-10 text-center text-muted-foreground font-medium text-sm">No withdrawal history yet</div>
-              ) : (
-                withdrawals.map((w) => (
-                  <div key={w.id} className="p-5 flex items-center justify-between hover:bg-secondary/30 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center border ${w.status === 'completed' ? 'text-emerald-500 border-emerald-500/20 bg-emerald-500/10' : 'text-amber-500 border-amber-500/20 bg-amber-500/10'}`}>
-                        {w.status === 'completed' ? <CheckCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
-                      </div>
-                      <div>
-                        <p className="font-bold text-sm">{w.method}</p>
-                        <p className="text-[10px] text-muted-foreground font-medium truncate max-w-[150px]">{w.paymentDetails}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-black text-foreground text-sm">
-                        {(w.pointsDeducted || 0).toLocaleString()} PTS
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        ${(w.amountUSD ?? 0).toFixed(2)}
-                      </div>
-                      <Badge className={`rounded-xl px-3 py-1 text-[9px] uppercase mt-1.5 font-bold ${w.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
-                        {w.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Info: history moved to Profile page */}
+      <Card className="glass-card p-4 flex items-center justify-center gap-3 text-sm">
+        <Info className="w-4 h-4 text-primary shrink-0" />
+        <span className="text-muted-foreground">
+          View your full withdrawal history in your{" "}
+          <a href="/profile" className="text-primary font-semibold hover:underline">Profile</a> page.
+        </span>
+      </Card>
 
       {/* Withdrawal Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

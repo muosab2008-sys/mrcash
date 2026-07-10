@@ -3,13 +3,14 @@
 export const dynamic = "force-dynamic";
 
 import { useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Loader2, Mail, Lock, User, IdCard, Link2, ArrowLeft, ArrowRight, Check, MailCheck } from "lucide-react";
+import { Loader2, Mail, Lock, User, IdCard, Link2, ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { AvatarSelector } from "@/components/avatar-selector";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,8 @@ const ALNUM_RE = /^[A-Za-z0-9]+$/;
 
 function RegisterForm() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { login } = useAuth();
   const referralCodeParam = searchParams.get("ref") || "";
 
   const [step, setStep] = useState(1);
@@ -27,8 +30,6 @@ function RegisterForm() {
   const [referralCode, setReferralCode] = useState(referralCodeParam);
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [registered, setRegistered] = useState(false);
-  const [resending, setResending] = useState(false);
 
   const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,34 +90,19 @@ function RegisterForm() {
         throw new Error(data.error || "Failed to create account");
       }
 
-      if (data.warning) {
-        toast.warning(data.warning);
-      } else {
-        toast.success("Account created! Check your email to verify.");
+      // Email verification is disabled — sign the user in immediately.
+      try {
+        await login(email.trim(), password);
+        toast.success("Welcome to MrCash!");
+        router.push("/");
+      } catch {
+        toast.success("Account created! Please sign in.");
+        router.push("/login");
       }
-      setRegistered(true);
     } catch (error: any) {
       toast.error(error.message || "Failed to create account");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleResend = async () => {
-    setResending(true);
-    try {
-      const res = await fetch("/api/auth/resend-verification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to resend");
-      toast.success(data.message || "Verification email resent.");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to resend email");
-    } finally {
-      setResending(false);
     }
   };
 
@@ -133,44 +119,7 @@ function RegisterForm() {
           </Link>
         </div>
 
-        {registered ? (
-          /* Verification Pending State */
-          <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-8 text-center">
-            <div className="mx-auto mb-6 w-16 h-16 rounded-2xl bg-gradient-to-br from-[#3B82F6] to-[#8B5CF6] flex items-center justify-center">
-              <MailCheck className="h-8 w-8 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-white mb-2">Verify your email</h1>
-            <p className="text-sm text-white/50 leading-relaxed">
-              We sent a verification link to{" "}
-              <span className="text-white font-medium">{email}</span>. Click the link in that email to activate your
-              account, then sign in.
-            </p>
-
-            <div className="mt-8 space-y-3">
-              <Link href="/login">
-                <Button className="w-full h-14 rounded-2xl bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] text-white font-bold shadow-lg shadow-[#3B82F6]/20">
-                  Go to Sign In
-                </Button>
-              </Link>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleResend}
-                disabled={resending}
-                className="w-full h-14 rounded-2xl bg-white/[0.02] border-white/5 hover:bg-white/5 hover:border-white/10 text-white font-medium"
-              >
-                {resending ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Resending...
-                  </>
-                ) : (
-                  "Resend Verification Email"
-                )}
-              </Button>
-            </div>
-          </div>
-        ) : (
+        {(
           <>
             {/* Progress Steps */}
             <div className="flex items-center justify-center gap-4 mb-8">
