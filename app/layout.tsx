@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     title: 'Mr.Cash|Earn Rewards',
     description: 'Share your link and get paid! The best platform to earn rewards online.',
     url: 'https://mrcash.app',
-    siteName: 'MrCash',
+    siteName: 'Mr.Cash',
     images: [
       {
         url: '/og-image.png',
