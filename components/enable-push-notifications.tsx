@@ -6,10 +6,29 @@ import { doc, setDoc } from "firebase/firestore";
 import { app, db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
-import { Bell, BellOff, BellRing, Loader2, AlertTriangle } from "lucide-react";
+import { Bell, BellOff, BellRing, Loader2, AlertTriangle, Share } from "lucide-react";
 import { toast } from "sonner";
 
-type PermState = "default" | "granted" | "denied" | "unsupported";
+type PermState = "default" | "granted" | "denied" | "unsupported" | "ios-install";
+
+// iOS (iPhone/iPad) only allows web push when the site is installed to the
+// home screen and opened as a standalone PWA.
+function isIos() {
+  if (typeof navigator === "undefined") return false;
+  return (
+    /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    // iPadOS 13+ reports as Mac but has touch
+    (navigator.platform === "MacIntel" && (navigator as any).maxTouchPoints > 1)
+  );
+}
+
+function isStandalone() {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia?.("(display-mode: standalone)").matches ||
+    (window.navigator as any).standalone === true
+  );
+}
 
 export function EnablePushNotifications() {
   const { user } = useAuth();
@@ -20,7 +39,15 @@ export function EnablePushNotifications() {
   useEffect(() => {
     let active = true;
     (async () => {
-      if (typeof window === "undefined" || !("Notification" in window)) {
+      if (typeof window === "undefined") return;
+
+      // On iOS, push only works from an installed home-screen app.
+      if (isIos() && !isStandalone()) {
+        if (active) setPerm("ios-install");
+        return;
+      }
+
+      if (!("Notification" in window)) {
         if (active) setPerm("unsupported");
         return;
       }
@@ -115,6 +142,22 @@ export function EnablePushNotifications() {
       setLoading(false);
     }
   };
+
+  if (perm === "ios-install") {
+    return (
+      <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/10 p-4">
+        <Share className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+        <div className="space-y-1 text-sm text-foreground">
+          <p className="font-medium">Enable notifications on iPhone/iPad</p>
+          <p className="text-muted-foreground">
+            Tap the <span className="font-medium">Share</span> button in Safari, choose{" "}
+            <span className="font-medium">&quot;Add to Home Screen&quot;</span>, then open MrCash
+            from your home screen and turn on notifications here.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (perm === "unsupported") {
     return (
