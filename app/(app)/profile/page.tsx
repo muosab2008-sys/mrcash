@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AvatarSelector } from "@/components/avatar-selector";
 import { TwoFactorSetup } from "@/components/two-factor-setup";
+import { ProfileOffersHistory } from "@/components/profile-offers-history";
+import { EnablePushNotifications } from "@/components/enable-push-notifications";
 import { toast } from "sonner";
 import {
   User,
@@ -54,9 +56,7 @@ export default function ProfilePage() {
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(userData?.photoURL || null);
 
   // Activity logs
-  const [offers, setOffers] = useState<any[]>([]);
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
-  const [loadingOffers, setLoadingOffers] = useState(true);
   const [loadingWithdrawals, setLoadingWithdrawals] = useState(true);
 
   const currentLevelThreshold = (userData?.level || 1) * 10000;
@@ -65,24 +65,9 @@ export default function ProfilePage() {
   const pointsNeededForLevel = currentLevelThreshold - previousLevelThreshold;
   const levelProgress = Math.min((pointsInCurrentLevel / pointsNeededForLevel) * 100, 100);
 
-  // Subscribe to the user's completed offers (transactions) and withdrawal requests.
+  // Subscribe to the user's withdrawal requests.
   useEffect(() => {
     if (!userData?.uid) return;
-
-    const offersQuery = query(
-      collection(db, "transactions"),
-      where("userId", "==", userData.uid),
-      orderBy("createdAt", "desc"),
-      limit(50)
-    );
-    const unsubOffers = onSnapshot(
-      offersQuery,
-      (snap) => {
-        setOffers(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-        setLoadingOffers(false);
-      },
-      () => setLoadingOffers(false)
-    );
 
     const withdrawalsQuery = query(
       collection(db, "withdrawals"),
@@ -100,7 +85,6 @@ export default function ProfilePage() {
     );
 
     return () => {
-      unsubOffers();
       unsubWithdrawals();
     };
   }, [userData?.uid]);
@@ -516,45 +500,8 @@ export default function ProfilePage() {
       {/* ACTIVITY & REWARDS TAB */}
       {activeTab === "activity" && (
         <div className="space-y-6">
-          {/* Offers Log */}
-          <Card className="backdrop-blur-xl bg-background/40 border border-white/10">
-            <CardHeader className="p-5 pb-3">
-              <CardTitle className="flex items-center gap-2 text-foreground text-lg">
-                <Gift className="h-5 w-5 text-primary" /> Offers History
-              </CardTitle>
-              <CardDescription className="text-muted-foreground">Offers you completed and the rewards you earned</CardDescription>
-            </CardHeader>
-            <CardContent className="px-5 pb-5">
-              {loadingOffers ? (
-                <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-              ) : offers.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">No completed offers yet</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-[10px] uppercase tracking-widest text-muted-foreground border-b border-border">
-                        <th className="py-3 pr-4 font-bold">Offer</th>
-                        <th className="py-3 pr-4 font-bold">Provider</th>
-                        <th className="py-3 pr-4 font-bold text-right">Points</th>
-                        <th className="py-3 font-bold text-right">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {offers.map((o) => (
-                        <tr key={o.id} className="hover:bg-secondary/20">
-                          <td className="py-3 pr-4 font-medium text-foreground max-w-[160px] truncate">{o.offerName || "Offer"}</td>
-                          <td className="py-3 pr-4 text-muted-foreground capitalize">{o.offerwallName || o.offerwall || "—"}</td>
-                          <td className="py-3 pr-4 text-right font-bold text-emerald-500">+{(o.points || 0).toLocaleString()}</td>
-                          <td className="py-3 text-right text-muted-foreground whitespace-nowrap">{formatDate(o.createdAt)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Offers Log (from offers_history) */}
+          <ProfileOffersHistory userId={userData?.uid} />
 
           {/* Withdrawals Log */}
           <Card className="backdrop-blur-xl bg-background/40 border border-white/10">
@@ -641,6 +588,10 @@ export default function ProfilePage() {
               isEnabled={userData.twoFactorEnabled}
               onComplete={() => window.location.reload()}
             />
+            <div className="mt-6 pt-6 border-t border-border">
+              <p className="mb-3 text-sm font-medium text-foreground">Browser Notifications</p>
+              <EnablePushNotifications />
+            </div>
           </CardContent>
         </Card>
       )}
