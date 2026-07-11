@@ -1,17 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, query, where, orderBy, onSnapshot, limit } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Gift, Loader2 } from "lucide-react";
 
 interface OfferRecord {
   id: string;
-  offerName?: string;
-  points?: number;
-  company?: string;
-  createdAt?: any;
+  offerName: string;
+  points: number;
+  company: string;
+  date: any;
+  sortMs: number;
+}
+
+function toMs(value: any): number {
+  try {
+    if (!value) return 0;
+    if (typeof value?.toDate === "function") return value.toDate().getTime();
+    if (typeof value?.seconds === "number") return value.seconds * 1000;
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? 0 : d.getTime();
+  } catch {
+    return 0;
+  }
 }
 
 function formatDate(value: any) {
@@ -23,24 +36,43 @@ function formatDate(value: any) {
   }
 }
 
+// Normalize a raw transaction doc (field names vary across offerwall postbacks)
+function normalize(id: string, d: any): OfferRecord {
+  const rawDate = d.createdAt ?? d.timestamp ?? null;
+  return {
+    id,
+    offerName: d.offerName || d.offer_name || d.name || "Offer",
+    points: Number(d.points ?? d.amount ?? d.amountUSD ?? 0),
+    company: d.offerwallName || d.offerwall || d.source || d.company || d.provider || "—",
+    date: rawDate,
+    sortMs: toMs(rawDate),
+  };
+}
+
 export function ProfileOffersHistory({ userId }: { userId?: string }) {
   const [offers, setOffers] = useState<OfferRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!userId) return;
+    setLoading(true);
 
-    const offersQuery = query(
-      collection(db, "offers_history"),
-      where("userId", "==", userId),
-      orderBy("createdAt", "desc"),
-      limit(50)
+    // Read from the same "transactions" collection every offerwall postback writes to.
+    // We only filter by userId (single-field index, always available) and sort client-side
+    // so records using either `createdAt` or `timestamp` are all included.
+    const txQuery = query(
+      collection(db, "transactions"),
+      where("userId", "==", userId)
     );
 
     const unsubscribe = onSnapshot(
-      offersQuery,
+      txQuery,
       (snap) => {
-        setOffers(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as OfferRecord));
+        const rows = snap.docs
+          .map((d) => normalize(d.id, d.data()))
+          .sort((a, b) => b.sortMs - a.sortMs)
+          .slice(0, 50);
+        setOffers(rows);
         setLoading(false);
       },
       () => setLoading(false)
@@ -83,7 +115,7 @@ export function ProfileOffersHistory({ userId }: { userId?: string }) {
                   </div>
                   <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
                     <span className="capitalize">{o.company || "—"}</span>
-                    <span>{formatDate(o.createdAt)}</span>
+                    <span>{formatDate(o.date)}</span>
                   </div>
                 </li>
               ))}
@@ -111,7 +143,7 @@ export function ProfileOffersHistory({ userId }: { userId?: string }) {
                       </td>
                       <td className="py-3 pr-4 text-muted-foreground capitalize">{o.company || "—"}</td>
                       <td className="py-3 text-right text-muted-foreground whitespace-nowrap">
-                        {formatDate(o.createdAt)}
+                        {formatDate(o.date)}
                       </td>
                     </tr>
                   ))}
