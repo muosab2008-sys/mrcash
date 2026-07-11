@@ -123,10 +123,16 @@ export async function POST(req: NextRequest) {
       ts.set(transactionRef, {
         userId: firebase_uid,
         amount: finalReward,
+        points: finalReward,
         type: finalReward > 0 ? 'offer_credit' : 'chargeback',
         offerId: offerId,
         offerName: `${offerName} (GemiAd)`,
+        offerwallName: 'GemiAd',
+        provider: 'gemiad',
+        userIp: clientIp || null,
+        isTest: isTestRequest,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
         status: 'completed'
       });
 

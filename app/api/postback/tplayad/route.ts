@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import admin from 'firebase-admin';
+import { getClientIp } from '@/lib/postback-meta';
 
 // 1. تهيئة الفايربيز لحساب الـ Admin داخلياً وتجنب تكرار التهيئة في Vercel
 if (!admin.apps.length) {
@@ -131,6 +132,11 @@ export async function POST(req: NextRequest) {
       userId = userId.replace('TEST_', '');
     }
 
+    // كشف طلبات الفحص الشخصية (معرف يبدأ بـ TEST_ أو رقم معاملة تجريبي)
+    const isTestRequest =
+      transId.startsWith('test_') ||
+      String(subId).toUpperCase().startsWith('TEST_');
+
     const userRef = db.collection('users').doc(userId);
     const notificationRef = db.collection('notifications').doc();
 
@@ -149,10 +155,16 @@ export async function POST(req: NextRequest) {
       ts.set(transactionRef, {
         userId: userId,
         amount: finalReward,
+        points: finalReward,
         type: finalReward > 0 ? 'offer_credit' : 'chargeback',
         offerId: data.campaignId || 'tplayad_campaign',
         offerName: `${campaignName} (Tplayad)`,
+        offerwallName: 'Tplayad',
+        provider: 'tplayad',
+        userIp: getClientIp(req) || null,
+        isTest: isTestRequest,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
         status: 'completed'
       });
 

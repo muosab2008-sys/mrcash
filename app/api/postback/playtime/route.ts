@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
 import crypto from 'crypto'; 
+import { getClientIp } from '@/lib/postback-meta';
 
 export const dynamic = 'force-dynamic';
 
@@ -104,11 +105,17 @@ async function handlePostback(req: NextRequest, isGetMethod: boolean) {
       ts.set(transactionRef, {
         userId: firebase_uid,
         amount: finalReward,
+        points: finalReward,
         payout: payout,
         type: 'offer_credit',
         offerId: offerId,
         offerName: `${offerName} (Playtime)`,
+        offerwallName: 'Playtime',
+        provider: 'playtime',
+        userIp: getClientIp(req) || null,
+        isTest: originalUidForHash.toUpperCase().startsWith('TEST_'),
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
         status: 'completed',
         signature: incomingSignature
       });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
+import { getClientIp } from '@/lib/postback-meta';
 
 export const dynamic = 'force-dynamic';
 
@@ -118,6 +119,10 @@ async function handleAdBreakPostback(request: NextRequest) {
         type: pointsToReward >= 0 ? 'offer_credit' : 'chargeback',
         offerId: txid,
         offerName: `${offerName} (AdBreak Media)`,
+        offerwallName: 'AdBreak Media',
+        provider: 'adbreak',
+        userIp: getClientIp(request) || null,
+        isTest: isTestRequest,
         payoutUsd: parseFloat(payoutRaw) || 0,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         createdAt: admin.firestore.FieldValue.serverTimestamp(),

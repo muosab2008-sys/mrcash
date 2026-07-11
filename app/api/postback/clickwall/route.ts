@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
     }
 
     // 🔥 تنظيف الـ ID وقشع كلمة TEST_ تلقائياً إذا أرسلتها لوحة ClickWall أثناء الفحص
-    const userId = rawUserId.replace(/^TEST_/, '');
+    const isTestRequest = /^TEST_/i.test(rawUserId);
+    const userId = rawUserId.replace(/^TEST_/i, '');
     const pointsToReward = parseInt(amountStr, 10);
 
     if (isNaN(pointsToReward) || pointsToReward <= 0) {
@@ -63,10 +64,14 @@ export async function GET(request: NextRequest) {
         points: pointsToReward,
         amount: pointsToReward,
         offerName: `ClickWall: ${finalOfferTitle}`,
+        offerwallName: 'ClickWall',
+        provider: 'clickwall',
         status: 'completed',
         type: 'offer_credit', 
         userIp: userIp,
-        timestamp: admin.firestore.FieldValue.serverTimestamp()
+        isTest: isTestRequest,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
 
       // ج) حقن وثيقة الإشعار ليفجر التوست الأزرق فوراً بناءً على الفهرس الجديد 🚀

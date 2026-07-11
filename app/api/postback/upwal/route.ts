@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
+import { getClientIp } from '@/lib/postback-meta';
 
 export const dynamic = 'force-dynamic';
 
@@ -106,6 +107,10 @@ async function handleUpWallPostback(request: NextRequest) {
         type: pointsToReward >= 0 ? 'offer_credit' : 'chargeback',
         offerId: txid,
         offerName: `${offerName} (UpWall)`,
+        offerwallName: 'UpWall',
+        provider: 'upwal',
+        userIp: getClientIp(request) || null,
+        isTest: isTestRequest,
         payoutUsd: payoutUsd,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         createdAt: admin.firestore.FieldValue.serverTimestamp(),

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
+import { getClientIp } from '@/lib/postback-meta';
 
 export const dynamic = 'force-dynamic';
 
@@ -106,6 +107,10 @@ async function handleFlexWallPostback(request: NextRequest) {
         type: 'offer_credit',
         offerId: offerId,
         offerName: `${offerName} (FlexWall)`,
+        offerwallName: 'FlexWall',
+        provider: 'flexwall',
+        userIp: getClientIp(request) || null,
+        isTest: isTestRequest,
         payoutUsd: parseFloat(payoutRaw),
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         createdAt: admin.firestore.FieldValue.serverTimestamp(),

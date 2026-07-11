@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import admin from 'firebase-admin';
+import { getClientIp } from '@/lib/postback-meta';
 
 export const dynamic = 'force-dynamic';
 
@@ -157,7 +158,13 @@ export async function POST(req: NextRequest) {
         type: finalReward > 0 ? 'offer_credit' : 'chargeback',
         offerId: offerId,
         offerName: `${offerName} (Notik)`,
+        offerwallName: 'Offery',
+        provider: 'offery',
+        points: finalReward,
+        userIp: getClientIp(req) || null,
+        isTest: isTestRequest,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
         status: 'completed'
       });
 

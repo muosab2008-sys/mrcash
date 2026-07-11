@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
+import { getClientIp } from '@/lib/postback-meta';
 
 export const dynamic = 'force-dynamic';
 
@@ -112,6 +113,10 @@ async function handleOvnixPostback(request: NextRequest) {
         type: pointsToReward >= 0 ? 'offer_credit' : 'chargeback',
         offerId: txid,
         offerName: `${offerName} (Ovnix)`,
+        offerwallName: 'Ovnix',
+        provider: 'ovnix',
+        userIp: getClientIp(request) || null,
+        isTest: isTestRequest,
         payoutUsd: parseFloat(payoutRaw),
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         createdAt: admin.firestore.FieldValue.serverTimestamp(),

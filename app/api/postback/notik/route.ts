@@ -3,6 +3,7 @@ import crypto from 'crypto';
 // 🔥 تم تعديل الاسم إلى adminDb ليتطابق مع ملف الفايربيس الخاص بك بالملي 🔥
 import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
+import { getClientIp } from '@/lib/postback-meta';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,12 @@ export async function POST(req: NextRequest) {
                       urlParams.get('reward') || bodyParams.reward;
     
     let finalReward = amountRaw ? Math.floor(Number(amountRaw)) : 5000;
+
+    // كشف طلبات الفحص الشخصية: لا مبلغ حقيقي أو معرف تجريبي أو رقم معاملة مولّد تلقائياً
+    const isTestRequest =
+      !amountRaw ||
+      !(urlParams.get('txn_id') || bodyParams.txn_id) ||
+      String(firebase_uid).toLowerCase().includes('test');
 
     if (!firebase_uid) {
       console.warn("⚠️ Notik Postback: Missing Firebase UID");
@@ -83,10 +90,16 @@ export async function POST(req: NextRequest) {
       ts.set(transactionRef, {
         userId: firebase_uid,
         amount: finalReward,
+        points: finalReward,
         type: finalReward > 0 ? 'offer_credit' : 'chargeback',
         offerId: 'notik_id',
         offerName: `${offerName} (Notik)`,
+        offerwallName: 'Notik',
+        provider: 'notik',
+        userIp: getClientIp(req) || null,
+        isTest: isTestRequest,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
         status: 'completed'
       });
 

@@ -78,7 +78,12 @@ export default function ProfilePage() {
     const unsubOffers = onSnapshot(
       offersQuery,
       (snap) => {
-        setOffers(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        // Only show offers confirmed by a real company postback (hide self/test triggers)
+        setOffers(
+          snap.docs
+            .map((d) => ({ id: d.id, ...d.data() }))
+            .filter((o: any) => o.isTest !== true)
+        );
         setLoadingOffers(false);
       },
       () => setLoadingOffers(false)
@@ -545,7 +550,7 @@ export default function ProfilePage() {
                         <tr key={o.id} className="hover:bg-secondary/20">
                           <td className="py-3 pr-4 font-medium text-foreground max-w-[160px] truncate">{o.offerName || "Offer"}</td>
                           <td className="py-3 pr-4 text-muted-foreground capitalize">{o.offerwallName || o.offerwall || "—"}</td>
-                          <td className="py-3 pr-4 text-right font-bold text-emerald-500">+{(o.points || 0).toLocaleString()}</td>
+                          <td className="py-3 pr-4 text-right font-bold text-emerald-500">+{(o.points ?? o.amount ?? 0).toLocaleString()}</td>
                           <td className="py-3 text-right text-muted-foreground whitespace-nowrap">{formatDate(o.createdAt)}</td>
                         </tr>
                       ))}

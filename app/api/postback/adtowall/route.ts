@@ -101,10 +101,16 @@ export async function POST(req: NextRequest) {
       ts.set(transactionRef, {
         userId: firebase_uid,
         amount: finalReward,
+        points: finalReward,
         type: 'offer_credit',
         offerId: offerId,
         offerName: `${offerName} (Adtowall)`,
+        offerwallName: 'Adtowall',
+        provider: 'adtowall',
+        userIp: clientIp || null,
+        isTest: isTestRequest,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
         status: 'completed'
       });
 

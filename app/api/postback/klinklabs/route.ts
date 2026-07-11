@@ -146,6 +146,10 @@ async function handleKlinkPostback(request: NextRequest, isPost: boolean) {
         type: pointsToReward >= 0 ? 'offer_credit' : 'chargeback',
         offerId: offerId,
         offerName: `${offerName} (Klinklabs)`,
+        offerwallName: 'Klinklabs',
+        provider: 'klinklabs',
+        userIp: clientIp || null,
+        isTest: isTestRequest,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         status: 'completed'

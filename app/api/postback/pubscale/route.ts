@@ -129,6 +129,10 @@ export async function GET(request: NextRequest) {
         type: 'offer_credit',
         offerId: 'pubscale_id',
         offerName: `${finalOfferTitle} (PubScale)`,
+        offerwallName: 'PubScale',
+        provider: 'pubscale',
+        userIp: clientIp || null,
+        isTest: isTestRequest,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         status: 'completed'

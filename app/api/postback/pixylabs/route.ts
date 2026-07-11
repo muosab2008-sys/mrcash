@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
+import { getClientIp } from '@/lib/postback-meta';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,8 +49,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // كشف طلبات الفحص الشخصية قبل تحويلها للحساب الاحتياطي
+    const isTestRequest =
+      !userId || userId.toLowerCase() === 'none' || userId.toLowerCase().includes('test');
+
     // حساب تجريبي احتياطي لتجنب سقوط أداة الفحص بداخل اللوحة
-    if (!userId || userId.toLowerCase() === 'none' || userId.toLowerCase().includes('test')) {
+    if (isTestRequest) {
       userId = "YjkvTqAkpMhpmj6ts19g6bvhBDx1"; 
     }
 
@@ -98,6 +103,10 @@ export async function GET(request: NextRequest) {
         type: pointsToReward > 0 ? 'offer_credit' : 'chargeback',
         offerId: 'pixylabs_id',
         offerName: `${offerName} (PixyLabs)`,
+        offerwallName: 'PixyLabs',
+        provider: 'pixylabs',
+        userIp: getClientIp(request) || null,
+        isTest: isTestRequest,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         status: 'completed'
