@@ -67,34 +67,58 @@ export function ProfileOffersHistory({ userId }: { userId?: string }) {
         ) : offers.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">No completed offers yet</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-[10px] uppercase tracking-widest text-muted-foreground border-b border-border">
-                  <th className="py-3 pr-4 font-bold">Offer</th>
-                  <th className="py-3 pr-4 font-bold text-right">Points</th>
-                  <th className="py-3 pr-4 font-bold">Company</th>
-                  <th className="py-3 font-bold text-right">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {offers.map((o) => (
-                  <tr key={o.id} className="hover:bg-secondary/20">
-                    <td className="py-3 pr-4 font-medium text-foreground max-w-[160px] truncate">
-                      {o.offerName || "Offer"}
-                    </td>
-                    <td className="py-3 pr-4 text-right font-bold text-emerald-500">
+          <>
+            {/* Mobile: stacked cards */}
+            <ul className="space-y-3 sm:hidden">
+              {offers.map((o) => (
+                <li
+                  key={o.id}
+                  className="rounded-xl border border-border bg-secondary/20 p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="font-medium text-foreground break-words">{o.offerName || "Offer"}</p>
+                    <span className="shrink-0 font-bold text-emerald-500">
                       +{(o.points || 0).toLocaleString()}
-                    </td>
-                    <td className="py-3 pr-4 text-muted-foreground capitalize">{o.company || "—"}</td>
-                    <td className="py-3 text-right text-muted-foreground whitespace-nowrap">
-                      {formatDate(o.createdAt)}
-                    </td>
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="capitalize">{o.company || "—"}</span>
+                    <span>{formatDate(o.createdAt)}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {/* Desktop / tablet: table */}
+            <div className="hidden overflow-x-auto sm:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-[10px] uppercase tracking-widest text-muted-foreground border-b border-border">
+                    <th className="py-3 pr-4 font-bold">Offer</th>
+                    <th className="py-3 pr-4 font-bold text-right">Points</th>
+                    <th className="py-3 pr-4 font-bold">Company</th>
+                    <th className="py-3 font-bold text-right">Date</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {offers.map((o) => (
+                    <tr key={o.id} className="hover:bg-secondary/20">
+                      <td className="py-3 pr-4 font-medium text-foreground max-w-[160px] truncate">
+                        {o.offerName || "Offer"}
+                      </td>
+                      <td className="py-3 pr-4 text-right font-bold text-emerald-500">
+                        +{(o.points || 0).toLocaleString()}
+                      </td>
+                      <td className="py-3 pr-4 text-muted-foreground capitalize">{o.company || "—"}</td>
+                      <td className="py-3 text-right text-muted-foreground whitespace-nowrap">
+                        {formatDate(o.createdAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
