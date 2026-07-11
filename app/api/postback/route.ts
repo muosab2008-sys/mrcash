@@ -1,8 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin";
+import { adminApp, adminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
+import { getMessaging } from "firebase-admin/messaging";
 
 export const dynamic = "force-dynamic";
+
+// Send an actual Web Push (FCM) to the user's saved device token, if any.
+async function sendPush(userId: string, title: string, body: string) {
+  try {
+    const snap = await adminDb.collection("users").doc(userId).get();
+    const token = snap.get("notificationToken") as string | undefined;
+    if (!token) return;
+
+    await getMessaging(adminApp).send({
+      token,
+      notification: { title, body },
+      webpush: {
+        notification: { icon: "/coin.png" },
+        fcmOptions: { link: "https://mrcash.app/profile" },
+      },
+    });
+  } catch (err: any) {
+    console.error("[v0] Push send failed:", err?.message || err);
+  }
+}
 
 // Smartly pull a value from either the URL query params or the request body,
 // trying each possible key name in order until one has a value.
@@ -83,15 +104,19 @@ async function handlePostback(req: NextRequest): Promise<NextResponse> {
       });
 
       // Fire a real-time in-app notification so the toast reacts.
+      const message = `You earned +${points} points from ${offerName} (${company}).`;
       await adminDb.collection("notifications").add({
         userId,
         title: "Points Credited!",
-        message: `You earned +${points} points from ${offerName} (${company}).`,
+        message,
         type: "offer_credit",
         points,
         read: false,
         timestamp: FieldValue.serverTimestamp(),
       });
+
+      // Send a real device push notification (works in background too).
+      await sendPush(userId, "Points Credited!", message);
     }
 
     // Offer companies expect a plain "1" / "success" acknowledgement.

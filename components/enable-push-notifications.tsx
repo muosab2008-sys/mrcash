@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getMessaging, getToken, isSupported } from "firebase/messaging";
+import { getMessaging, getToken, isSupported, onMessage } from "firebase/messaging";
 import { doc, setDoc } from "firebase/firestore";
 import { app, db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
@@ -35,6 +35,20 @@ export function EnablePushNotifications() {
         return;
       }
       if (active) setPerm(Notification.permission as PermState);
+
+      // Show a toast when a push arrives while the app is open (foreground).
+      if (active && Notification.permission === "granted") {
+        try {
+          const messaging = getMessaging(app);
+          onMessage(messaging, (payload) => {
+            const title = payload.notification?.title || "MrCash";
+            const body = payload.notification?.body || "";
+            toast.success(title, { description: body });
+          });
+        } catch {
+          /* ignore */
+        }
+      }
     })();
     return () => {
       active = false;

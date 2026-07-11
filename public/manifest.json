@@ -8,8 +8,8 @@
   "theme_color": "#3B82F6",
   "orientation": "portrait-primary",
   "scope": "/",
-  "lang": "ar",
-  "dir": "rtl",
+  "lang": "en",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/logo.png",
