@@ -28,6 +28,7 @@ import {
   Ticket,
   Settings,
   CheckCircle,
+  Wallet,
 } from "lucide-react";
 import {
   LineChart,
@@ -161,6 +162,7 @@ export default function AdminDashboard() {
   const adminLinks = [
     { href: "/admin/users", label: "Manage Users", icon: Users, description: "View, ban, and manage users" },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: DollarSign, description: "Process withdrawal requests" },
+    { href: "/admin/withdrawal-methods", label: "Withdrawal Methods", icon: Wallet, description: "Enable or disable payout methods" },
     { href: "/admin/giveaways", label: "Giveaways", icon: Gift, description: "Manage giveaway prizes" },
     { href: "/admin/promo", label: "Promo Codes", icon: Ticket, description: "Create and manage promo codes" },
     { href: "/admin/offerwalls", label: "Offerwalls", icon: Settings, description: "Configure offerwall settings" },

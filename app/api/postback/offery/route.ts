@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import admin from 'firebase-admin';
+import { logOfferHistory, getPostbackIp } from '@/lib/offers-history';
 
 export const dynamic = 'force-dynamic';
 
@@ -172,6 +173,15 @@ export async function POST(req: NextRequest) {
         read: false,
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
+    });
+
+    await logOfferHistory({
+      userId: user_id,
+      offerName,
+      points: finalReward,
+      company: 'Offery',
+      ipAddress: getPostbackIp(req),
+      transactionId: targetTxnId,
     });
 
     return new NextResponse("ok", { status: 200 });

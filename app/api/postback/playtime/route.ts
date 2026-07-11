@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
 import crypto from 'crypto'; 
+import { logOfferHistory, getPostbackIp } from '@/lib/offers-history';
 
 export const dynamic = 'force-dynamic';
 
@@ -122,6 +123,15 @@ async function handlePostback(req: NextRequest, isGetMethod: boolean) {
         read: false,
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
+    });
+
+    await logOfferHistory({
+      userId: firebase_uid,
+      offerName,
+      points: finalReward,
+      company: 'Playtime',
+      ipAddress: getPostbackIp(req, urlParams.get('ip') || urlParams.get('user_ip') || bodyParams.ip),
+      transactionId: `playtime_${incomingSignature}`,
     });
 
     console.log(`✅ Success! Processed Playtime credit for user: ${firebase_uid}`);

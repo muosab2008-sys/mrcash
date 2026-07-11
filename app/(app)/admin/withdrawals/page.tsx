@@ -14,12 +14,15 @@ import {
   where,
   serverTimestamp,
   increment,
+  getDocs,
+  getDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   DollarSign,
@@ -33,6 +36,11 @@ import {
   Ban,
   Globe,
   Gift,
+  ShieldAlert,
+  Search,
+  Mail,
+  User as UserIcon,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -53,12 +61,75 @@ interface Withdrawal {
   lastOfferwall?: string | null;
 }
 
+interface OfferHistoryItem {
+  id: string;
+  offerName: string;
+  company: string;
+  points: number;
+  ipAddress: string;
+  createdAt: Date | null;
+}
+
 export default function AdminWithdrawalsPage() {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
   const [markingAll, setMarkingAll] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Security detail dialog state
+  const [detailWithdrawal, setDetailWithdrawal] = useState<Withdrawal | null>(null);
+  const [detailUser, setDetailUser] = useState<{ username?: string; email?: string } | null>(null);
+  const [userOffers, setUserOffers] = useState<OfferHistoryItem[]>([]);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+
+  const openSecurityDetails = async (withdrawal: Withdrawal) => {
+    setDetailWithdrawal(withdrawal);
+    setDetailUser(null);
+    setUserOffers([]);
+    setLoadingDetails(true);
+    try {
+      // Fetch fresh user profile (username + email)
+      let profile: { username?: string; email?: string } = {
+        username: withdrawal.username,
+        email: withdrawal.email,
+      };
+      try {
+        const userSnap = await getDoc(doc(db, "users", withdrawal.userId));
+        if (userSnap.exists()) {
+          const u = userSnap.data();
+          profile = { username: u.username || withdrawal.username, email: u.email || withdrawal.email };
+        }
+      } catch (err) {
+        console.log("[v0] withdrawal details: user lookup failed", err);
+      }
+      setDetailUser(profile);
+
+      // Fetch every offer this user completed, with the IP used for each
+      const offersSnap = await getDocs(
+        query(collection(db, "offers_history"), where("userId", "==", withdrawal.userId))
+      );
+      const offers = offersSnap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          offerName: data.offerName || "Offer",
+          company: data.company || "—",
+          points: data.points || 0,
+          ipAddress: data.ipAddress || "unknown",
+          createdAt: data.createdAt?.toDate?.() || data.timestamp?.toDate?.() || null,
+        } as OfferHistoryItem;
+      });
+      // Sort newest first on the client (avoids requiring a composite index)
+      offers.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+      setUserOffers(offers);
+    } catch (err: any) {
+      toast.error("Failed to load user security details");
+      console.error("[v0] openSecurityDetails error:", err?.message || err);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
 
   useEffect(() => {
     const q = query(collection(db, "withdrawals"), orderBy("createdAt", "desc"));
@@ -412,6 +483,19 @@ export default function AdminWithdrawalsPage() {
                       </div>
                     </div>
 
+                    <div className="flex flex-wrap gap-2">
+                      {/* Security Details Button (always available) */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openSecurityDetails(withdrawal)}
+                        className="text-[#3B82F6] border-[#3B82F6]/30 hover:bg-[#3B82F6]/10 rounded-xl"
+                      >
+                        <ShieldAlert className="mr-1 h-4 w-4" />
+                        Security Details
+                      </Button>
+                    </div>
+
                     {withdrawal.status === "pending" && (
                       <div className="flex flex-wrap gap-2">
                         {/* Approve Button */}
@@ -491,6 +575,121 @@ export default function AdminWithdrawalsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Security Details Dialog */}
+      <Dialog open={!!detailWithdrawal} onOpenChange={(open) => !open && setDetailWithdrawal(null)}>
+        <DialogContent className="max-w-3xl border-white/10 bg-[#0a0a0a] text-white rounded-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <ShieldAlert className="h-5 w-5 text-[#3B82F6]" />
+              User Security Report
+            </DialogTitle>
+          </DialogHeader>
+
+          {detailWithdrawal && (
+            <div className="space-y-5">
+              {/* User identity */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                  <p className="flex items-center gap-2 text-xs text-white/40">
+                    <UserIcon className="h-3.5 w-3.5" /> Username
+                  </p>
+                  <p className="mt-1 font-bold break-all">{detailUser?.username || detailWithdrawal.username || "—"}</p>
+                </div>
+                <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                  <p className="flex items-center gap-2 text-xs text-white/40">
+                    <Mail className="h-3.5 w-3.5" /> Email
+                  </p>
+                  <p className="mt-1 font-bold break-all">{detailUser?.email || detailWithdrawal.email || "—"}</p>
+                </div>
+              </div>
+
+              {/* Withdrawal IP highlighted for VPN comparison */}
+              <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
+                <p className="flex items-center gap-2 text-xs font-medium text-red-400">
+                  <Globe className="h-3.5 w-3.5" /> Withdrawal Request IP
+                </p>
+                <p className="mt-1 font-mono text-lg font-bold text-red-300">
+                  {detailWithdrawal.ipAddress || "unknown"}
+                </p>
+                <p className="mt-1 text-xs text-white/40">
+                  Compare this with each offer&apos;s IP below. Rows with a different IP are highlighted as possible VPN / multi-account activity.
+                </p>
+              </div>
+
+              {/* Offers history table */}
+              <div>
+                <p className="mb-2 flex items-center gap-2 text-sm font-bold text-white">
+                  <Gift className="h-4 w-4 text-[#8B5CF6]" />
+                  Offers Completed ({userOffers.length})
+                </p>
+
+                {loadingDetails ? (
+                  <div className="flex items-center justify-center py-10 text-white/40">
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading offers history...
+                  </div>
+                ) : userOffers.length === 0 ? (
+                  <div className="flex flex-col items-center gap-2 py-10 text-center text-white/40">
+                    <Search className="h-6 w-6" />
+                    <p>No recorded offers for this user yet.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-xl border border-white/5">
+                    <table className="w-full min-w-[560px] text-left text-sm">
+                      <thead>
+                        <tr className="border-b border-white/5 bg-white/[0.02] text-xs uppercase text-white/40">
+                          <th className="px-3 py-2.5">Offer</th>
+                          <th className="px-3 py-2.5">Company</th>
+                          <th className="px-3 py-2.5 text-right">Points</th>
+                          <th className="px-3 py-2.5">Offer IP</th>
+                          <th className="px-3 py-2.5">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {userOffers.map((offer) => {
+                          const withdrawalIp = detailWithdrawal.ipAddress || "";
+                          const ipMismatch =
+                            withdrawalIp &&
+                            withdrawalIp !== "unknown" &&
+                            offer.ipAddress !== "unknown" &&
+                            offer.ipAddress !== withdrawalIp;
+                          return (
+                            <tr
+                              key={offer.id}
+                              className={`border-b border-white/5 last:border-0 ${
+                                ipMismatch ? "bg-amber-500/5" : ""
+                              }`}
+                            >
+                              <td className="px-3 py-2.5 font-medium text-white/90">{offer.offerName}</td>
+                              <td className="px-3 py-2.5 text-white/60">{offer.company}</td>
+                              <td className="px-3 py-2.5 text-right font-bold text-emerald-400">
+                                +{offer.points.toLocaleString()}
+                              </td>
+                              <td className="px-3 py-2.5">
+                                <span
+                                  className={`inline-flex items-center gap-1 font-mono text-xs ${
+                                    ipMismatch ? "text-amber-400" : "text-white/70"
+                                  }`}
+                                >
+                                  {ipMismatch && <AlertTriangle className="h-3 w-3" />}
+                                  {offer.ipAddress}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2.5 whitespace-nowrap text-white/50">
+                                {offer.createdAt ? offer.createdAt.toLocaleString() : "—"}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
+import { logOfferHistory, getPostbackIp } from '@/lib/offers-history';
 
 export const dynamic = 'force-dynamic';
 
@@ -115,6 +116,15 @@ export async function GET(request: NextRequest) {
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
+    });
+
+    await logOfferHistory({
+      userId,
+      offerName,
+      points: pointsToReward,
+      company: 'PixyLabs',
+      ipAddress: getPostbackIp(request, searchParams.get('user_ip') || searchParams.get('ip')),
+      transactionId,
     });
 
     return NextResponse.json({ success: true, message: 'PixyLabs Swaarm postback processed successfully' }, { status: 200 });

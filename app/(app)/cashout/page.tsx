@@ -2,9 +2,9 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  collection, doc, query, where, orderBy, limit, getDocs, serverTimestamp, runTransaction,
+  collection, doc, query, where, orderBy, limit, getDocs, serverTimestamp, runTransaction, onSnapshot,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
@@ -110,8 +110,25 @@ export default function CashoutPage() {
   const [paymentDetails, setPaymentDetails] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [displayMode, setDisplayMode] = useState<"points" | "usd">("points");
+  const [disabledMethods, setDisabledMethods] = useState<Set<string>>(new Set());
+
+  // Listen for admin-controlled method availability (withdrawal_methods collection)
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "withdrawal_methods"), (snapshot) => {
+      const disabled = new Set<string>();
+      snapshot.docs.forEach((d) => {
+        if (d.data().enabled === false) disabled.add(d.id);
+      });
+      setDisabledMethods(disabled);
+    });
+    return () => unsub();
+  }, []);
 
   const handleOpenWithdraw = (method: any) => {
+    if (disabledMethods.has(method.id)) {
+      toast.error(`${method.name} is currently unavailable`);
+      return;
+    }
     setSelectedMethod(method);
     setSelectedAmount(null);
     setPaymentDetails("");

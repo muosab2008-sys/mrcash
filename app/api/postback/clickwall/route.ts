@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
+import { logOfferHistory, getPostbackIp } from '@/lib/offers-history';
 
 export async function GET(request: NextRequest) {
   try {
@@ -81,6 +82,15 @@ export async function GET(request: NextRequest) {
         read: false,
         timestamp: admin.firestore.FieldValue.serverTimestamp() 
       });
+    });
+
+    await logOfferHistory({
+      userId,
+      offerName: finalOfferTitle,
+      points: pointsToReward,
+      company: 'ClickWall',
+      ipAddress: getPostbackIp(request, userIp),
+      transactionId,
     });
 
     // 5. 🏁 إرجاع الرد الرسمي الذي تتوقعه شركة ClickWall لإتمام العملية بنجاح

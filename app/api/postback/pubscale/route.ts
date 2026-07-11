@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
 import crypto from 'crypto'; 
+import { logOfferHistory, getPostbackIp } from '@/lib/offers-history';
 
 export const dynamic = 'force-dynamic';
 
@@ -144,6 +145,15 @@ export async function GET(request: NextRequest) {
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
+    });
+
+    await logOfferHistory({
+      userId,
+      offerName: finalOfferTitle,
+      points: pointsToReward,
+      company: 'PubScale',
+      ipAddress: getPostbackIp(request, searchParams.get('ip') || searchParams.get('user_ip')),
+      transactionId,
     });
 
     console.log(`[PubScale Success] Credited +${pointsToReward} MC to user ${userId}`);

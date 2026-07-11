@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin'; 
 import admin from 'firebase-admin';
+import { logOfferHistory, getPostbackIp } from '@/lib/offers-history';
 
 export const dynamic = 'force-dynamic';
 
@@ -130,6 +131,15 @@ async function handleOvnixPostback(request: NextRequest) {
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
+    });
+
+    await logOfferHistory({
+      userId,
+      offerName,
+      points: pointsToReward,
+      company: 'Ovnix',
+      ipAddress: getPostbackIp(request, rawData.ip || rawData.user_ip),
+      transactionId,
     });
 
     console.log(`[Ovnix Live Success] Processed +${pointsToReward} points for user: ${userId}`);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import admin from 'firebase-admin';
+import { logOfferHistory, getPostbackIp } from '@/lib/offers-history';
 
 // 1. تهيئة الفايربيز لحساب الـ Admin داخلياً وتجنب تكرار التهيئة في Vercel
 if (!admin.apps.length) {
@@ -167,6 +168,15 @@ export async function POST(req: NextRequest) {
         read: false,
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
+    });
+
+    await logOfferHistory({
+      userId,
+      offerName: campaignName,
+      points: finalReward,
+      company: 'Tplayad',
+      ipAddress: getPostbackIp(req),
+      transactionId: transId,
     });
 
     return new NextResponse("OK", { status: 200 });
