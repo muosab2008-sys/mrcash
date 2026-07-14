@@ -37,20 +37,6 @@ export function AppShell({ children }: AppShellProps) {
           isCollapsed={sidebarCollapsed}
         />
 
-        {/* Live activity ticker - shows recent wins from all offerwalls */}
-        <LiveFeedTicker />
-
-        {/* Main content - transparent background */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden pb-20 lg:pb-0 bg-transparent">
-          <div className="w-full min-h-full flex flex-col">
-            <div className="w-full flex-1 p-0">
-              {children}
-            </div>
-            {/* Global Footer - Appears on every page */}
-            <GlobalFooter />
-          </div>
-        </main>
-      </div>
 
       {/* Bottom navigation - Mobile only */}
       <BottomNav />
