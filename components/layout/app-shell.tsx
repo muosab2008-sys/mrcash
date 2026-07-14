@@ -37,6 +37,12 @@ export function AppShell({ children }: AppShellProps) {
           isCollapsed={sidebarCollapsed}
         />
 
+        {/* محتوى الصفحة الرئيسي */}
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+
+      </div> {/* 👈 هنا قمنا بإغلاق الـ div الخاص بـ Main content area بشكل صحيح */}
 
       {/* Bottom navigation - Mobile only */}
       <BottomNav />
