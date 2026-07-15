@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-    // وضعنا رقم طلبك الحالي مباشرة من الفاتورة لتسهيل الربط تلقائياً
+    //وضعنا رقم طلبك الحالي مباشرة من الفاتورة لتسهيل الربط تلقائياً
     const orderId = "662154";
 
     const apiKey = process.env.PROXY_CHEAP_API_KEY;
