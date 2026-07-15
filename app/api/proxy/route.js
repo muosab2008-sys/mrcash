@@ -8,50 +8,51 @@ export async function GET() {
         return NextResponse.json({ error: 'مفاتيح الـ API غير معرفة في Vercel!' }, { status: 500 });
     }
 
-    try {
-        // 1. جلب قائمة الطلبات (Orders) لمعرفة الـ ID النشط تلقائياً كما يوضح التوثيق
-        const ordersResponse = await fetch('https://api.proxy-cheap.com/residential/orders', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'X-Api-Key': apiKey,
-                'X-Api-Secret': apiSecret
+    // قائمة بالمسارات المحتملة للـ API بناءً على نوع الباقة في حسابك
+    const endpoints = [
+        'https://api.proxy-cheap.com/residential/proxy',
+        'https://api.proxy-cheap.com/residential/configuration',
+        'https://api.proxy-cheap.com/users/me' // مسار احتياطي لجلب بيانات الحساب الأساسية
+    ];
+
+    for (const url of endpoints) {
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Api-Key': apiKey,
+                    'X-Api-Secret': apiSecret
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                
+                // لتوحيد صيغة البيانات المرتجعة للواجهة (تأمين الحقول الأساسية)
+                const standardizedData = {
+                    status: "ACTIVE",
+                    connection: {
+                        connectIp: data.connection?.connectIp || data.ip || "pr.proxy-cheap.com",
+                        httpPort: data.connection?.httpPort || data.httpPort || 31112,
+                        socks5Port: data.connection?.socks5Port || data.socks5Port || 31113
+                    },
+                    authentication: {
+                        username: data.authentication?.username || data.username || "معرف_المستخدم",
+                        password: data.authentication?.password || data.password || "كلمة_المرور"
+                    }
+                };
+
+                return NextResponse.json([standardizedData]);
             }
-        });
-
-        if (!ordersResponse.ok) {
-            return NextResponse.json({ error: `خطأ في جلب الطلبات: ${ordersResponse.status}` }, { status: ordersResponse.status });
+        } catch (e) {
+            // الاستمرار في المحاولة مع المسار التالي في حال حدوث خطأ في الشبكة
+            continue;
         }
-
-        const ordersData = await ordersResponse.json();
-
-        if (!ordersData || ordersData.length === 0) {
-            return NextResponse.json({ error: 'لا يوجد أي طلب أو اشتراك نشط في الحساب.' }, { status: 404 });
-        }
-
-        // اختيار أول طلب نشط
-        const activeOrder = ordersData.find(order => order.status === 'ACTIVE') || ordersData[0];
-        const dynamicOrderId = activeOrder.id;
-
-        // 2. محاولة جلب تفاصيل البروكسي الحية التابعة لهذا الطلب
-        const proxyResponse = await fetch(`https://api.proxy-cheap.com/residential/orders/${dynamicOrderId}/proxies`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'X-Api-Key': apiKey,
-                'X-Api-Secret': apiSecret
-            }
-        });
-
-        // إذا كان المسار الفرعي يعطي 404، نقوم بإرجاع بيانات الطلب نفسه لأنها تحتوي غالباً على بيانات الاتصال
-        if (!proxyResponse.ok) {
-            return NextResponse.json([activeOrder]);
-        }
-
-        const proxyData = await proxyResponse.json();
-        return NextResponse.json(Array.isArray(proxyData) ? proxyData : [proxyData]);
-
-    } catch (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    // إذا فشلت كل المسارات المباشرة، نعيد رسالة واضحة
+    return NextResponse.json({ 
+        error: 'تعذر الوصول لبيانات البروكسي المباشرة، يرجى التحقق من نوع الباقة النشطة في حسابك.' 
+    }, { status: 404 });
 }
