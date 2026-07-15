@@ -4,55 +4,47 @@ export async function GET() {
     const apiKey = process.env.PROXY_CHEAP_API_KEY;
     const apiSecret = process.env.PROXY_CHEAP_API_SECRET;
 
+    // 1. التحقق الفوري إذا كانت المفاتيح فارغة في بيئة Vercel
     if (!apiKey || !apiSecret) {
-        return NextResponse.json({ error: 'مفاتيح الـ API غير معرفة في Vercel!' }, { status: 500 });
+        return NextResponse.json({ 
+            error: 'خطأ حاسم: مفاتيح البيئة PROXY_CHEAP_API_KEY أو PROXY_CHEAP_API_SECRET غير معرفة في إعدادات Vercel!' 
+        }, { status: 500 });
     }
 
-    // قائمة بالمسارات المحتملة للـ API بناءً على نوع الباقة في حسابك
-    const endpoints = [
-        'https://api.proxy-cheap.com/residential/proxy',
-        'https://api.proxy-cheap.com/residential/configuration',
-        'https://api.proxy-cheap.com/users/me' // مسار احتياطي لجلب بيانات الحساب الأساسية
-    ];
-
-    for (const url of endpoints) {
-        try {
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Api-Key': apiKey,
-                    'X-Api-Secret': apiSecret
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                
-                // لتوحيد صيغة البيانات المرتجعة للواجهة (تأمين الحقول الأساسية)
-                const standardizedData = {
-                    status: "ACTIVE",
-                    connection: {
-                        connectIp: data.connection?.connectIp || data.ip || "pr.proxy-cheap.com",
-                        httpPort: data.connection?.httpPort || data.httpPort || 31112,
-                        socks5Port: data.connection?.socks5Port || data.socks5Port || 31113
-                    },
-                    authentication: {
-                        username: data.authentication?.username || data.username || "معرف_المستخدم",
-                        password: data.authentication?.password || data.password || "كلمة_المرور"
-                    }
-                };
-
-                return NextResponse.json([standardizedData]);
+    try {
+        // سنحاول الاتصال بأبسط مسار لمعلومات الحساب لمعرفة سبب الرفض
+        const res = await fetch('https://api.proxy-cheap.com/users/me', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Api-Key': apiKey,
+                'X-Api-Secret': apiSecret
             }
-        } catch (e) {
-            // الاستمرار في المحاولة مع المسار التالي في حال حدوث خطأ في الشبكة
-            continue;
-        }
-    }
+        });
 
-    // إذا فشلت كل المسارات المباشرة، نعيد رسالة واضحة
-    return NextResponse.json({ 
-        error: 'تعذر الوصول لبيانات البروكسي المباشرة، يرجى التحقق من نوع الباقة النشطة في حسابك.' 
-    }, { status: 404 });
+        const status = res.status;
+        
+        // جلب نص الخطأ الخام القادم من سيرفر Proxy-Cheap
+        const rawText = await res.text();
+        let detail = rawText;
+        try {
+            const parsed = JSON.parse(rawText);
+            detail = parsed.message || parsed.error || rawText;
+        } catch(e) {}
+
+        // إذا أعاد السيرفر أي خطأ (مثل 401 Unauthorized أو 403 Forbidden)
+        if (!res.ok) {
+            return NextResponse.json({
+                error: `فشل المصادقة مع سيرفر Proxy-Cheap (كود الخطأ: ${status})`,
+                server_response: detail,
+                suggestion: 'تأكد من مطابقة الـ API Key والـ Secret الحاليين مع اللوحة في حسابك، وتأكد من حفظهم في إعدادات Vercel Environment Variables.'
+            }, { status: status });
+        }
+
+        // إذا نجح الاتصال (وهذا مستبعد حالياً)، سيعيد البيانات
+        return NextResponse.json({ success: true, data: JSON.parse(rawText) });
+
+    } catch (error) {
+        return NextResponse.json({ error: 'خطأ في الاتصال بالشبكة', details: error.message }, { status: 500 });
+    }
 }
