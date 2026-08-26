@@ -48,7 +48,7 @@ const defaultOfferwalls: Offerwall[] = [
   { id: "upwall", name: "upwall", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/6809146f505d9.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
   { id: "adbreak", name: "adbreak", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://dashboard.adbreakmedia.com/images/vertical_text_logo/text_bluish_transparent.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
   { id: "capsbit", name: "capsbit", description: "Unlock exclusive high-payout opportunities", logoUrl: "https://mistcash.co/assets/images/networks/6a86faceb71eb.png", avgPoints: 2200, isActive: true, url: "#", color: "#25D3C2", likes: 52, dislikes: 15, isHot: true },
-  { id: "gaintwall", name: "gaintwall", description: "Unlock exclusive high-payout opportunities", logoUrl: "https://gaintwall.com/assets/brand/gaintwall-logo-lockup.png", avgPoints: 2200, isActive: true, url: "#", color: "#25D3C2", likes: 52, dislikes: 15, isHot: true },
+  { id: "gaintwall", name: "gaintwall", description: "Unlock exclusive high-payout opportunities", logoUrl: "https://gaintwall.com/assets/brand/gaintwall-logo-alt.png", avgPoints: 2200, isActive: true, url: "#", color: "#25D3C2", likes: 52, dislikes: 15, isHot: true },
 ];
 
 interface VoteData {
@@ -211,7 +211,8 @@ export default function EarnPage() {
       upwall: `https://offerwall.upwall.io/?app_id=6ff3-bd30-f8e8-4fa9&userid=${uid}`,
       adbreak: `https://wall.adbreakmedia.com/11fff2ba859f2bc8b975d98d3d93b104c5c0389ff1fed4cbded445571a0c63da/${uid}`,
       capsbit: `https://offerwall.capsbit.com/322c05d808103a10d0fae9609b1784/${uid}`,
-      gaintwall: `https://gaintwall.com/offerwall?apiKey=tV1zJEg6r8RqzIOwNpPVqTUVIcoHEEdD${uid}`,
+      gaintwall: `https://gaintwall.com/offerwall?apiKey=tV1zJEg6r8RqzIOwNpPVqTUVIcoHEEdD&userId=${encodeURIComponent(uid)}`,
+};
     };
     return urls[wall.id] || wall.url;
   };
