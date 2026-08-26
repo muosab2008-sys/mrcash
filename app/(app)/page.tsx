@@ -214,7 +214,7 @@ export default function EarnPage() {
       // Correct format:
 gaintwall: `https://gaintwall.com/offerwall?apiKey=tV1zJEg6r8RqzIOwNpPVqTUVIcoHEEdD&userId=${uid}`,
 };
-    };
+    
     return urls[wall.id] || wall.url;
   };
 
