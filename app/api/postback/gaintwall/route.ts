@@ -16,7 +16,7 @@ async function handlePostback(req: NextRequest) {
     const url = new URL(req.url);
     const searchParams = url.searchParams;
 
-    // استخراج المتغيرات من الرابط أو من الـ Body في حال تم إرسالها كـ Form Data / JSON
+    // استخراج المتغيرات من الـ Query Params أو الـ Body بمختلف الصيغ الممكنة
     let bodyParams: Record<string, any> = {};
     try {
       const contentType = req.headers.get('content-type') || '';
@@ -31,65 +31,57 @@ async function handlePostback(req: NextRequest) {
     const firebase_uid = searchParams.get('userId') || searchParams.get('user_id') || bodyParams.userId || bodyParams.user_id || '';
     const offerId = searchParams.get('offerId') || searchParams.get('offer_id') || bodyParams.offerId || bodyParams.offer_id || '';
     const offerName = searchParams.get('offerName') || searchParams.get('offer_name') || bodyParams.offerName || bodyParams.offer_name || 'Gaintwall Offer';
-    const txId = searchParams.get('transactionId') || searchParams.get('transaction_id') || bodyParams.transactionId || bodyParams.transaction_id || '';
+    const txId = searchParams.get('transactionId') || searchParams.get('transaction_id') || searchParams.get('txid') || bodyParams.transactionId || bodyParams.transaction_id || bodyParams.txid || '';
     const status = searchParams.get('status') || bodyParams.status || 'approved';
     const rewardRaw = searchParams.get('reward') || bodyParams.reward || '0';
     const payoutRaw = searchParams.get('payout') || bodyParams.payout || '0';
     const userIp = searchParams.get('ip') || bodyParams.ip || '';
     const hash = searchParams.get('hash') || bodyParams.hash || '';
 
-    // التحقق من المتغيرات المطلوبة
-    if (!firebase_uid || !offerId || !txId) {
-      console.warn('⚠️ Gaintwall Postback: Missing vital parameters', { firebase_uid, offerId, txId });
-      return new NextResponse('Missing parameters', { status: 400 });
-    }
-
-    // كشف طلبات الاختبار التجريبية (لتجنب فشل التفعيل أثناء الـ Test)
+    // 1. كشف طلبات الفحص والتفعيل التجريبية من Gaintwall للرد بـ 200 فوراً
     const isTestRequest = 
+      !firebase_uid || 
+      !offerId || 
+      !txId ||
       txId.toLowerCase().includes('test') || 
       firebase_uid.toLowerCase().includes('test') ||
       offerName.toLowerCase().includes('test') ||
       !hash;
 
-    // التحقق الأمني في الطلبات الحقيقية فقط
-    if (!isTestRequest) {
-      // 1. فحص الـ Hash
-      if (hash && GAINTWALL_SECRET_KEY) {
-        const dataToHash = `${firebase_uid}${offerId}${txId}${GAINTWALL_SECRET_KEY}`;
-        const generatedHash = crypto.createHash('sha256').update(dataToHash).digest('hex');
+    if (isTestRequest) {
+      console.log('✅ Gaintwall Test Postback Verified Successfully');
+      return new NextResponse('Approved', { status: 200 });
+    }
 
-        if (hash.toLowerCase() !== generatedHash.toLowerCase()) {
-          console.error(`❌ Gaintwall Hash Mismatch: received ${hash}, calculated ${generatedHash}`);
-          return new NextResponse('Unauthorized', { status: 401 });
-        }
-      }
+    // 2. التحقق الأمني في الطلبات الحقيقية فقط
+    if (hash && GAINTWALL_SECRET_KEY) {
+      const dataToHash = `${firebase_uid}${offerId}${txId}${GAINTWALL_SECRET_KEY}`;
+      const generatedHash = crypto.createHash('sha256').update(dataToHash).digest('hex');
 
-      // 2. فحص الـ IP (إذا كان موجوداً)
-      if (clientIp && clientIp !== GAINTWALL_TRUSTED_IP && !clientIp.includes('127.0.0.1')) {
-        console.warn(`⚠️ Gaintwall Warning: IP mismatch (${clientIp})`);
+      if (hash.toLowerCase() !== generatedHash.toLowerCase()) {
+        console.error(`❌ Gaintwall Hash Mismatch: received ${hash}, calculated ${generatedHash}`);
+        return new NextResponse('Unauthorized', { status: 401 });
       }
     }
 
-    // حساب النقاط والتعامل مع Reversals
+    // 3. التحقق من تكرار المعاملة (Idempotency)
+    const transactionRef = adminDb.collection('transactions').doc(txId);
+    const transactionDoc = await transactionRef.get();
+    if (transactionDoc.exists) {
+      return new NextResponse('Approved', { status: 200 });
+    }
+
+    // 4. احتساب النقاط وتجهيز الخصم في حال الـ Reversal
     let rewardAmount = parseFloat(rewardRaw) || 0;
     if (status === 'rejected') {
       rewardAmount = -Math.abs(rewardAmount);
     }
     const finalReward = Math.round(rewardAmount);
 
-    // التحقق من تكرار المعاملة (Idempotency)
-    const transactionRef = adminDb.collection('transactions').doc(txId);
-    if (!isTestRequest) {
-      const transactionDoc = await transactionRef.get();
-      if (transactionDoc.exists) {
-        return new NextResponse('Approved', { status: 200 });
-      }
-    }
-
     const userRef = adminDb.collection('users').doc(firebase_uid);
     const notificationRef = adminDb.collection('notifications').doc();
 
-    // تنفيذ المعاملة على Firebase
+    // 5. حفظ البيانات في Firestore
     await adminDb.runTransaction(async (ts) => {
       const userDoc = await ts.get(userRef);
 
@@ -149,7 +141,7 @@ async function handlePostback(req: NextRequest) {
 
     return new NextResponse('Approved', { status: 200 });
   } catch (error: any) {
-    console.error('Gaintwall Postback Processing Error:', error.message);
+    console.error('Gaintwall Postback Handler Error:', error.message);
     return new NextResponse('Approved', { status: 200 });
   }
 }
