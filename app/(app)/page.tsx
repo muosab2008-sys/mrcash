@@ -211,7 +211,8 @@ export default function EarnPage() {
       upwall: `https://offerwall.upwall.io/?app_id=6ff3-bd30-f8e8-4fa9&userid=${uid}`,
       adbreak: `https://wall.adbreakmedia.com/11fff2ba859f2bc8b975d98d3d93b104c5c0389ff1fed4cbded445571a0c63da/${uid}`,
       capsbit: `https://offerwall.capsbit.com/322c05d808103a10d0fae9609b1784/${uid}`,
-      gaintwall: `https://gaintwall.com/offerwall?apiKey=tV1zJEg6r8RqzIOwNpPVqTUVIcoHEEdD&userId=${encodeURIComponent(uid)}`,
+      // Correct format:
+gaintwall: `https://gaintwall.com/offerwall?apiKey=tV1zJEg6r8RqzIOwNpPVqTUVIcoHEEdD&userId=${uid}`,
 };
     };
     return urls[wall.id] || wall.url;
