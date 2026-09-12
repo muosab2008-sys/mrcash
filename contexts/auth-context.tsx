@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from "react"
 import type { User } from "@supabase/supabase-js"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
@@ -67,12 +67,11 @@ function toUserData(user: User, profile: Record<string, unknown> | null): UserDa
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const supabase = typeof window !== "undefined" ? createClient() : null
+  const supabase = useMemo(() => (typeof window !== "undefined" ? createClient() : null), [])
   const router = useRouter()
   const requireSupabase = () => {
-    const client = createClient()
-    if (!client) throw new Error("Authentication is not configured for this preview.")
-    return client
+    if (!supabase) throw new Error("Authentication is not configured for this preview.")
+    return supabase
   }
   const [user, setUser] = useState<User | null>(null)
   const [userData, setUserData] = useState<UserData | null>(null)
@@ -98,8 +97,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
       return () => { mounted = false }
     }
-    requireSupabase().auth.getUser().then(({ data }) => loadProfile(data.user))
-    const { data: listener } = requireSupabase().auth.onAuthStateChange((_event, session) => {
+
+    const client = requireSupabase()
+    client.auth.getSession()
+      .then(({ data, error }) => {
+        if (error) throw error
+        return loadProfile(data.session?.user ?? null)
+      })
+      .catch(() => loadProfile(null))
+
+    const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
       void loadProfile(session?.user ?? null)
     })
     return () => { mounted = false; listener.subscription.unsubscribe() }
@@ -107,7 +114,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const { error } = await requireSupabase().auth.signInWithPassword({ email, password })
-    if (error) throw new Error(error.message.toLowerCase().includes("confirm") ? "Please confirm your email before signing in." : "Invalid email or password")
+    if (error) {
+      const message = error.message.toLowerCase()
+      if (message.includes("confirm")) throw new Error("Please confirm your email before signing in.")
+      if (error.status === 429) throw new Error("Too many attempts. Please try again later.")
+      throw new Error("Invalid email or password")
+    }
   }
 
   const loginWithGoogle = async () => {
@@ -121,7 +133,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       options: { emailRedirectTo: redirectUrl(), data: { username, avatar_url: photoURL ?? null, referral_code: referralCode ?? null } },
     })
-    if (error) throw error
+    if (error) {
+      const message = error.message.toLowerCase()
+      if (message.includes("already") || message.includes("registered") || message.includes("exists")) {
+        throw new Error("This email is already in use. Sign in with your existing method or use a different email.")
+      }
+      if (message.includes("password")) throw new Error("Choose a stronger password and try again.")
+      throw new Error("Unable to create your account. Please try again.")
+    }
   }
 
   const logout = async () => { await requireSupabase().auth.signOut(); router.replace("/login") }
