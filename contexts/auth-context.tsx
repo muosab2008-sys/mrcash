@@ -69,6 +69,11 @@ function toUserData(user: User, profile: Record<string, unknown> | null): UserDa
 export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = typeof window !== "undefined" ? createClient() : null
   const router = useRouter()
+  const requireSupabase = () => {
+    const client = createClient()
+    if (!client) throw new Error("Authentication is not configured for this preview.")
+    return client
+  }
   const [user, setUser] = useState<User | null>(null)
   const [userData, setUserData] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -80,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (mounted) { setUser(null); setUserData(null); setLoading(false) }
         return
       }
-      const { data } = await createClient().from("profiles").select("*").eq("id", nextUser.id).maybeSingle()
+      const { data } = await requireSupabase().from("profiles").select("*").eq("id", nextUser.id).maybeSingle()
       if (!mounted) return
       const nextData = toUserData(nextUser, data)
       setUser(nextUser)
@@ -93,25 +98,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
       return () => { mounted = false }
     }
-    createClient().auth.getUser().then(({ data }) => loadProfile(data.user))
-    const { data: listener } = createClient().auth.onAuthStateChange((_event, session) => {
+    requireSupabase().auth.getUser().then(({ data }) => loadProfile(data.user))
+    const { data: listener } = requireSupabase().auth.onAuthStateChange((_event, session) => {
       void loadProfile(session?.user ?? null)
     })
     return () => { mounted = false; listener.subscription.unsubscribe() }
   }, [router, supabase])
 
   const login = async (email: string, password: string) => {
-    const { error } = await createClient().auth.signInWithPassword({ email, password })
+    const { error } = await requireSupabase().auth.signInWithPassword({ email, password })
     if (error) throw new Error(error.message.toLowerCase().includes("confirm") ? "Please confirm your email before signing in." : "Invalid email or password")
   }
 
   const loginWithGoogle = async () => {
-    const { error } = await createClient().auth.signInWithOAuth({ provider: "google", options: { redirectTo: redirectUrl() } })
+    const { error } = await requireSupabase().auth.signInWithOAuth({ provider: "google", options: { redirectTo: redirectUrl() } })
     if (error) throw error
   }
 
   const register = async (email: string, password: string, username: string, photoURL?: string, referralCode?: string) => {
-    const { error } = await createClient().auth.signUp({
+    const { error } = await requireSupabase().auth.signUp({
       email,
       password,
       options: { emailRedirectTo: redirectUrl(), data: { username, avatar_url: photoURL ?? null, referral_code: referralCode ?? null } },
@@ -119,22 +124,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error
   }
 
-  const logout = async () => { await createClient().auth.signOut(); router.replace("/login") }
+  const logout = async () => { await requireSupabase().auth.signOut(); router.replace("/login") }
   const resetPassword = async (email: string) => {
-    const { error } = await createClient().auth.resetPasswordForEmail(email, { redirectTo: redirectUrl() })
+    const { error } = await requireSupabase().auth.resetPasswordForEmail(email, { redirectTo: redirectUrl() })
     if (error) throw error
   }
 
   const updateProfile = async (updates: Record<string, unknown>) => {
     if (!user) throw new Error("No user logged in")
-    const { data, error } = await createClient().from("profiles").update(updates).eq("id", user.id).select("*").single()
+    const { data, error } = await requireSupabase().from("profiles").update(updates).eq("id", user.id).select("*").single()
     if (error) throw error
     setUserData(toUserData(user, data))
   }
 
   const updateUserProfile = (username: string) => updateProfile({ username })
-  const updateUserEmail = async (email: string) => { const { error } = await createClient().auth.updateUser({ email }); if (error) throw error; await updateProfile({ email }) }
-  const updateUserPassword = async (password: string) => { const { error } = await createClient().auth.updateUser({ password }); if (error) throw error }
+  const updateUserEmail = async (email: string) => { const { error } = await requireSupabase().auth.updateUser({ email }); if (error) throw error; await updateProfile({ email }) }
+  const updateUserPassword = async (password: string) => { const { error } = await requireSupabase().auth.updateUser({ password }); if (error) throw error }
   const updateUserAvatar = (photoURL: string) => updateProfile({ photo_url: photoURL })
 
   return <AuthContext.Provider value={{ user, userData, loading, login, loginWithGoogle, register, logout, resetPassword, updateUserProfile, updateUserEmail, updateUserPassword, updateUserAvatar }}>{children}</AuthContext.Provider>
