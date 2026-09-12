@@ -4,30 +4,23 @@ import { useEffect } from "react";
 
 export function ServiceWorkerRegistration() {
   useEffect(() => {
-    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      // Register service worker
-      navigator.serviceWorker
-        .register("/sw.js")
-        .then((registration) => {
-          console.log("Service Worker registered with scope:", registration.scope);
-          
-          // Check for updates
-          registration.addEventListener("updatefound", () => {
-            const newWorker = registration.installing;
-            if (newWorker) {
-              newWorker.addEventListener("statechange", () => {
-                if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-                  // New content is available, notify user if needed
-                  console.log("New content available; please refresh.");
-                }
-              });
-            }
-          });
-        })
-        .catch((error) => {
-          console.error("Service Worker registration failed:", error);
-        });
-    }
+    if (!("serviceWorker" in navigator)) return;
+
+    let cancelled = false;
+    const clearLegacyWorkers = async () => {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+
+      if ("caches" in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
+      }
+
+      if (!cancelled) navigator.serviceWorker.controller?.postMessage({ type: "CLEAR_LEGACY_CACHE" });
+    };
+
+    void clearLegacyWorkers().catch(() => undefined);
+    return () => { cancelled = true };
   }, []);
 
   return null;

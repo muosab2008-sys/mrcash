@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useRef, useState, useMemo, type ReactNode } from "react"
 import type { User } from "@supabase/supabase-js"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
@@ -76,16 +76,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [userData, setUserData] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
+  const fetchedUserId = useRef<string | null>(null)
 
   useEffect(() => {
     let mounted = true
+    let loadingUserId: string | null = null
+
     const loadProfile = async (nextUser: User | null) => {
       if (!nextUser) {
+        fetchedUserId.current = null
         if (mounted) { setUser(null); setUserData(null); setLoading(false) }
         return
       }
+      if (fetchedUserId.current === nextUser.id || loadingUserId === nextUser.id) return
+      loadingUserId = nextUser.id
       const { data } = await requireSupabase().from("profiles").select("*").eq("id", nextUser.id).maybeSingle()
       if (!mounted) return
+      fetchedUserId.current = nextUser.id
+      loadingUserId = null
       const nextData = toUserData(nextUser, data)
       setUser(nextUser)
       setUserData(nextData)
@@ -98,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return () => { mounted = false }
     }
 
-    const client = requireSupabase()
+    const client = supabase
     client.auth.getSession()
       .then(({ data, error }) => {
         if (error) throw error
@@ -106,7 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => loadProfile(null))
 
-    const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = client.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") fetchedUserId.current = null
       void loadProfile(session?.user ?? null)
     })
     return () => { mounted = false; listener.subscription.unsubscribe() }
