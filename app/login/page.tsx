@@ -12,10 +12,6 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Loader2, Mail, Lock, ArrowLeft, KeyRound, Shield } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -42,23 +38,6 @@ export default function LoginPage() {
     try {
       await login(email, password);
 
-      const currentUser = auth.currentUser;
-
-      // تم إلغاء جدار فحص وتأكيد الإيميل هنا ليتخطى المشكلة تماماً وعبر كل الحسابات
-
-      // Check if user has 2FA enabled
-      if (currentUser) {
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        if (userDoc.exists() && userDoc.data()?.twoFactorEnabled) {
-          // Sign out temporarily and show 2FA prompt
-          setPendingUserId(currentUser.uid);
-          await signOut(auth);
-          setShow2FA(true);
-          setLoading(false);
-          return;
-        }
-      }
-      
       toast.success("Welcome back!");
       router.push("/");
     } catch (error: any) {
@@ -104,19 +83,6 @@ export default function LoginPage() {
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
-      
-      // Check if user has 2FA enabled
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        if (userDoc.exists() && userDoc.data()?.twoFactorEnabled) {
-          setPendingUserId(currentUser.uid);
-          await signOut(auth);
-          setShow2FA(true);
-          setGoogleLoading(false);
-          return;
-        }
-      }
       
       toast.success("Welcome!");
       router.push("/");

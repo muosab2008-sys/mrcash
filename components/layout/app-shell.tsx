@@ -5,8 +5,6 @@ import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { BottomNav } from "./bottom-nav";
 import { GlobalFooter } from "./global-footer";
-import { CommunityChat } from "@/components/community-chat";
-import { PointsNotificationBanner } from "@/components/points-notification-banner";
 import { LiveFeedTicker } from "@/components/live-feed-ticker";
 
 interface AppShellProps {
@@ -47,11 +45,6 @@ export function AppShell({ children }: AppShellProps) {
       {/* Bottom navigation - Mobile only */}
       <BottomNav />
       
-      {/* Community Chat - Floating */}
-      <CommunityChat />
-      
-      {/* Points Notification Banner - Top Right */}
-      <PointsNotificationBanner />
     </div>
   );
 }

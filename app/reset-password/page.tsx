@@ -2,11 +2,10 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Lock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import { confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { createClient } from "@/lib/supabase/client";
 
 // English letters, numbers, and a safe set of symbols, min 8 chars.
 const PASSWORD_PATTERN = /^[A-Za-z0-9!@#$%^&*()_\-+=.]{8,}$/;
@@ -25,41 +24,21 @@ function ResetPasswordContent() {
   const [status, setStatus] = useState<"loading" | "valid" | "expired" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const verificationStarted = useRef(false);
-
   useEffect(() => {
-    if (verificationStarted.current) return;
-    verificationStarted.current = true;
-
-    // Custom token flow: validity is checked on submit by the server.
     if (isCustomFlow) {
       setStatus("valid");
       return;
     }
 
-    // Native Firebase oobCode flow.
-    if (!oobCode) {
-      setStatus("expired");
-      setErrorMessage("Invalid link. Please request a new one.");
-      return;
-    }
-
-    (async () => {
-      try {
-        await verifyPasswordResetCode(auth, oobCode);
-        setStatus("valid");
-      } catch (error: any) {
+    const client = createClient();
+    client.auth.getSession().then(({ data: { session } }) => {
+      if (session) setStatus("valid");
+      else {
         setStatus("expired");
-        if (error.code === "auth/expired-action-code") {
-          setErrorMessage("This link has expired. Please request a new one.");
-        } else if (error.code === "auth/invalid-action-code") {
-          setErrorMessage("This link is invalid or has already been used.");
-        } else {
-          setErrorMessage("An error occurred. Please request a new link.");
-        }
+        setErrorMessage("This link has expired. Please request a new one.");
       }
-    })();
-  }, [oobCode, isCustomFlow]);
+    });
+  }, [isCustomFlow]);
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,27 +80,13 @@ function ResetPasswordContent() {
       return;
     }
 
-    // ---------- Native Firebase oobCode flow ----------
-    if (!oobCode) {
-      setStatus("error");
-      setErrorMessage("This link has expired or has already been used.");
-      return;
-    }
-
     try {
-      await confirmPasswordReset(auth, oobCode, password);
+      const { error } = await createClient().auth.updateUser({ password });
+      if (error) throw error;
       setStatus("success");
-    } catch (error: any) {
+    } catch {
       setStatus("error");
-      if (error.code === "auth/expired-action-code") {
-        setErrorMessage("This link has expired. Please request a new one.");
-      } else if (error.code === "auth/invalid-action-code") {
-        setErrorMessage("This link is invalid or has already been used.");
-      } else if (error.code === "auth/weak-password") {
-        setErrorMessage("Password is too weak. Must be at least 8 characters.");
-      } else {
-        setErrorMessage("Failed to update password. Please try again.");
-      }
+      setErrorMessage("Failed to update password. Please request a new link and try again.");
     }
   };
 
