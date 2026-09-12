@@ -33,6 +33,7 @@ export function useNotifications() {
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [pushPermission, setPushPermission] = useState<NotificationPermission | null>(null);
   const shownIds = useRef(new Set<string>());
@@ -43,7 +44,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const client = createClient();
-    if (!client || !user) {
+    if (!client || !userId) {
       setNotifications([]);
       shownIds.current.clear();
       return;
@@ -54,7 +55,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       const { data } = await client
         .from("notifications")
         .select("id,title,message,type,read,created_at")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(50);
       if (active) setNotifications((data ?? []).map((item) => ({ ...item, createdAt: item.created_at })) as Notification[]);
@@ -62,8 +63,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     void load();
 
     const channel = client
-      .channel(`notifications:${user.id}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, ({ new: item }) => {
+      .channel(`notifications:${userId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, ({ new: item }) => {
         const notification = { ...item, createdAt: item.created_at } as Notification;
         setNotifications((current) => [notification, ...current].slice(0, 50));
         if (shownIds.current.has(notification.id)) return;
@@ -79,7 +80,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       active = false;
       void client.removeChannel(channel);
     };
-  }, [user]);
+  }, [userId]);
 
   const requestPushPermission = async () => {
     if (typeof window === "undefined" || !("Notification" in window)) return false;
@@ -90,15 +91,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const markAsRead = async (id: string) => {
     const client = createClient();
-    if (!client || !user) return;
-    await client.from("notifications").update({ read: true }).eq("id", id).eq("user_id", user.id);
+    if (!client || !userId) return;
+    await client.from("notifications").update({ read: true }).eq("id", id).eq("user_id", userId);
     setNotifications((current) => current.map((item) => item.id === id ? { ...item, read: true } : item));
   };
 
   const markAllAsRead = async () => {
     const client = createClient();
-    if (!client || !user) return;
-    await client.from("notifications").update({ read: true }).eq("user_id", user.id).eq("read", false);
+    if (!client || !userId) return;
+    await client.from("notifications").update({ read: true }).eq("user_id", userId).eq("read", false);
     setNotifications((current) => current.map((item) => ({ ...item, read: true })));
   };
 
