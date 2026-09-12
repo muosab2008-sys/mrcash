@@ -146,8 +146,8 @@ export function NotificationPanel() {
                               {notification.message}
                             </p>
                             <p className="text-[10px] text-muted-foreground mt-2">
-                              {notification.createdAt?.toDate && 
-                                formatDistanceToNow(notification.createdAt.toDate(), { addSuffix: true })}
+                              {notification.createdAt &&
+                                formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                             </p>
                           </div>
                         </div>
