@@ -6,6 +6,7 @@ import { Sidebar } from "./sidebar";
 import { BottomNav } from "./bottom-nav";
 import { GlobalFooter } from "./global-footer";
 import { LiveFeedTicker } from "@/components/live-feed-ticker";
+import { CommunityChat } from "@/components/community-chat";
 
 interface AppShellProps {
   children: ReactNode;
@@ -44,6 +45,7 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Bottom navigation - Mobile only */}
       <BottomNav />
+      <CommunityChat />
       
     </div>
   );

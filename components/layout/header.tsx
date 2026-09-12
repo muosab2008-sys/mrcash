@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NotificationPanel } from "@/components/notifications/notification-panel";
+import { useNotifications } from "@/components/notifications/notification-provider";
 
 interface HeaderProps {
   onMenuClick?: () => void;
