@@ -43,7 +43,11 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
-const redirectUrl = () => process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ?? `${window.location.origin}/auth/callback`
+const redirectUrl = () => {
+  if (process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL) return process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL
+  if (typeof window !== "undefined") return `${window.location.origin}/auth/callback`
+  return "/auth/callback"
+}
 
 function toUserData(user: User, profile: Record<string, unknown> | null): UserData {
   const metadata = user.user_metadata ?? {}
@@ -52,7 +56,7 @@ function toUserData(user: User, profile: Record<string, unknown> | null): UserDa
     email: user.email ?? "",
     username: String(profile?.username ?? metadata.username ?? user.email?.split("@")[0] ?? "User"),
     photoURL: (profile?.photo_url ?? metadata.avatar_url ?? user.user_metadata?.picture ?? null) as string | null,
-    points: Number(profile?.points ?? 0),
+    points: Number(profile?.balance ?? profile?.mc ?? profile?.points ?? 0),
     fragments: Number(profile?.fragments ?? 0),
     level: Number(profile?.level ?? 1),
     totalEarned: Number(profile?.total_earned ?? 0),
