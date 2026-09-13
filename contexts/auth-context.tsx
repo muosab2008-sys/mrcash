@@ -22,7 +22,9 @@ export interface UserData {
   twoFactorEnabled: boolean
   twoFactorSecret?: string
   lastLoginIp?: string | null
+  country?: string | null
   countryCode?: string | null
+  ipAddress?: string | null
 }
 
 interface AuthContextType {
@@ -62,7 +64,9 @@ function toUserData(user: User, profile: Record<string, unknown> | null): UserDa
     twoFactorEnabled: Boolean(profile?.two_factor_enabled ?? false),
     twoFactorSecret: profile?.two_factor_secret as string | undefined,
     lastLoginIp: (profile?.last_login_ip ?? null) as string | null,
+    country: (profile?.country ?? null) as string | null,
     countryCode: (profile?.country_code ?? null) as string | null,
+    ipAddress: (profile?.ip_address ?? profile?.last_login_ip ?? null) as string | null,
   }
 }
 
