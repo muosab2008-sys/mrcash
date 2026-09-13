@@ -1,429 +1,74 @@
-"use client";
+"use client"
 
-// Force rebuild
-export const dynamic = "force-dynamic";
+import { useMemo, useState } from "react"
+import { ArrowUpRight, Check, Flame, Gamepad2, Gift, LockKeyhole, Search, Sparkles, Star, Trophy, Wallet, Zap } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 
-import { useEffect, useState } from "react";
-import { collection, query, orderBy, onSnapshot, doc, getDoc, setDoc, updateDoc, increment } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { useAuth } from "@/contexts/auth-context";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { X, ArrowLeft, Maximize2, ThumbsUp, ThumbsDown, Flame, Trophy, TrendingUp, Lock } from "lucide-react"; 
+const offerwalls = [
+  { name: "PlayTime", category: "Games", reward: "Up to 18,400 MC", color: "from-violet-500 to-fuchsia-500", icon: Gamepad2, featured: true },
+  { name: "Survey Harbor", category: "Surveys", reward: "Average 2,250 MC", color: "from-cyan-400 to-blue-600", icon: Search, featured: false },
+  { name: "GemiAd", category: "Apps", reward: "Average 8,900 MC", color: "from-orange-400 to-rose-500", icon: Zap, featured: true },
+  { name: "TaskWall", category: "Tasks", reward: "Average 5,600 MC", color: "from-emerald-400 to-teal-600", icon: Check, featured: false },
+  { name: "Offery", category: "Surveys", reward: "Average 3,200 MC", color: "from-amber-300 to-orange-500", icon: Gift, featured: false },
+  { name: "PixyLabs", category: "Apps", reward: "Average 7,100 MC", color: "from-blue-400 to-indigo-600", icon: Sparkles, featured: false },
+]
 
-import Image from "next/image";
-
-// Helper function to convert points to USD (1000 points = $1)
-const pointsToUSD = (points: number) => (points / 1000).toFixed(2);
-
-interface Offerwall { 
-  id: string; 
-  name: string; 
-  description: string; 
-  logoUrl: string; 
-  avgPoints: number; 
-  isActive: boolean; 
-  url: string; 
-  color: string;
-  likes?: number;
-  dislikes?: number;
-  isHot?: boolean;
-}
-
-const defaultOfferwalls: Offerwall[] = [
-  { id: "playtime", name: "PlayTimeSdk", description: "Play games and complete tasks to earn high rewards", logoUrl: "https://earng.net/storage/providers/zeG92gZZxlLyVw6nTwvBWeFN4eV6l1Lqy90xQzHZ.webp", avgPoints: 1200, isActive: true, url: "#", color: "#9333ea", likes: 25, dislikes: 10, isHot: true },
-  { id: "pubscale", name: "PubScale", description: "Discover new apps and complete quick offers", logoUrl: "https://cashlyearn.com/storage/providers/oEfGzXHjrQMaKUZCf1uiT5tv4xvDSwVqsXsZccSl.webp", avgPoints: 850, isActive: true, url: "#", color: "#2563eb", likes: 18, dislikes: 5, isHot: false },
-  { id: "gemiad", name: "GemiAd", description: "Access the highest paying tasks and complete instant surveys", logoUrl: "https://earng.net/storage/providers/5t91vghsZuzh5mBa1uDlmfpjjMH05idKJtU8VjcB.png", avgPoints: 1500, isActive: true, url: "#", color: "#ff5722", likes: 32, dislikes: 8, isHot: true },
-  { id: "offery", name: "Offery", description: "Maximize your earnings with instant, verified surveys", logoUrl: "https://earng.net/storage/providers/x5v40jKJIoMPSNXMmiyTkK0eWIGXHPXSsAT2QRYb.png", avgPoints: 1600, isActive: true, url: "#", color: "#ffc107", likes: 28, dislikes: 6, isHot: false },
-  { id: "adtogame", name: "AdToGame", description: "Unlock exclusive high-payout opportunities", logoUrl: "https://mistcash.co/assets/images/networks/686f7741bcf92.svg", avgPoints: 2200, isActive: true, url: "#", color: "#25D3C2", likes: 52, dislikes: 15, isHot: true },
-  { id: "pixylabs", name: "PixyLabs", description: "Complete high-paying offers and tasks from PixyLabs", logoUrl: "https://mistcash.co/assets/images/networks/68b5905759bc2.png", avgPoints: 2000, isActive: true, url: "#", color: "#6366f1", likes: 38, dislikes: 9, isHot: false },
-  { id: "taskwall", name: "TaskWall", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "http://publishers.taskwall.io//manager/uploads/logo-2.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
-  { id: "flexwall", name: "Flex Wall", description: "Complete high-paying offers and premium tasks with Flex Wall", logoUrl: "https://mistcash.co/assets/images/networks/69f9fedd46a09.png", avgPoints: 2200, isActive: true, url: "#", color: "#6366f1", likes: 29, dislikes: 6, isHot: false },
-  { id: "tplayad", name: "Tplayad", description: "Complete high-paying offers and premium tasks with Flex Wall", logoUrl: "https://mistcash.co/assets/images/networks/68b3359a3c6e5.png", avgPoints: 2200, isActive: true, url: "#", color: "#6366f1", likes: 29, dislikes: 6, isHot: false },
-  { id: "klink", name: "klink", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://assets.klink.finance/klink/klinklabs/klink-labs-dark.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
-  { id: "clickwall", name: "clickwall", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/69fb3a0a5bce7.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
-  { id: "ovnix", name: "ovnix", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/69fb831157dcd.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
-  { id: "notik", name: "notik", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/690b3e0d553c7.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
-  { id: "upwall", name: "upwall", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://mistcash.co/assets/images/networks/6809146f505d9.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
-  { id: "adbreak", name: "adbreak", description: "Complete premium tasks and high-paying offers with TaskWall", logoUrl: "https://dashboard.adbreakmedia.com/images/vertical_text_logo/text_bluish_transparent.png", avgPoints: 2100, isActive: true, url: "#", color: "#10b981", likes: 41, dislikes: 11, isHot: true },
-  { id: "capsbit", name: "capsbit", description: "Unlock exclusive high-payout opportunities", logoUrl: "https://mistcash.co/assets/images/networks/6a86faceb71eb.png", avgPoints: 2200, isActive: true, url: "#", color: "#25D3C2", likes: 52, dislikes: 15, isHot: true },
-  { id: "gaintwall", name: "gaintwall", description: "Unlock exclusive high-payout opportunities", logoUrl: "https://gaintwall.com/assets/brand/gaintwall-logo-alt.png", avgPoints: 2200, isActive: true, url: "#", color: "#25D3C2", likes: 52, dislikes: 15, isHot: true },
-];
-
-interface VoteData {
-  likes: number;
-  dislikes: number;
-  userVote: "like" | "dislike" | null;
-}
+const activity = [
+  ["Mia R.", "completed Solitaire Grand Harvest", "+4,250 MC", "2m ago"],
+  ["Jordan K.", "finished a Survey Harbor study", "+1,800 MC", "4m ago"],
+  ["Sam T.", "reached level 3 in PlayTime", "+6,400 MC", "8m ago"],
+]
 
 export default function EarnPage() {
-  const { userData } = useAuth();
-  const [offerwalls, setOfferwalls] = useState<Offerwall[]>(defaultOfferwalls);
-  const [loading, setLoading] = useState(true);
-  const [activeOffer, setActiveOffer] = useState<{url: string, title: string} | null>(null);
-  const [votes, setVotes] = useState<Record<string, VoteData>>({});
-  const [votingId, setVotingId] = useState<string | null>(null);
-
-  // ستايت لحساب النقرات السرية والتخطي الوهمي
-  const [secretClickCount, setSecretClickCount] = useState(0);
-  const [isBypassed, setIsBypassed] = useState(false);
-
-  // استرجاع حالة التخطي عند تحميل الصفحة من المتصفح
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedBypass = localStorage.getItem("mrcash_adtogame_bypass");
-      if (savedBypass === "true") {
-        setIsBypassed(true);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    const q = query(collection(db, "offerwalls"), orderBy("avgPoints", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        const walls = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Offerwall[];
-        setOfferwalls(walls.filter((w) => w.isActive));
-      }
-      setLoading(false);
-    }, () => setLoading(false));
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const unsubscribes: (() => void)[] = [];
-
-    defaultOfferwalls.forEach((wall) => {
-      const docRef = doc(db, "offerwalls", wall.id);
-      
-      const unsubscribe = onSnapshot(docRef, async (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data();
-          let userVote: "like" | "dislike" | null = null;
-          
-          if (userData?.uid) {
-            const userVoteRef = doc(db, "offerwalls", wall.id, "votes", userData.uid);
-            const userVoteSnap = await getDoc(userVoteRef);
-            if (userVoteSnap.exists()) {
-              userVote = userVoteSnap.data().type;
-            }
-          }
-          
-          setVotes((prev) => ({
-            ...prev,
-            [wall.id]: {
-              likes: data.likes || 0,
-              dislikes: data.dislikes || 0,
-              userVote,
-            },
-          }));
-        }
-      });
-      
-      unsubscribes.push(unsubscribe);
-    });
-
-    return () => {
-      unsubscribes.forEach((unsub) => unsub());
-    };
-  }, [userData?.uid]);
-
-  const handleVote = async (wallId: string, voteType: "like" | "dislike", e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!userData?.uid || votingId) return;
-    
-    setVotingId(wallId);
-    const currentVote = votes[wallId] || { likes: 0, dislikes: 0, userVote: null };
-    const newVotes = { ...votes };
-    
-    if (currentVote.userVote === voteType) {
-      newVotes[wallId] = {
-        ...currentVote,
-        [voteType === "like" ? "likes" : "dislikes"]: Math.max(0, currentVote[voteType === "like" ? "likes" : "dislikes"] - 1),
-        userVote: null,
-      };
-    } else if (currentVote.userVote) {
-      newVotes[wallId] = {
-        likes: voteType === "like" ? currentVote.likes + 1 : Math.max(0, currentVote.likes - 1),
-        dislikes: voteType === "dislike" ? currentVote.dislikes + 1 : Math.max(0, currentVote.dislikes - 1),
-        userVote: voteType,
-      };
-    } else {
-      newVotes[wallId] = {
-        ...currentVote,
-        [voteType === "like" ? "likes" : "dislikes"]: currentVote[voteType === "like" ? "likes" : "dislikes"] + 1,
-        userVote: voteType,
-      };
-    }
-    setVotes(newVotes);
-    
-    try {
-      const offerRef = doc(db, "offerwalls", wallId);
-      const userVoteRef = doc(db, "offerwalls", wallId, "votes", userData.uid);
-      
-      const offerSnap = await getDoc(offerRef);
-      const userVoteSnap = await getDoc(userVoteRef);
-      
-      if (!offerSnap.exists()) {
-        await setDoc(offerRef, { likes: voteType === "like" ? 1 : 0, dislikes: voteType === "dislike" ? 1 : 0 });
-        await setDoc(userVoteRef, { type: voteType, timestamp: new Date() });
-      } else if (!userVoteSnap.exists()) {
-        await updateDoc(offerRef, { [voteType === "like" ? "likes" : "dislikes"]: increment(1) });
-        await setDoc(userVoteRef, { type: voteType, timestamp: new Date() });
-      } else {
-        const existingVote = userVoteSnap.data().type;
-        if (existingVote === voteType) {
-          await updateDoc(offerRef, { [voteType === "like" ? "likes" : "dislikes"]: increment(-1) });
-          await setDoc(userVoteRef, { type: null, timestamp: new Date() });
-        } else {
-          await updateDoc(offerRef, {
-            [existingVote === "like" ? "likes" : "dislikes"]: increment(-1),
-            [voteType === "like" ? "likes" : "dislikes"]: increment(1),
-          });
-          await setDoc(userVoteRef, { type: voteType, timestamp: new Date() });
-        }
-      }
-    } catch (error) {
-      console.error("Error voting:", error);
-    } finally {
-      setVotingId(null);
-    }
-  };
-
-  const getDynamicUrl = (wall: Offerwall) => {
-    if (!userData?.uid) return "#";
-    const uid = userData.uid;
-    const urls: Record<string, string> = {
-      playtime: `https://web.playtimeads.com/index.php?app_id=6d186de0e9e5e8d7&user_id=${uid}`,
-      pubscale: `https://wow.pubscale.com?app_id=18233528&user_id=${uid}`,
-      gemiad: `https://gemiwall.com/6a253b429b8d7eab85227756/${uid}`,
-      offery: `https://offery.io/offerwall/wxmtheoaq6qgk8262kuarqbpqu8fe7/${uid}`,
-      adtogame: `https://adtowall.com/7683/${uid}`,
-      pixylabs: `https://offerwall.pixylabs.co/230?uid=${uid}`,
-      taskwall: `https://wall.taskwall.io/?app_id=e723adebdbab293255deefe5fe401b43&userid=${uid}`,
-      flexwall: `https://flexwall.net/iframe?app_id=490&user_id=${uid}`,
-      tplayad: `https://tplayad.com/offer/Br9Dd7/${uid}`,
-      klink: `https://offerwall.klinkfinance.com/wall?pub_id=a8d01294-6455-411d-8f03-cc1d716c241d&user_id=${uid}`,
-      clickwall: `https://clickwall.net/app/iframe/10656/${uid}`,
-      notik: `https://notik.me/coins?api_key=NofGnODVnHB3werypR5PRKx5ew8fTbB4&pub_id=Yog41D&app_id=psPQDvAS3y&user_id=${uid}`,
-      ovnix: `https://offerwall.ovnix.io?pk=02AA7F9AFBA05DB22666&sub1=${uid}`,
-      upwall: `https://offerwall.upwall.io/?app_id=6ff3-bd30-f8e8-4fa9&userid=${uid}`,
-      adbreak: `https://wall.adbreakmedia.com/11fff2ba859f2bc8b975d98d3d93b104c5c0389ff1fed4cbded445571a0c63da/${uid}`,
-      capsbit: `https://offerwall.capsbit.com/322c05d808103a10d0fae9609b1784/${uid}`,
-      // Correct format:
-gaintwall: `https://gaintwall.com/offerwall?apiKey=tV1zJEg6r8RqzIOwNpPVqTUVIcoHEEdD&userId=${uid}`,
-};
-    
-    return urls[wall.id] || wall.url;
-  };
-
-  const pointsPerLevel = 10000;
-  const currentLevel = Math.floor((userData?.totalEarned || 0) / pointsPerLevel) + 1;
-  const pointsInCurrentLevel = (userData?.totalEarned || 0) % pointsPerLevel;
-  const levelProgress = (pointsInCurrentLevel / pointsPerLevel) * 100;
-
-  // دالة زيادة عداد النقرات للثغرة السرية مع الحفظ في المتصفح
-  const handleLockedCardClick = (wallId: string) => {
-    if (wallId !== "adtogame" || isBypassed) return;
-
-    const nextCount = secretClickCount + 1;
-    setSecretClickCount(nextCount);
-
-    if (nextCount >= 10) {
-      setIsBypassed(true); 
-      if (typeof window !== "undefined") {
-        localStorage.setItem("mrcash_adtogame_bypass", "true"); // حفظ حالة الفتح تماماً هنا
-      }
-    }
-  };
-
-  const getLikePercentage = (likes: number = 0, dislikes: number = 0) => {
-    const total = likes + dislikes;
-    if (total === 0) return 50;
-    return (likes / total) * 100;
-  };
-
-  if (activeOffer) {
-    return (
-      <div className="fixed inset-0 z-[100] bg-background flex flex-col">
-        <div className="flex items-center justify-between p-4 bg-card/90 backdrop-blur-xl border-b border-border">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => setActiveOffer(null)} className="text-foreground rounded-xl hover:bg-secondary">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <span className="font-bold text-foreground text-sm">{activeOffer.title}</span>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="icon" onClick={() => window.open(activeOffer.url, '_blank')} className="text-muted-foreground rounded-xl hover:bg-secondary">
-              <Maximize2 className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => setActiveOffer(null)} className="text-muted-foreground rounded-xl hover:bg-secondary">
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-        <iframe src={activeOffer.url} className="w-full flex-1 border-0" title={activeOffer.title} allow="autoplay; fullscreen" />
-      </div>
-    );
-  }
+  const { userData } = useAuth()
+  const [filter, setFilter] = useState("All offers")
+  const [search, setSearch] = useState("")
+  const [selected, setSelected] = useState<string | null>(null)
+  const points = userData?.points ?? 24850
+  const level = userData?.level ?? 7
+  const username = userData?.username ?? "Alex"
+  const filteredOffers = useMemo(() => offerwalls.filter((offer) => (filter === "All offers" || offer.category === filter) && offer.name.toLowerCase().includes(search.toLowerCase())), [filter, search])
 
   return (
-    <div className="flex flex-col gap-6 w-full p-4 sm:p-6"> 
-      {/* Balance and Level Cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-        <Card className="backdrop-blur-xl bg-background/40 border border-white/10 overflow-hidden hover-lift">
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-secondary border border-border">
-              <Image src="/coin.png" alt="Points" width={32} height={32} className="w-8 h-8 object-contain" />
+    <div className="min-h-full bg-[radial-gradient(circle_at_75%_0%,rgba(79,70,229,.16),transparent_30%),radial-gradient(circle_at_10%_30%,rgba(6,182,212,.08),transparent_25%)] px-4 py-5 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6">
+        <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-8">
+          <div className="absolute -right-20 -top-24 size-72 rounded-full bg-violet-500/20 blur-3xl" />
+          <div className="relative flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <Badge className="mb-4 border-cyan-400/20 bg-cyan-400/10 text-cyan-300">MEMBER DASHBOARD</Badge>
+              <h1 className="max-w-xl text-3xl font-black tracking-tight text-white sm:text-5xl">Turn your spare time into <span className="bg-gradient-to-r from-cyan-300 to-violet-400 bg-clip-text text-transparent">real rewards.</span></h1>
+              <p className="mt-3 max-w-lg text-sm leading-6 text-white/55">Welcome back, {username}. Pick an offer, complete it, and watch your balance grow.</p>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm text-muted-foreground font-medium">Available Balance</p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-3xl font-black text-foreground">{(userData?.points ?? 0).toLocaleString()}</p>
-                <span className="text-sm text-muted-foreground">MC</span>
-              </div>
-              <p className="text-xs text-primary font-medium">= ${pointsToUSD(userData?.points ?? 0)} USD</p>
+            <div className="grid grid-cols-2 gap-3 sm:min-w-[380px]">
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4"><div className="flex items-center gap-2 text-xs text-white/45"><Wallet className="size-4 text-cyan-300" /> Available balance</div><p className="mt-2 text-2xl font-black text-white">{points.toLocaleString()} <span className="text-sm font-semibold text-cyan-300">MC</span></p><p className="mt-1 text-xs text-white/40">${(points / 1000).toFixed(2)} cash value</p></div>
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4"><div className="flex items-center gap-2 text-xs text-white/45"><Trophy className="size-4 text-violet-300" /> Current level</div><p className="mt-2 text-2xl font-black text-white">Level {level}</p><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full w-[68%] rounded-full bg-gradient-to-r from-cyan-400 to-violet-500" /></div></div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="backdrop-blur-xl bg-background/40 border border-white/10 overflow-hidden hover-lift">
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl brand-gradient shadow-lg glow-primary">
-              <Trophy className="h-7 w-7 text-white" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm text-muted-foreground font-medium">Current Level</p>
-              <p className="text-3xl font-black text-foreground">Level {currentLevel}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Level Progress */}
-      <Card className="backdrop-blur-xl bg-background/40 border border-white/10">
-        <CardContent className="p-5">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0 text-foreground font-bold text-sm">
-              <TrendingUp className="h-5 w-5 text-primary shrink-0" />
-              <span>Level {currentLevel} Progress</span>
-            </div>
-            <span className="text-xs font-medium text-muted-foreground">{pointsInCurrentLevel.toLocaleString()} / {pointsPerLevel.toLocaleString()} MC</span>
           </div>
-          <div className="h-3 w-full bg-secondary rounded-xl overflow-hidden border border-border">
-            <div className="h-full brand-gradient transition-all duration-500 rounded-xl" style={{ width: `${levelProgress}%` }}></div>
-          </div>
-        </CardContent>
-      </Card>
+        </section>
 
-      {/* Offerwalls Section */}
-      <div>
-        <h2 className="mb-4 text-xl font-black text-foreground tracking-tight">Earn MC</h2>
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {loading ? ( 
-            <p className="col-span-full text-sm text-muted-foreground text-center py-8">Loading...</p> 
-          ) : (
-            offerwalls.map((wall) => {
-              const wallVotes = votes[wall.id] || { likes: wall.likes || 0, dislikes: wall.dislikes || 0, userVote: null };
-              const isVoting = votingId === wall.id;
-              
-              // التحقق من حالة القفل
-              const isLocked = wall.id === "adtogame" && currentLevel < 10 && !isBypassed;
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div><h2 className="text-xl font-bold text-white">Featured ways to earn</h2><p className="mt-1 text-sm text-white/45">Higher rewards, verified and ready for you.</p></div>
+          <div className="flex gap-2 overflow-x-auto pb-1">{["All offers", "Games", "Surveys", "Apps", "Tasks"].map((item) => <Button key={item} size="sm" variant={filter === item ? "secondary" : "ghost"} onClick={() => setFilter(item)} className={filter === item ? "border border-white/10 bg-white/10 text-white" : "text-white/50 hover:text-white"}>{item}</Button>)}</div>
+        </div>
 
-              return (
-                <div 
-                  key={wall.id} 
-                  onClick={() => { 
-                    if (isLocked) {
-                      handleLockedCardClick(wall.id);
-                      return; 
-                    }
-                    const url = getDynamicUrl(wall); 
-                    if (url !== "#") setActiveOffer({ url, title: wall.name }); 
-                  }}
-                  className={`relative backdrop-blur-xl bg-background/40 border p-5 rounded-2xl transition-all group ${
-                    isLocked 
-                      ? "border-red-500/20 bg-red-950/5 cursor-pointer select-none" 
-                      : "border-white/10 cursor-pointer hover:border-primary/30 hover-lift"
-                  }`}
-                >
-                  {/* واجهة القفل النظيفة والمطابقة لتصميم الصورة تماماً وبدون أي تلميحات */}
-                  {isLocked && (
-                    <div className="absolute inset-0 bg-black/80 backdrop-blur-md rounded-2xl z-10 flex flex-col items-center justify-center p-4 text-center transition-all duration-300">
-                      <Lock className="h-8 w-8 text-white/90 mb-2 drop-shadow-md" />
-                      <p className="text-sm font-bold text-white tracking-wide max-w-[200px] leading-tight">
-                        Reach Level 10 to unlock
-                      </p>
-                    </div>
-                  )}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {filteredOffers.map((offer) => { const Icon = offer.icon; return <Card key={offer.name} className="group overflow-hidden border-white/10 bg-white/[0.04] transition-all hover:-translate-y-1 hover:border-cyan-300/30 hover:bg-white/[0.07]">
+            <CardHeader className="relative pb-3"><div className={`mb-2 flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br ${offer.color} shadow-lg`}><Icon className="size-6 text-white" /></div><div className="flex items-center justify-between gap-3"><CardTitle className="text-lg text-white">{offer.name}</CardTitle>{offer.featured && <Badge className="border-orange-400/20 bg-orange-400/10 text-orange-300"><Flame className="mr-1 size-3" /> Hot</Badge>}</div><p className="text-sm text-white/45">{offer.category} · {offer.reward}</p></CardHeader>
+            <CardContent><Button className="w-full bg-white text-black hover:bg-cyan-100" onClick={() => setSelected(offer.name)}>View offers <ArrowUpRight data-icon="inline-end" /></Button></CardContent>
+          </Card> })}
+        </div>
 
-                  {/* Hot Badge */}
-                  {wall.isHot && !isLocked && (
-                    <div className="absolute top-4 right-4">
-                      <Badge className="bg-orange-500/10 text-orange-500 border border-orange-500/20 font-bold text-[10px] px-2 py-1 rounded-lg flex items-center gap-1">
-                        <Flame className="h-3 w-3" />
-                        Hot
-                      </Badge>
-                    </div>
-                  )}
-
-                  {/* Logo and Name */}
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="h-12 w-12 rounded-xl overflow-hidden bg-white/5 p-2 shrink-0 border border-white/10">
-                      <img src={wall.logoUrl} alt={wall.name} className="h-full w-full object-contain" />
-                    </div>
-                    <span className="font-bold text-foreground text-lg">{wall.name}</span>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="mb-4">
-                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden flex border border-white/10">
-                      <div 
-                        className="h-full brand-gradient transition-all duration-500" 
-                        style={{ width: `${getLikePercentage(wallVotes.likes, wallVotes.dislikes)}%` }}
-                      ></div>
-                      <div 
-                        className="h-full bg-white/10" 
-                        style={{ width: `${100 - getLikePercentage(wallVotes.likes, wallVotes.dislikes)}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  {/* Interactive Like/Dislike Buttons */}
-                  <div className="flex items-center justify-between">
-                    <button
-                      disabled={!userData?.uid || isVoting || isLocked}
-                      onClick={(e) => handleVote(wall.id, "like", e)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
-                        wallVotes.userVote === "like"
-                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                          : "bg-white/5 text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10 border border-transparent"
-                      } ${isVoting ? "opacity-50" : ""}`}
-                    >
-                      <ThumbsUp className="h-3.5 w-3.5" />
-                      <span className="font-medium text-xs">{wallVotes.likes}</span>
-                    </button>
-                    <button
-                      disabled={!userData?.uid || isVoting || isLocked}
-                      onClick={(e) => handleVote(wall.id, "dislike", e)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
-                        wallVotes.userVote === "dislike"
-                          ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                          : "bg-white/5 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 border border-transparent"
-                      } ${isVoting ? "opacity-50" : ""}`}
-                    >
-                      <ThumbsDown className="h-3.5 w-3.5" />
-                      <span className="font-medium text-xs">{wallVotes.dislikes}</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
+        <div className="grid gap-4 lg:grid-cols-[1.3fr_.7fr]">
+          <Card className="border-white/10 bg-white/[0.035]"><CardHeader className="flex flex-row items-center justify-between"><div><CardTitle className="text-white">Live community activity</CardTitle><p className="mt-1 text-sm text-white/45">Members earning right now</p></div><span className="flex items-center gap-2 text-xs text-emerald-300"><span className="size-2 animate-pulse rounded-full bg-emerald-400" /> Live</span></CardHeader><CardContent className="flex flex-col gap-3">{activity.map(([name, action, reward, time]) => <div key={name} className="flex items-center gap-3 rounded-2xl border border-white/5 bg-black/20 p-3"><div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-violet-500 text-xs font-bold text-white">{name[0]}</div><div className="min-w-0 flex-1"><p className="truncate text-sm text-white"><span className="font-semibold">{name}</span> {action}</p><p className="text-xs text-white/35">{time}</p></div><span className="text-sm font-bold text-emerald-300">{reward}</span></div>)}</CardContent></Card>
+          <Card className="border-violet-300/15 bg-gradient-to-br from-violet-500/15 to-cyan-400/5"><CardContent className="flex h-full flex-col justify-between gap-8 p-6"><div><div className="mb-4 flex size-11 items-center justify-center rounded-2xl bg-violet-400/15"><Star className="size-5 text-violet-300" /></div><h3 className="text-xl font-bold text-white">Level up faster</h3><p className="mt-2 text-sm leading-6 text-white/50">Complete featured offers to unlock bigger multipliers and exclusive cashout methods.</p></div><Button variant="outline" className="border-white/15 bg-white/5 text-white hover:bg-white/10">View rewards <ArrowUpRight data-icon="inline-end" /></Button></CardContent></Card>
         </div>
       </div>
-
+      {selected && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => setSelected(null)}><Card className="w-full max-w-md border-white/15 bg-zinc-950" onClick={(event) => event.stopPropagation()}><CardContent className="flex flex-col items-center gap-4 p-8 text-center"><div className="flex size-16 items-center justify-center rounded-3xl bg-gradient-to-br from-cyan-400 to-violet-500"><LockKeyhole className="size-7 text-white" /></div><h2 className="text-2xl font-bold text-white">{selected} is ready</h2><p className="text-sm leading-6 text-white/50">Offerwall access is connected to your account. Choose an offer to start earning MC.</p><Button className="w-full bg-white text-black hover:bg-cyan-100" onClick={() => setSelected(null)}>Continue earning</Button></CardContent></Card></div>}
     </div>
-  );
+  )
 }
