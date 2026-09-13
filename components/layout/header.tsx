@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
-import { Settings, Menu, ArrowRightLeft, Shield, Info, X } from "lucide-react";
+import { Settings, Menu, ArrowRightLeft, Shield, Info, X, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -89,6 +89,13 @@ export function Header({ onMenuClick }: HeaderProps) {
                     {displayMode === "points" ? "MC" : "USD"}
                   </span>
                 </button>
+
+                {userData.countryCode && (
+                  <div className="hidden items-center gap-1.5 rounded-xl border border-border bg-secondary/60 px-2.5 py-2 text-xs text-muted-foreground sm:flex" title={userData.country ?? userData.countryCode}>
+                    <Globe className="size-3.5" aria-hidden="true" />
+                    <span>{userData.countryCode.toUpperCase()}</span>
+                  </div>
+                )}
 
                 {/* Toggle Points/USD */}
                 <Button

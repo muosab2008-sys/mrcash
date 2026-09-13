@@ -3,8 +3,6 @@
 export const dynamic = "force-dynamic";
 
 import { useState } from "react";
-import { doc, getDoc, runTransaction, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,91 +25,27 @@ export default function PromoPage() {
   const handleRedeem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userData || !code.trim()) return;
-
     setLoading(true);
+    const normalizedCode = code.trim().toUpperCase();
 
     try {
-      const promoRef = doc(db, "promoCodes", code.toUpperCase());
-      const promoSnap = await getDoc(promoRef);
-
-      if (!promoSnap.exists()) {
-        toast.error("Invalid promo code");
-        setRecentCodes([
-          { code: code.toUpperCase(), success: false, reward: "Invalid" },
-          ...recentCodes.slice(0, 4),
-        ]);
-        setCode("");
-        return;
-      }
-
-      const promoData = promoSnap.data();
-
-      if (!promoData.isActive) {
-        toast.error("This promo code has expired");
-        setRecentCodes([
-          { code: code.toUpperCase(), success: false, reward: "Expired" },
-          ...recentCodes.slice(0, 4),
-        ]);
-        setCode("");
-        return;
-      }
-
-      const usageRef = doc(db, "promoCodes", code.toUpperCase(), "usedBy", userData.uid);
-      const usageSnap = await getDoc(usageRef);
-
-      if (usageSnap.exists()) {
-        toast.error("You have already used this code");
-        setRecentCodes([
-          { code: code.toUpperCase(), success: false, reward: "Already used" },
-          ...recentCodes.slice(0, 4),
-        ]);
-        setCode("");
-        return;
-      }
-
-      if (promoData.maxUses && promoData.usesCount >= promoData.maxUses) {
-        toast.error("This promo code has reached its usage limit");
-        setRecentCodes([
-          { code: code.toUpperCase(), success: false, reward: "Limit reached" },
-          ...recentCodes.slice(0, 4),
-        ]);
-        setCode("");
-        return;
-      }
-
-      await runTransaction(db, async (transaction) => {
-        const userRef = doc(db, "users", userData.uid);
-
-        const updates: Record<string, any> = {};
-        if (promoData.pointsReward) {
-          updates.points = (userData.points || 0) + promoData.pointsReward;
-          updates.totalEarned = (userData.totalEarned || 0) + promoData.pointsReward;
-        }
-
-        transaction.update(userRef, updates);
-
-        transaction.set(usageRef, {
-          userId: userData.uid,
-          usedAt: serverTimestamp(),
-        });
-
-        transaction.update(promoRef, {
-          usesCount: (promoData.usesCount || 0) + 1,
-        });
+      const response = await fetch("/api/promo/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: normalizedCode }),
       });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || "Unable to redeem code");
 
-      const rewardText = promoData.pointsReward 
-        ? `${promoData.pointsReward.toLocaleString()} MC ($${pointsToUSD(promoData.pointsReward)})`
-        : "Bonus";
-
+      const reward = Number(result.reward_mc ?? 0);
+      const rewardText = `${reward.toLocaleString()} MC ($${pointsToUSD(reward)})`;
       toast.success(`Code redeemed! You received ${rewardText}`);
-      setRecentCodes([
-        { code: code.toUpperCase(), success: true, reward: rewardText },
-        ...recentCodes.slice(0, 4),
-      ]);
+      setRecentCodes((current) => [{ code: normalizedCode, success: true, reward: rewardText }, ...current.slice(0, 4)]);
       setCode("");
-    } catch {
-      toast.error("Failed to redeem code");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to redeem code";
+      toast.error(message);
+      setRecentCodes((current) => [{ code: normalizedCode, success: false, reward: message }, ...current.slice(0, 4)]);
     } finally {
       setLoading(false);
     }
