@@ -34,7 +34,7 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/[0.04] backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_-1px_0_rgba(255,255,255,0.08)]">
         <div className="flex h-14 sm:h-16 items-center justify-between px-3 sm:px-6">
           
           {/* Left: Menu & Logo */}

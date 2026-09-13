@@ -66,7 +66,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
       {/* Sidebar Container */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex h-full flex-col border-r border-border bg-sidebar transition-all duration-300 lg:sticky lg:top-0 lg:z-auto lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex h-full flex-col border-r border-white/10 bg-white/[0.045] backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_-1px_0_0_rgba(255,255,255,0.08),0_8px_32px_rgba(0,0,0,0.28)] transition-all duration-300 lg:sticky lg:top-0 lg:z-auto lg:translate-x-0",
           isOpen ? "translate-x-0 w-64 sm:w-72" : "-translate-x-full",
           isCollapsed ? "lg:w-16" : "lg:w-64"
         )}
@@ -124,10 +124,10 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
                         href={item.href}
                         onClick={onClose}
                         className={cn(
-                          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                          "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                           isActive 
-                            ? "brand-gradient text-white shadow-lg glow-primary" 
-                            : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                            ? "bg-white/12 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_24px_rgba(99,120,255,0.22)] border border-white/15" 
+                            : "text-muted-foreground hover:bg-white/8 hover:text-foreground",
                           isCollapsed && "lg:justify-center lg:px-2"
                         )}
                       >
@@ -150,7 +150,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }: SidebarProps) 
                       href="/admin"
                       onClick={onClose}
                       className={cn(
-                        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                        "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                         pathname.startsWith("/admin") 
                           ? "brand-gradient text-white shadow-lg" 
                           : "text-muted-foreground hover:bg-secondary hover:text-foreground",

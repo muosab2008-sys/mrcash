@@ -17,7 +17,7 @@ export function AppShell({ children }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="flex h-screen flex-col lg:flex-row bg-transparent text-white overflow-hidden">
+    <div className="relative flex h-screen flex-col lg:flex-row bg-transparent text-white overflow-hidden">
       
       {/* Sidebar - Hidden on mobile, visible on desktop */}
       <Sidebar 
